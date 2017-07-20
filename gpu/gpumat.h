@@ -353,6 +353,13 @@ void sigmoid(GpuMat& A);
 void deriv_sigmoid(const GpuMat& A, GpuMat& C);
 
 /**
+ * @brief back_delta_sigmoid
+ * @param sigmoid = (target - sigmoid) * sigmoid * (1 - sigmoid)
+ * @param target
+ */
+void back_delta_sigmoid(GpuMat &sigmoid, const GpuMat &target);
+
+/**
  * @brief deriv_sigmoid
  * @param A
  */

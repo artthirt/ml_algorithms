@@ -320,6 +320,15 @@ extern "C"
 void cuda_deriv_sigmoid(const GpuMat& A, GpuMat& C);
 extern "C"
 void cuda_deriv_sigmoid2(GpuMat& A);
+
+/**
+ * @brief cuda_back_delta_sigmoid
+ * @param sigmoid = (target - sigmoid) * sigmoid * (1 - sigmoid)
+ * @param target
+ */
+extern "C"
+void cuda_back_delta_sigmoid(GpuMat &sigmoid, const GpuMat &target);
+
 /**
  * @brief cuda_tanh
  * @param A
@@ -1067,6 +1076,19 @@ void deriv_sigmoid(const GpuMat &A, GpuMat &C)
 	cuda_deriv_sigmoid(A, C);
 }
 
+
+void back_delta_sigmoid(GpuMat &sigmoid, const GpuMat &target)
+{
+	if(sigmoid.empty() || target.empty()){
+		throw new std::invalid_argument("back_delta_sigmoid");
+	}
+
+	if(sigmoid.rows != target.rows || sigmoid.cols != target.cols || sigmoid.type != target.type)
+		throw new std::invalid_argument("back_delta_sigmoid");
+
+	cuda_back_delta_sigmoid(sigmoid, target);
+}
+
 void deriv_sigmoid(GpuMat &A)
 {
 	if(A.empty()){
@@ -1258,5 +1280,6 @@ void hsplit2(const GpuMat &res, std::vector<int> cols, std::vector<GpuMat > &lis
 
 	cuda_hsplit2(res, list);
 }
+
 
 }

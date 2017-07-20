@@ -623,6 +623,23 @@ __global__ void deriv_sigmoid(Mtx A)
 	}
 }
 
+template< class T >
+__global__ void back_delta_sigmoid(Mtx sigmoid, Mtx target)
+{
+	int row = threadIdx.y + blockIdx.y * blockDim.y;
+	int col = threadIdx.x + blockIdx.x * blockDim.x;
+
+	T* dA = (T*)sigmoid.data;
+	T* dC = (T*)target.data;
+
+	if(row < sigmoid.rows && col < sigmoid.cols){
+		T val = dA[row * sigmoid.cols + col];
+		T target = dC[row * sigmoid.cols + col];
+		T delta = target - val;
+		dA[row * sigmoid.cols + col] = delta * val * (1 - val);
+	}
+}
+
 /**
  * @brief tanh
  * @param A
@@ -2225,6 +2242,30 @@ void cuda_deriv_sigmoid2(GpuMat& A)
 		break;
 	}
 }
+
+/**
+ * @brief cuda_back_delta_sigmoid
+ * @param sigmoid
+ * @param delta
+ */
+extern "C"
+void cuda_back_delta_sigmoid(GpuMat &sigmoid, const GpuMat &target)
+{
+	int x1 = sigmoid.cols / BLOCKSIZE + 1;
+	int x2 = sigmoid.rows / BLOCKSIZE + 1;
+
+	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+
+	switch (sigmoid.type) {
+	case GPU_DOUBLE:
+		internal::back_delta_sigmoid<double> <<<dimGrid, dimBlock>>>(sigmoid, target);
+		break;
+	case GPU_FLOAT:
+		internal::back_delta_sigmoid<float> <<<dimGrid, dimBlock>>>(sigmoid, target);
+		break;
+	}
+}
+
 
 ///////////////
 
