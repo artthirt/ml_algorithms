@@ -26,11 +26,6 @@ public:
 	mlp();
 
 	/**
-	 * @brief XOut
-	 * @return
-	 */
-	GpuMat &XOut();
-	/**
 	 * @brief setLambda
 	 * @param val
 	 */
@@ -95,6 +90,14 @@ public:
 	 * @param last_layer
 	 */
 	void backward(const GpuMat &Delta, bool last_layer = false);
+	/**
+	 * @brief Y
+	 * @return
+	 */
+	inline GpuMat &Y(){
+		return A1;
+	}
+
 	/**
 	 * @brief write
 	 * write only data

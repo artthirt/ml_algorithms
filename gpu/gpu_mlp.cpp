@@ -23,11 +23,6 @@ mlp::mlp(){
 	m_lambda = 0.;
 }
 
-GpuMat &mlp::XOut()
-{
-	return A1;
-}
-
 void mlp::setLambda(double val)
 {
 	m_lambda = val;
