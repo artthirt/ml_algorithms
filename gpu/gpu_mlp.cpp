@@ -83,7 +83,6 @@ void mlp::apply_func(const GpuMat &Z, GpuMat &A, etypefunction func){
 
 void mlp::apply_back_func(const GpuMat &D1, GpuMat &D2, etypefunction func){
 	switch (func) {
-		default:
 		case RELU:
 			deriv_reLu(A1, DA1);
 			break;
@@ -97,6 +96,8 @@ void mlp::apply_back_func(const GpuMat &D1, GpuMat &D2, etypefunction func){
 		case TANH:
 			deriv_tanh(A1, DA1);
 			break;
+		default:
+			return;
 	}
 	elemwiseMult(D1, DA1, D2);
 }
@@ -157,7 +158,7 @@ void mlp::backward(const GpuMat &Delta, bool last_layer)
 
 	gpumat::GpuMat* pDA1 = &DA1;
 
-	if(m_func != gpumat::SOFTMAX){
+	if(m_func != gpumat::SOFTMAX && m_func != gpumat::LINEAR){
 		apply_back_func(Delta, DA1, m_func);
 	}else{
 		pDA1 = (GpuMat*)&Delta;
