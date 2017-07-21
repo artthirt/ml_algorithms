@@ -277,80 +277,14 @@ void upsample(const ct::Mat_<T>& Y, int K, const ct::Mat_<T>& Mask, const ct::Si
 	}
 }
 
-template< typename T >
-void vec2mat(const std::vector< ct::Mat_<T> >& vec, ct::Mat_<T>& mat)
-{
-	if(vec.empty() || vec[0].empty())
-		return;
+void vec2mat(const std::vector< ct::Matf >& vec, ct::Matf& mat);
+void vec2mat(const std::vector< ct::Matd >& vec, ct::Matd& mat);
 
-	int rows = (int)vec.size();
-	int cols = vec[0].total();
+void mat2vec(const ct::Matf& mat, const ct::Size& szOut, std::vector< ct::Matf >& vec);
+void mat2vec(const ct::Matd& mat, const ct::Size& szOut, std::vector< ct::Matd >& vec);
 
-	mat.setSize(rows, cols);
-
-	T *dM = mat.ptr();
-
-#pragma omp parallel for
-	for(int i = 0; i < rows; ++i){
-		const ct::Mat_<T>& V = vec[i];
-		T *dV = V.ptr();
-		for(int j = 0; j < V.total(); ++j){
-			dM[i * cols + j] = dV[j];
-		}
-	}
-}
-
-template< typename T >
-void mat2vec(const ct::Mat_<T>& mat, const ct::Size& szOut, std::vector< ct::Mat_<T> >& vec)
-{
-	if(mat.empty())
-		return;
-
-	int rows = mat.rows;
-	int cols = mat.cols;
-
-	vec.resize(rows);
-
-	T *dM = mat.ptr();
-
-#pragma omp parallel for
-	for(int i = 0; i < rows; ++i){
-		ct::Mat_<T>& V = vec[i];
-		V.setSize(szOut);
-		T *dV = V.ptr();
-		for(int j = 0; j < V.total(); ++j){
-			dV[j] = dM[i * cols + j];
-		}
-	}
-}
-
-template< typename T >
-void flipW(const ct::Mat_<T>& W, const ct::Size& sz,int channels, ct::Mat_<T>& Wr)
-{
-	if(W.empty() || W.rows != sz.area() * channels)
-		return;
-
-	Wr.setSize(W.size());
-
-#pragma omp parallel for
-	for(int k = 0; k < W.cols; ++k){
-		for(int c = 0; c < channels; ++c){
-			T *dW = W.ptr() + c * sz.area() * W.cols + k;
-			T *dWr = Wr.ptr() + c * sz.area() * W.cols + k;
-
-#ifdef __GNUC__
-#pragma omp simd
-#endif
-			for(int a = 0; a < sz.height; ++a){
-				for(int b = 0; b < sz.width; ++b){
-					dWr[((sz.height - a - 1) * sz.width + b) * W.cols] = dW[((a) * sz.width + b) * W.cols];
-				}
-			}
-
-		}
-	}
-}
-
+void flipW(const ct::Matf& W, const ct::Size& sz,int channels, ct::Matf& Wr);
+void flipW(const ct::Matd& W, const ct::Size& sz,int channels, ct::Matd& Wr);
 //-------------------------------------
 
 template< typename T >
