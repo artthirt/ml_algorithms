@@ -48,6 +48,20 @@ void im2col(const ct::Mat_<T>& X, const ct::Size& szA0, int channels, const ct::
 	}
 }
 
+void im2col(const ct::Matf& X, const ct::Size& szA0, int channels, const ct::Size& szW,
+			int stride, ct::Matf& Res, ct::Size& szOut)
+{
+	im2col(X, szA0, channels, szW, stride, Res, szOut);
+}
+
+void im2col(const ct::Matd& X, const ct::Size& szA0, int channels, const ct::Size& szW,
+			int stride, ct::Matd& Res, ct::Size& szOut)
+{
+	im2col(X, szA0, channels, szW, stride, Res, szOut);
+}
+
+/////////////////////////////////////////
+
 template< typename T >
 void im2colT(const ct::Mat_<T>& X, const ct::Size& szA0, int channels, const ct::Size& szW,
 			int stride, ct::Mat_<T>& Res, ct::Size& szOut)
@@ -95,6 +109,20 @@ void im2colT(const ct::Mat_<T>& X, const ct::Size& szA0, int channels, const ct:
 	}
 }
 
+void im2colT(const ct::Matf& X, const ct::Size& szA0, int channels, const ct::Size& szW,
+			int stride, ct::Matf& Res, ct::Size& szOut)
+{
+	im2colT(X, szA0, channels, szW, stride, Res, szOut);
+}
+
+void im2colT(const ct::Matd& X, const ct::Size& szA0, int channels, const ct::Size& szW,
+			int stride, ct::Matd& Res, ct::Size& szOut)
+{
+	im2colT(X, szA0, channels, szW, stride, Res, szOut);
+}
+
+//////////////////////////////////////////
+
 template< typename T >
 void back_deriv(const ct::Mat_<T>& Delta, const ct::Size& szOut, const ct::Size& szA0,
 				int channels, const ct::Size& szW, int stride, ct::Mat_<T>& X)
@@ -135,6 +163,20 @@ void back_deriv(const ct::Mat_<T>& Delta, const ct::Size& szOut, const ct::Size&
 	}
 }
 
+void back_deriv(const ct::Matf& Delta, const ct::Size& szOut, const ct::Size& szA0,
+				int channels, const ct::Size& szW, int stride, ct::Matf& X)
+{
+	back_deriv(Delta, szOut, szA0, channels, szW, stride, X);
+}
+
+void back_deriv(const ct::Matd& Delta, const ct::Size& szOut, const ct::Size& szA0,
+				int channels, const ct::Size& szW, int stride, ct::Matd& X)
+{
+	back_deriv(Delta, szOut, szA0, channels, szW, stride, X);
+}
+
+/////////////////////////////////////////////
+
 template< typename T >
 void back_derivT(const ct::Mat_<T>& Delta, const ct::Size& szOut, const ct::Size& szA0,
 				int channels, const ct::Size& szW, int stride, ct::Mat_<T>& X)
@@ -172,6 +214,20 @@ void back_derivT(const ct::Mat_<T>& Delta, const ct::Size& szOut, const ct::Size
 		}
 	}
 }
+
+void back_derivT(const ct::Matf& Delta, const ct::Size& szOut, const ct::Size& szA0,
+				int channels, const ct::Size& szW, int stride, ct::Matf& X)
+{
+	back_derivT(Delta, szOut, szA0, channels, szW, stride, X);
+}
+
+void back_derivT(const ct::Matd& Delta, const ct::Size& szOut, const ct::Size& szA0,
+				int channels, const ct::Size& szW, int stride, ct::Matd& X)
+{
+	back_derivT(Delta, szOut, szA0, channels, szW, stride, X);
+}
+
+////////////////////////////////////////////////////
 
 template< typename T >
 void subsample(const ct::Mat_<T>& X, const ct::Size& szA, ct::Mat_<T>& Y, ct::Mat_<T>& Mask, ct::Size& szO)
@@ -228,6 +284,18 @@ void subsample(const ct::Mat_<T>& X, const ct::Size& szA, ct::Mat_<T>& Y, ct::Ma
 	}
 }
 
+void subsample(const ct::Matf& X, const ct::Size& szA, ct::Matf& Y, ct::Matf& Mask, ct::Size& szO)
+{
+	subsample(X, szA, Y, Mask, szO);
+}
+
+void subsample(const ct::Matd& X, const ct::Size& szA, ct::Matd& Y, ct::Matd& Mask, ct::Size& szO)
+{
+	subsample(X, szA, Y, Mask, szO);
+}
+
+////////////////////////////////////////////
+
 template< typename T >
 void upsample(const ct::Mat_<T>& Y, int K, const ct::Mat_<T>& Mask, const ct::Size& szO,
 			  const ct::Size& szA, ct::Mat_<T>& X)
@@ -268,6 +336,20 @@ void upsample(const ct::Mat_<T>& Y, int K, const ct::Mat_<T>& Mask, const ct::Si
 		}
 	}
 }
+
+void upsample(const ct::Matf& Y, int K, const ct::Matf& Mask, const ct::Size& szO,
+			  const ct::Size& szA, ct::Matf& X)
+{
+	upsample(Y, K, Mask, szO, szA, X);
+}
+
+void upsample(const ct::Matd& Y, int K, const ct::Matd& Mask, const ct::Size& szO,
+			  const ct::Size& szA, ct::Matd& X)
+{
+	upsample(Y, K, Mask, szO, szA, X);
+}
+
+//////////////////////////////////////////
 
 template< typename T >
 void vec2mat(const std::vector< ct::Mat_<T> >& vec, ct::Mat_<T>& mat)

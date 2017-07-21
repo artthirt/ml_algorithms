@@ -10,279 +10,115 @@
 
 namespace conv2{
 
-template< typename T >
-void im2col(const ct::Mat_<T>& X, const ct::Size& szA0, int channels, const ct::Size& szW,
-			int stride, ct::Mat_<T>& Res, ct::Size& szOut)
-{
-	if(X.empty() || !channels)
-		return;
+/**
+ * @brief im2col
+ * @param X -> [channels, szA0.height * szA0.width]
+ * @param szA0
+ * @param channels
+ * @param szW
+ * @param stride
+ * @param Res -> [szOut.width * szOut.height, szW.width * szW.height * channels]
+ * @param szOut
+ */
+void im2col(const ct::Matf& X, const ct::Size& szA0, int channels, const ct::Size& szW,
+			int stride, ct::Matf& Res, ct::Size& szOut);
+void im2col(const ct::Matd& X, const ct::Size& szA0, int channels, const ct::Size& szW,
+			int stride, ct::Matd& Res, ct::Size& szOut);
 
-	szOut.width = (szA0.width - szW.width)/stride + 1;
-	szOut.height = (szA0.height - szW.height)/stride + 1;
+/**
+ * @brief im2colT
+ * @param X -> [szA0.height * szA0.width, channels]
+ * @param szA0
+ * @param channels
+ * @param szW
+ * @param stride
+ * @param Res -> [szOut.width * szOut.height, szW.width * szW.height * channels]
+ * @param szOut
+ */
+void im2colT(const ct::Matf& X, const ct::Size& szA0, int channels, const ct::Size& szW,
+			int stride, ct::Matf& Res, ct::Size& szOut);
+void im2colT(const ct::Matd& X, const ct::Size& szA0, int channels, const ct::Size& szW,
+			int stride, ct::Matd& Res, ct::Size& szOut);
 
-	int rows = szOut.area();
-	int cols = szW.area() * channels;
+/**
+ * @brief back_deriv
+ * @param Delta -> [szOut.width * szOut.height, szW.width * szW.height * channels]
+ * @param szOut
+ * @param szA0
+ * @param channels
+ * @param szW
+ * @param stride
+ * @param X -> [channels, szA0.height * szA0.width]
+ */
+void back_deriv(const ct::Matf& Delta, const ct::Size& szOut, const ct::Size& szA0,
+				int channels, const ct::Size& szW, int stride, ct::Matf& X);
+void back_deriv(const ct::Matd& Delta, const ct::Size& szOut, const ct::Size& szA0,
+				int channels, const ct::Size& szW, int stride, ct::Matd& X);
 
-	Res.setSize(rows, cols);
+/**
+ * @brief back_derivT
+ * @param Delta
+ * @param szOut
+ * @param szA0
+ * @param channels
+ * @param szW
+ * @param stride
+ * @param X
+ */
+void back_derivT(const ct::Matf& Delta, const ct::Size& szOut, const ct::Size& szA0,
+				int channels, const ct::Size& szW, int stride, ct::Matf& X);
+void back_derivT(const ct::Matd& Delta, const ct::Size& szOut, const ct::Size& szA0,
+				int channels, const ct::Size& szW, int stride, ct::Matd& X);
 
-	T *dX = X.ptr();
-	T *dR = Res.ptr();
+/**
+ * @brief subsample
+ * @param X
+ * @param szA
+ * @param Y
+ * @param Mask
+ * @param szO
+ */
+void subsample(const ct::Matf& X, const ct::Size& szA, ct::Matf& Y, ct::Matf& Mask, ct::Size& szO);
+void subsample(const ct::Matd& X, const ct::Size& szA, ct::Matd& Y, ct::Matd& Mask, ct::Size& szO);
 
-#pragma omp parallel for
-	for(int c = 0; c < channels; ++c){
-		T *dXi = &dX[c * szA0.area()];
+/**
+ * @brief upsample
+ * @param Y
+ * @param K
+ * @param Mask
+ * @param szO
+ * @param szA
+ * @param X
+ */
+void upsample(const ct::Matf& Y, int K, const ct::Matf& Mask, const ct::Size& szO,
+			  const ct::Size& szA, ct::Matf& X);
+void upsample(const ct::Matd& Y, int K, const ct::Matd& Mask, const ct::Size& szO,
+			  const ct::Size& szA, ct::Matd& X);
 
-#pragma omp parallel for
-		for(int y = 0; y < szOut.height; ++y){
-			int y0 = y * stride;
-			for(int x = 0; x < szOut.width; ++x){
-				int x0 = x * stride;
-				int row = y * szOut.width + x;
-
-#ifdef __GNUC__
-#pragma omp simd
-#endif
-				for(int a = 0; a < szW.height; ++a){
-					for(int b = 0; b < szW.width; ++b){
-						int col = c * szW.area() + (a * szW.width + b);
-						if(y0 + a < szA0.height && x0 + b < szA0.width){
-							dR[row * Res.cols + col] = dXi[(y0 + a) * szA0.width + (x0 + b)];
-						}
-					}
-				}
-
-			}
-		}
-	}
-}
-
-template< typename T >
-void im2colT(const ct::Mat_<T>& X, const ct::Size& szA0, int channels, const ct::Size& szW,
-			int stride, ct::Mat_<T>& Res, ct::Size& szOut)
-{
-	if(X.empty() || !channels)
-		return;
-
-	szOut.width = (szA0.width - szW.width)/stride + 1;
-	szOut.height = (szA0.height - szW.height)/stride + 1;
-
-	int rows = szOut.area();
-	int cols = szW.area() * channels;
-
-	Res.setSize(rows, cols);
-
-	int colsX = channels;
-
-	T *dR = Res.ptr();
-
-#pragma omp parallel for
-	for(int c = 0; c < channels; ++c){
-		T *dXi = X.ptr() + c;
-
-#pragma omp parallel for
-		for(int y = 0; y < szOut.height; ++y){
-			int y0 = y * stride;
-			for(int x = 0; x < szOut.width; ++x){
-				int x0 = x * stride;
-				int row = y * szOut.width + x;
-
-#ifdef __GNUC__
-#pragma omp simd
-#endif
-				for(int a = 0; a < szW.height; ++a){
-					for(int b = 0; b < szW.width; ++b){
-						int col = c * szW.area() + (a * szW.width + b);
-						if(y0 + a < szA0.height && x0 + b < szA0.width){
-							dR[row * Res.cols + col] = dXi[((y0 + a) * szA0.width + (x0 + b)) * colsX];
-						}
-					}
-				}
-
-			}
-		}
-	}
-}
-
-template< typename T >
-void back_deriv(const ct::Mat_<T>& Delta, const ct::Size& szOut, const ct::Size& szA0,
-				int channels, const ct::Size& szW, int stride, ct::Mat_<T>& X)
-{
-	if(Delta.empty() || !channels)
-		return;
-
-	X.setSize(channels, szA0.area());
-	X.fill(0);
-
-	T *dX = X.ptr();
-	T *dR = Delta.ptr();
-
-#pragma omp parallel for
-	for(int c = 0; c < channels; ++c){
-		T *dXi = &dX[c * szA0.area()];
-#pragma omp parallel for
-		for(int y = 0; y < szOut.height; ++y){
-			int y0 = y * stride;
-			for(int x = 0; x < szOut.width; ++x){
-				int x0 = x * stride;
-				int row = y * szOut.width + x;
-
-				for(int a = 0; a < szW.height; ++a){
-#ifdef __GNUC__
-#pragma omp simd
-#endif
-					for(int b = 0; b < szW.width; ++b){
-						int col = c * szW.area() + (a * szW.width + b);
-						if(y0 + a < szA0.height && x0 + b < szA0.width){
-							dXi[(y0 + a) * szA0.width + (x0 + b)] += dR[row * Delta.cols + col];
-						}
-					}
-				}
-
-			}
-		}
-	}
-}
-
-template< typename T >
-void back_derivT(const ct::Mat_<T>& Delta, const ct::Size& szOut, const ct::Size& szA0,
-				int channels, const ct::Size& szW, int stride, ct::Mat_<T>& X)
-{
-	if(Delta.empty() || !channels)
-		return;
-
-	X.setSize(szA0.area(), channels);
-	X.fill(0);
-
-	T *dR = Delta.ptr();
-#pragma omp parallel for
-	for(int c = 0; c < channels; ++c){
-		T *dXi = X.ptr() + c;
-#pragma omp parallel for
-		for(int y = 0; y < szOut.height; ++y){
-			int y0 = y * stride;
-			for(int x = 0; x < szOut.width; ++x){
-				int x0 = x * stride;
-				int row = y * szOut.width + x;
-
-				for(int a = 0; a < szW.height; ++a){
-#ifdef __GNUC__
-#pragma omp simd
-#endif
-					for(int b = 0; b < szW.width; ++b){
-						int col = c * szW.area() + (a * szW.width + b);
-						if(y0 + a < szA0.height && x0 + b < szA0.width){
-							dXi[((y0 + a) * szA0.width + (x0 + b)) * channels] += dR[row * Delta.cols + col];
-						}
-					}
-				}
-
-			}
-		}
-	}
-}
-
-template< typename T >
-void subsample(const ct::Mat_<T>& X, const ct::Size& szA, ct::Mat_<T>& Y, ct::Mat_<T>& Mask, ct::Size& szO)
-{
-	if(X.empty() || X.rows != szA.area())
-		return;
-
-	szO.width = szA.width / 2;
-	szO.height = szA.height / 2;
-	int K = X.cols;
-
-	Y.setSize(szO.area(), K);
-	Mask.setSize(X.size());
-	Mask.fill(0);
-
-	int stride = 2;
-
-#pragma omp parallel for
-	for(int k = 0; k < K; ++k){
-		T *dX = X.ptr() + k;
-		T* dM = Mask.ptr() + k;
-		T *dY = Y.ptr() + k;
-
-#pragma omp parallel for
-		for(int y = 0; y < szO.height; ++y){
-			int y0 = y * stride;
-			for(int x = 0; x < szO.width; ++x){
-				int x0 = x * stride;
-
-				T mmax = dX[(y0 * szA.width + x0) * X.cols];
-				int xm = x0, ym = y0;
-				T resM = 0;
-#ifdef __GNUC__
-#pragma omp simd
-#endif
-				for(int a = 0; a < stride; ++a){
-					for(int b = 0; b < stride; ++b){
-						if(y0 + a < szA.height && x0 + b < szA.width){
-							T val = dX[((y0 + a) * szA.width + (x0 + b)) * X.cols];
-							if(val > mmax){
-								mmax = val;
-								xm = x0 + b;
-								ym = y0 + a;
-								resM = 1;
-							}
-						}
-					}
-				}
-
-				dY[(y * szO.width + x) * Y.cols] = mmax;
-				dM[(ym * szA.width + xm) * Mask.cols] = resM;
-			}
-		}
-	}
-}
-
-template< typename T >
-void upsample(const ct::Mat_<T>& Y, int K, const ct::Mat_<T>& Mask, const ct::Size& szO,
-			  const ct::Size& szA, ct::Mat_<T>& X)
-{
-	if(Y.empty() || Mask.empty() || Y.total() != szO.area() * K)
-		return;
-
-	X.setSize(szA.area(), K);
-
-	int stride = 2;
-
-#pragma omp parallel for
-	for(int k = 0; k < K; ++k){
-		T *dX = X.ptr() + k;
-		T* dM = Mask.ptr() + k;
-		T *dY = Y.ptr() + k;
-
-#pragma omp parallel for
-		for(int y = 0; y < szO.height; ++y){
-			int y0 = y * stride;
-			for(int x = 0; x < szO.width; ++x){
-				int x0 = x * stride;
-
-				T val = dY[(y * szO.width + x) * K];
-
-#ifdef __GNUC__
-#pragma omp simd
-#endif
-				for(int a = 0; a < stride; ++a){
-					for(int b = 0; b < stride; ++b){
-						if(y0 + a < szA.height && x0 + b < szA.width){
-							T m = dM[((y0 + a) * szA.width + (x0 + b)) * Mask.cols];
-							dX[((y0 + a) * szA.width + (x0 + b)) * X.cols] = val * m;
-						}
-					}
-				}
-			}
-		}
-	}
-}
-
+/**
+ * @brief vec2mat
+ * @param vec
+ * @param mat
+ */
 void vec2mat(const std::vector< ct::Matf >& vec, ct::Matf& mat);
 void vec2mat(const std::vector< ct::Matd >& vec, ct::Matd& mat);
 
+/**
+ * @brief mat2vec
+ * @param mat
+ * @param szOut
+ * @param vec
+ */
 void mat2vec(const ct::Matf& mat, const ct::Size& szOut, std::vector< ct::Matf >& vec);
 void mat2vec(const ct::Matd& mat, const ct::Size& szOut, std::vector< ct::Matd >& vec);
 
+/**
+ * @brief flipW
+ * @param W
+ * @param sz
+ * @param channels
+ * @param Wr
+ */
 void flipW(const ct::Matf& W, const ct::Size& sz,int channels, ct::Matf& Wr);
 void flipW(const ct::Matd& W, const ct::Size& sz,int channels, ct::Matd& Wr);
 //-------------------------------------
