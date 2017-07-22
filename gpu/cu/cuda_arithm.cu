@@ -635,7 +635,7 @@ __global__ void back_delta_sigmoid(Mtx sigmoid, Mtx target)
 	if(row < sigmoid.rows && col < sigmoid.cols){
 		T val = dA[row * sigmoid.cols + col];
 		T target = dC[row * sigmoid.cols + col];
-		T delta = target - val;
+		T delta = val - target;
 		dA[row * sigmoid.cols + col] = delta * val * (1 - val);
 	}
 }
