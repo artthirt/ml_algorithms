@@ -1109,7 +1109,7 @@ public:
 		res << "[";
 		for(int i = 0; i < _rows; i++){
 			for(int j = 0; j < cols; j++){
-				res << std::setprecision(4) << val[i * cols + j] << "\t";
+				res << std::setprecision(4) << val[i * cols + j] << ", ";
 			}
 			res << ";\n";
 		}

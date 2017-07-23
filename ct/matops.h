@@ -1350,6 +1350,62 @@ inline Mat_<T> elemwiseSqr(const Mat_<T>& m, T eps)
 }
 
 /**
+ * @brief v_mulColumns
+ * @param m
+ * @return
+ */
+template< typename T >
+void v_mulColumns(const Mat_<T>& m, const Mat_<T>& c, Mat_<T>& res, int col = 0)
+{
+	if(m.empty() || c.empty() || c.rows != m.rows || col >= c.cols)
+		throw new std::invalid_argument("v_elemwiseSqr: matrix is empty");
+
+	res.setSize(m.size());
+
+	T *m_val = m.ptr();
+	T *c_val = c.ptr();
+	T *r_val = res.ptr();
+
+
+#pragma omp parallel for
+	for(int i = 0; i < m.rows; ++i){
+#ifdef __GNUC__
+#pragma omp simd
+#endif
+		for(int j = 0; j < m.cols; j++){
+			int offset = i * m.cols + j;
+			int c_off = i * c.cols + col;
+			r_val[offset] = m_val[offset] * c_val[c_off];
+		}
+	}
+}
+
+/**
+ * @brief v_cropValues
+ * @param m
+ * @return
+ */
+template< typename T >
+void v_cropValues(const Mat_<T>& m, T val)
+{
+	if(m.empty())
+		throw new std::invalid_argument("v_elemwiseSqr: matrix is empty");
+
+	T* m_val = m.ptr();
+
+#pragma omp parallel for
+	for(int i = 0; i < m.rows; ++i){
+#ifdef __GNUC__
+#pragma omp simd
+#endif
+		for(int j = 0; j < m.cols; j++){
+			int offset = i * m.cols + j;
+			m_val[offset] = m_val[offset] < val? 0 : m_val[offset];
+		}
+	}
+}
+
+/**
  * @brief sqr
  * @param m
  * @return

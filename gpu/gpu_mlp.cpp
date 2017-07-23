@@ -66,6 +66,7 @@ void mlp::init(int input, int output, int type){
 void mlp::apply_func(const GpuMat &Z, GpuMat &A, etypefunction func){
 	switch (func) {
 		default:
+			return;
 		case RELU:
 			reLu(Z, A);
 			break;
@@ -141,7 +142,8 @@ void mlp::forward(const GpuMat *mat, etypefunction func, bool save_A0)
 	}
 
 	biasPlus(A1, B);
-	apply_func(A1, A1, func);
+	if(func != LINEAR)
+		apply_func(A1, A1, func);
 
 	if(!save_A0)
 		pA0 = nullptr;
