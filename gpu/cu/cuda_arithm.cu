@@ -127,6 +127,21 @@ __global__ void sub(Mtx A, Mtx B, T valA, T valB)
 		dA[row * A.cols + col] = valA * dA[row * A.cols + col] - valB * dB[row * B.cols + col];
 }
 
+template< class T >
+__global__ void subWithColumn(Mtx A, Mtx B, Mtx mul, T valA, T valB)
+{
+	int row = threadIdx.y + blockIdx.y * blockDim.y;
+	int col = threadIdx.x + blockIdx.x * blockDim.x;
+
+	T* dA = (T*)A.data;
+	T* dB = (T*)B.data;
+	T *dM = (T*)mul.data;
+
+	if(row < A.rows && col < A.cols){
+		T m = dM[row];
+		dA[row * A.cols + col] = (valA * dA[row * A.cols + col] - valB * dB[row * B.cols + col]) * m;
+	}
+}
 
 /**
  * @brief matmul
@@ -637,6 +652,25 @@ __global__ void back_delta_sigmoid(Mtx sigmoid, Mtx target)
 		T target = dC[row * sigmoid.cols + col];
 		T delta = val - target;
 		dA[row * sigmoid.cols + col] = delta * val * (1 - val);
+	}
+}
+
+template< class T >
+__global__ void back_delta_sigmoid(Mtx sigmoid, Mtx target, Mtx mC)
+{
+	int row = threadIdx.y + blockIdx.y * blockDim.y;
+	int col = threadIdx.x + blockIdx.x * blockDim.x;
+
+	T* dA = (T*)sigmoid.data;
+	T* dC = (T*)target.data;
+	T* dM = (T*)mC.data;
+
+	if(row < sigmoid.rows && col < sigmoid.cols){
+		T val = dA[row * sigmoid.cols + col];
+		T target = dC[row * sigmoid.cols + col];
+		T delta = val - target;
+		T m = dM[row];
+		dA[row * sigmoid.cols + col] = (delta * val * (1 - val)) * m;
 	}
 }
 
@@ -1501,6 +1535,32 @@ void cuda_subA(GpuMat& A, const GpuMat& B, double valA, double valB)
 }
 
 /**
+ * @brief cuda_subWithColumn
+ * @param A = A * valA - B * valB
+ * @param B
+ * @param valA
+ * @param valB
+ */
+extern "C"
+void cuda_subWithColumn(GpuMat& A, const GpuMat& B, const GpuMat& mulColumn, double valA, double valB)
+{
+	int x1 = A.cols / BLOCKSIZE + 1;
+	int x2 = A.rows / BLOCKSIZE + 1;
+
+	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+
+	switch (A.type) {
+	case GPU_DOUBLE:
+		internal::subWithColumn<double> <<<dimGrid, dimBlock>>>(A, B, mulColumn, (double)valA, (double)valB);
+		break;
+	case GPU_FLOAT:
+		internal::subWithColumn<float> <<<dimGrid, dimBlock>>>(A, B, mulColumn, (float)valA, (float)valB);
+		break;
+	}
+}
+
+
+/**
  * @brief matmul
  * @param A
  * @param B
@@ -2266,6 +2326,28 @@ void cuda_back_delta_sigmoid(GpuMat &sigmoid, const GpuMat &target)
 	}
 }
 
+/**
+ * @brief cuda_back_delta_sigmoid2
+ * @param sigmoid
+ * @param delta
+ */
+extern "C"
+void cuda_back_delta_sigmoid2(GpuMat &sigmoid, const GpuMat &target, const GpuMat& mulColumn)
+{
+	int x1 = sigmoid.cols / BLOCKSIZE + 1;
+	int x2 = sigmoid.rows / BLOCKSIZE + 1;
+
+	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+
+	switch (sigmoid.type) {
+	case GPU_DOUBLE:
+		internal::back_delta_sigmoid<double> <<<dimGrid, dimBlock>>>(sigmoid, target, mulColumn);
+		break;
+	case GPU_FLOAT:
+		internal::back_delta_sigmoid<float> <<<dimGrid, dimBlock>>>(sigmoid, target, mulColumn);
+		break;
+	}
+}
 
 ///////////////
 

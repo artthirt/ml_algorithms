@@ -72,6 +72,16 @@ extern "C"
 void cuda_subA(GpuMat& A, const GpuMat& B, double valA, double valB);
 
 /**
+ * @brief cuda_subWithColumn
+ * @param A = A * valA - B * valB
+ * @param B
+ * @param valA
+ * @param valB
+ */
+extern "C"
+void cuda_subWithColumn(GpuMat& A, const GpuMat& B, const GpuMat& mulColumn, double valA, double valB);
+
+/**
  * @brief matmul
  * @param A
  * @param B
@@ -328,6 +338,14 @@ void cuda_deriv_sigmoid2(GpuMat& A);
  */
 extern "C"
 void cuda_back_delta_sigmoid(GpuMat &sigmoid, const GpuMat &target);
+
+/**
+ * @brief cuda_back_delta_sigmoid2
+ * @param sigmoid
+ * @param delta
+ */
+extern "C"
+void cuda_back_delta_sigmoid2(GpuMat &sigmoid, const GpuMat &target, const GpuMat& mulColumn);
 
 /**
  * @brief cuda_tanh
@@ -793,6 +811,15 @@ void sub(GpuMat &A, const GpuMat &B, double valA, double valB)
 	cuda_subA(A, B, valA, valB);
 }
 
+void subWithColumn(GpuMat &A, const GpuMat &B, const GpuMat& mulColumn, double valA, double valB)
+{
+	if(A.rows != B.rows || A.cols != B.cols || A.type != B.type || mulColumn.rows != A.rows || mulColumn.cols != 1){
+		throw new std::invalid_argument("subWithColumn");
+	}
+
+	cuda_subWithColumn(A, B, mulColumn, valA, valB);
+}
+
 void matmul(const GpuMat &A, const GpuMat &B, GpuMat &C)
 {
 	if(A.cols != B.rows || A.type != B.type){
@@ -1076,7 +1103,6 @@ void deriv_sigmoid(const GpuMat &A, GpuMat &C)
 	cuda_deriv_sigmoid(A, C);
 }
 
-
 void back_delta_sigmoid(GpuMat &sigmoid, const GpuMat &target)
 {
 	if(sigmoid.empty() || target.empty()){
@@ -1087,6 +1113,19 @@ void back_delta_sigmoid(GpuMat &sigmoid, const GpuMat &target)
 		throw new std::invalid_argument("back_delta_sigmoid");
 
 	cuda_back_delta_sigmoid(sigmoid, target);
+}
+
+void back_delta_sigmoid(GpuMat &sigmoid, const GpuMat &target, const GpuMat& mulColumn)
+{
+	if(sigmoid.empty() || target.empty() || mulColumn.empty()){
+		throw new std::invalid_argument("back_delta_sigmoid");
+	}
+
+	if(sigmoid.rows != target.rows || sigmoid.cols != target.cols || sigmoid.type != target.type
+			|| mulColumn.rows != sigmoid.rows || mulColumn.cols != 1)
+		throw new std::invalid_argument("back_delta_sigmoid");
+
+	cuda_back_delta_sigmoid2(sigmoid, target, mulColumn);
 }
 
 void deriv_sigmoid(GpuMat &A)

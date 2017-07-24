@@ -132,6 +132,13 @@ void sub(const GpuMat& A, const GpuMat& B, GpuMat& C, double valA = 1., double v
  */
 void sub(GpuMat& A, const GpuMat& B, double valA = 1., double valB = 1.);
 /**
+ * @brief sub
+ * @param A - = (A .- B) * mulColumn
+ * @param B
+ * @param mulColumn
+ */
+void subWithColumn(GpuMat& A, const GpuMat& B, const GpuMat& mulColumn, double valA = 1., double valB = 1.);
+/**
  * @brief matmul
  * @param A
  * @param B
@@ -358,6 +365,13 @@ void deriv_sigmoid(const GpuMat& A, GpuMat& C);
  * @param target
  */
 void back_delta_sigmoid(GpuMat &sigmoid, const GpuMat &target);
+
+/**
+ * @brief back_delta_sigmoid
+ * @param sigmoid = (target - sigmoid) * sigmoid * (1 - sigmoid)
+ * @param target
+ */
+void back_delta_sigmoid(GpuMat &sigmoid, const GpuMat &target, const GpuMat& mulColumn);
 
 /**
  * @brief deriv_sigmoid
