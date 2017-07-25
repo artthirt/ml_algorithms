@@ -662,7 +662,7 @@ std::string getString(void* data, int rows, int cols)
 
 	std::stringstream stream;
 
-	stream << std::fixed << std::setw(4) << std::setprecision(4) << "[";
+	stream << std::fixed << std::setprecision(4) << "[";
 	for(int i = 0; i < rows; i++){
 		for(int j = 0; j < cols; j++){
 			stream << vec[i * cols + j] << ", ";
