@@ -620,6 +620,30 @@ public:
 		}
 	}
 
+	/**
+	 * @brief fill
+	 * @param val
+	 * @param RowOrCol - number of row or column (see axe)
+	 * @param axe - 0 - fill column, 1 - fill row
+	 */
+	void fill(T val, int RowOrCol, int axe){
+		if(empty())
+			return;
+
+		if(axe == 0){
+			T *dP = ptr();
+			for(int i = 0; i < rows; ++i){
+				dP[RowOrCol] = val;
+			}
+		}
+		if(axe == 1){
+			T *dP = ptr(RowOrCol);
+			for(int i = 0; i < cols; ++i){
+				dP[i] = val;
+			}
+		}
+	}
+
 	void swap_dims(){
 		std::swap(rows, cols);
 	}
