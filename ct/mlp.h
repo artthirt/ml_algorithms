@@ -235,6 +235,9 @@ public:
 	inline void apply_back_func(const ct::Mat_<T>& D1, ct::Mat_<T>& D2, etypefunction func){
 		switch (func) {
 			default:
+			case LINEAR:
+				D2 = D1;
+				return;
 			case RELU:
 				v_derivRelu(A1, DA1);
 				break;
