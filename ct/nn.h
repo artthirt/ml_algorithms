@@ -860,10 +860,12 @@ void hsplit(const ct::Mat_<T>& res, size_t cols, std::vector< ct::Mat_<T> >& lis
  * @param list
  */
 template< typename T >
-void hsplit(const ct::Mat_<T>& res, std::vector< int > cols, std::vector< ct::Mat_<T>* >& list)
+void hsplit(const ct::Mat_<T>& res, std::vector< int > cols, std::vector< ct::Mat_<T> >& list)
 {
-	if(res.empty() || list.empty() || list.size() != cols.size())
+	if(res.empty() || cols.empty())
 		throw new std::invalid_argument("hsplit: wrong parameters");
+
+	list.resize(cols.size());
 
 	std::vector< int > cumoffset;
 	cumoffset.resize(cols.size());
@@ -873,16 +875,18 @@ void hsplit(const ct::Mat_<T>& res, std::vector< int > cols, std::vector< ct::Ma
 		cs += cols[i];
 	}
 
+	if(cs != res.cols){
+		throw new std::invalid_argument("hsplit: wrong parameters");
+	}
+
 	for(size_t i = 0; i < cols.size(); ++i){
-		if(!list[i])
-			throw new std::invalid_argument("hsplit: null matrix in list");
-		list[i]->setSize(res.rows, cols[i]);
+		list[i].setSize(res.rows, cols[i]);
 	}
 
 	T *dR = res.ptr();
 //#pragma omp parallel for
 	for(int i = 0; i < (int)cols.size(); ++i){
-		T *dLi = list[i]->ptr();
+		T *dLi = list[i].ptr();
 		int col = cols[i];
 		int offset = cumoffset[i];
 #ifdef __GNUC__

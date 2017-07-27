@@ -185,6 +185,10 @@ public:
 		m_lambda = 0;
 	}
 
+	Mat_<T>& Y(){
+		return A1;
+	}
+
 	void setLambda(T val){
 		m_lambda = val;
 	}
@@ -329,6 +333,8 @@ private:
 	T m_lambda;
 	etypefunction m_func;
 };
+
+typedef mlp<float> mlpf;
 
 }
 

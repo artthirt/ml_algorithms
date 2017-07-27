@@ -28,22 +28,22 @@ CUDA_SOURCES += $$PWD/cu/cuda_arithm.cu \
                 $$PWD/cu/cuda_conv2.cu
 
 win32{
-    CUDA_DIR					= "c:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v8.0/"
-    MSVCRT_LINK_FLAG_DEBUG		= "/MDd"
+    CUDA_DIR			= "c:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v8.0/"
+    MSVCRT_LINK_FLAG_DEBUG	= "/MDd"
     MSVCRT_LINK_FLAG_RELEASE	= "/MD"
-    SYSTEM_NAME					= Win64         # Depending on your system either 'Win32', 'x64', or 'Win64'
+    SYSTEM_NAME			= Win64         # Depending on your system either 'Win32', 'x64', or 'Win64'
 # Path to cuda toolkit install
 # Path to header and libs files
     INCLUDEPATH  += $$CUDA_DIR/include
     QMAKE_LIBDIR += $$CUDA_DIR/lib/x64     # Note I'm using a 64 bits Operating system
 }else{
-    CUDA_DIR					= /usr/
-    SYSTEM_NAME					= unix         # Depending on your system either 'Win32', 'x64', or 'Win64'
-    CUDA_OBJECTS_DIR			= ./
+    CUDA_DIR			= /usr/
+    SYSTEM_NAME			= unix         # Depending on your system either 'Win32', 'x64', or 'Win64'
+    CUDA_OBJECTS_DIR		= ./
 }
 
 SYSTEM_TYPE = 64            # '32' or '64', depending on your system
-CUDA_ARCH = sm_21           # Type of CUDA architecture, for example 'compute_10', 'compute_11', 'sm_10'
+CUDA_ARCH = sm_30           # Type of CUDA architecture, for example 'compute_10', 'compute_11', 'sm_10'
 NVCC_OPTIONS = --use_fast_math
 
 # Add the necessary libraries

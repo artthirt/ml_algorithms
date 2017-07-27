@@ -643,6 +643,8 @@ public:
 	}
 };
 
+typedef convnn<float> convnnf;
+
 }
 
 #endif // NN2_H
