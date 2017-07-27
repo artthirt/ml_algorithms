@@ -218,6 +218,9 @@ public:
 	inline void apply_func(const ct::Mat_<T>& Z, ct::Mat_<T>& A, etypefunction func){
 		switch (func) {
 			default:
+			case LINEAR:
+				A = Z;
+				return;
 			case RELU:
 				v_relu(Z, A);
 				break;
