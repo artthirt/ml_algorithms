@@ -1109,7 +1109,7 @@ public:
 			return "";
 		std::stringstream res;
 		T* val = &(*this->val)[0];
-		res << "[";
+		res  << std::setprecision(4) << std::fixed << "[";
 		for(int i = 0; i < rows; i++){
 			for(int j = 0; j < cols; j++){
 				res << std::setprecision(4) << val[i * cols + j] << "\t";
