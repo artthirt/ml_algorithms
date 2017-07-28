@@ -1657,6 +1657,55 @@ inline Mat_<T> subIndOne(const Mat_<T>& mat, const Mat_<T>& ind)
 }
 
 template< typename T >
+void subWithColumn(ct::Mat_<T>& t, const ct::Mat_<T>& y, const ct::Mat_<T> column)
+{
+	if(t.empty() || y.empty() || column.empty() || t.rows != y.rows || t.cols != y.cols || column.rows != t.rows || column.cols != 1)
+		throw new std::invalid_argument("subWithColumn: wring parameters");
+
+#pragma omp parallel for
+	for(int i = 0; i < t.rows; ++i){
+		T* dT = t.ptr(i);
+		T* dY = y.ptr(i);
+		T* dC = column.ptr(i);
+		T c = dC[0];
+#ifdef __GNUC__
+#pragma omp simd
+#endif
+		for(int j = 0; j < t.cols; ++j){
+			T v1 = dT[j];
+			T v2 = dY[j];
+			v1 = (v1 - v2) * c;
+			dT[j] = v1;
+		}
+	}
+}
+
+template< typename T >
+void back_delta_sigmoid(ct::Mat_<T>& t, const ct::Mat_<T>& y, const ct::Mat_<T> column)
+{
+	if(t.empty() || y.empty() || column.empty() || t.rows != y.rows || t.cols != y.cols || column.rows != t.rows || column.cols != 1)
+		throw new std::invalid_argument("back_delta_sigmoid: wring parameters");
+
+#pragma omp parallel for
+	for(int i = 0; i < t.rows; ++i){
+		T* dT = t.ptr(i);
+		T* dY = y.ptr(i);
+		T* dC = column.ptr(i);
+		T c = dC[0];
+#ifdef __GNUC__
+#pragma omp simd
+#endif
+		for(int j = 0; j < t.cols; ++j){
+			T val = dT[j];
+			T target = dY[j];
+			T d = val - target;
+			T res = d * val * (1 - val);
+			dT[j] = res * c;
+		}
+	}
+}
+
+template< typename T >
 void get_mean(const ct::Mat_<T>& X, ct::Mat_<T>& Y, int axis = 0)
 {
 	if(X.empty())

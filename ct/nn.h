@@ -775,18 +775,18 @@ void hconcat(const std::vector< ct::Mat_<T> >& list, ct::Mat_<T>& res)
  * @param res
  */
 template< typename T >
-void hconcat(const std::vector< ct::Mat_<T>* >& list, ct::Mat_<T>& res)
+void hconcat2(const std::vector< ct::Mat_<T> >& list, ct::Mat_<T>& res)
 {
 	if(list.empty())
 		return;
-	int rows		= list[0]->rows;
+	int rows		= list[0].rows;
 	int cols		= 0;
 
 	std::vector< int > cumoffset;
 	cumoffset.resize(list.size());
 	for(size_t i = 0; i < list.size(); ++i){
 		cumoffset[i] = cols;
-		cols += list[i]->cols;
+		cols += list[i].cols;
 	}
 
 	if(!cols)
@@ -801,8 +801,8 @@ void hconcat(const std::vector< ct::Mat_<T>* >& list, ct::Mat_<T>& res)
 
 //#pragma omp parallel for
 		for(int j = 0; j < (int)list.size(); ++j){
-			T* dL = list[j]->ptr();
-			int lcols = list[j]->cols;
+			T* dL = list[j].ptr();
+			int lcols = list[j].cols;
 			int cumoff = cumoffset[j];
 
 #ifdef __GNUC__
