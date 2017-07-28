@@ -180,16 +180,6 @@ uint32_t Optimizer::iteration() const
 	return m_iteration;
 }
 
-bool Optimizer::init(const std::vector<GpuMat> &gradW, const std::vector<GpuMat> &gradB)
-{
-	return false;
-}
-
-bool Optimizer::pass(const std::vector<GpuMat> &gradW, const std::vector<GpuMat> &gradB, std::vector<GpuMat> &W, std::vector<GpuMat> &b)
-{
-	return false;
-}
-
 ///////////////////////////////
 
 StohasticGradientOptimizer::StohasticGradientOptimizer(): Optimizer()

@@ -86,9 +86,9 @@ public:
 
 	uint32_t iteration() const;
 
-	virtual bool init(const std::vector<GpuMat> &gradW, const std::vector<GpuMat> &gradB);
+	virtual bool init(const std::vector<GpuMat> &gradW, const std::vector<GpuMat> &gradB) = 0;
 	virtual bool pass(const std::vector< gpumat::GpuMat >& gradW, const std::vector< gpumat::GpuMat >& gradB,
-			  std::vector< gpumat::GpuMat >& W, std::vector< gpumat::GpuMat >& b);
+			  std::vector< gpumat::GpuMat >& W, std::vector< gpumat::GpuMat >& b) = 0;
 
 protected:
 	uint32_t m_iteration;

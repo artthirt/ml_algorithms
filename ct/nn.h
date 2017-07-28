@@ -895,7 +895,7 @@ void hsplit(const ct::Mat_<T>& res, std::vector< int > cols, std::vector< ct::Ma
 #pragma omp parallel for
 #endif
 		for(int j = 0; j < res.rows; ++j){
-			for(size_t k = 0; k < cols[i]; ++k){
+			for(int k = 0; k < cols[i]; ++k){
 				dLi[j * col + k] = dR[j * res.cols + offset + k];
 			}
 		}

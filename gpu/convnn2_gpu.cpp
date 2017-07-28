@@ -235,16 +235,14 @@ void convnn_gpu::forward(const std::vector<gpumat::GpuMat> *_pX, gpumat::etypefu
 		gpumat::conv2::im2cols(*pX, szA0, channels, szW, stride, Xc, szOut);
 	}
 
-#pragma omp parallel for
-	for(int i = 0; i < Xc.size(); ++i){
+	for(int i = 0; i < (int)Xc.size(); ++i){
 		gpumat::GpuMat& Xi = Xc[i];
 		gpumat::GpuMat& A1i = A1[i];
 		gpumat::matmul(Xi, W[0], A1i);
 		gpumat::biasPlus(A1i, B[0]);
 	}
 
-#pragma omp parallel for
-	for(int i = 0; i < A1.size(); ++i){
+	for(int i = 0; i < (int)A1.size(); ++i){
 		gpumat::GpuMat& Ao = A1[i];
 		switch (m_func) {
 			case gpumat::RELU:
@@ -307,8 +305,7 @@ void convnn_gpu::backcnv(const std::vector<gpumat::GpuMat> &D, std::vector<gpuma
 {
 //	DA1.resize(A1.size());
 	/// A1 -> DA1
-#pragma omp parallel for
-	for(int i = 0; i < D.size(); ++i){
+	for(int i = 0; i < (int)D.size(); ++i){
 		switch (m_func) {
 			case ct::LINEAR:
 				D[i].copyTo(DS[i]);
@@ -332,13 +329,11 @@ void convnn_gpu::backcnv(const std::vector<gpumat::GpuMat> &D, std::vector<gpuma
 
 	/// D * DA1
 	if(D.data() != DS.data()){
-#pragma omp parallel for
-		for(int i = 0; i < D.size(); ++i){
+		for(int i = 0; i < (int)D.size(); ++i){
 			gpumat::elemwiseMult(D[i], A1[i], DS[i]);
 		}
 	}else{
-#pragma omp parallel for
-		for(int i = 0; i < D.size(); ++i){
+		for(int i = 0; i < (int)D.size(); ++i){
 			gpumat::elemwiseMult(DS[i], A1[i]);
 		}
 	}
@@ -391,8 +386,7 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 
 	vgW.resize(D.size());
 	vgB.resize(D.size());
-#pragma omp parallel for
-	for(int i = 0; i < D.size(); ++i){
+	for(int i = 0; i < (int)D.size(); ++i){
 		gpumat::GpuMat& Xci		= Xc[i];
 		gpumat::GpuMat& dSubi	= dSub2[i];
 		gpumat::GpuMat& Wi		= vgW[i];
@@ -434,8 +428,7 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 		Dlt.resize(D.size());
 
 		Dc.resize(D.size());
-#pragma omp parallel for
-		for(int i = 0; i < D.size(); ++i){
+		for(int i = 0; i < (int)D.size(); ++i){
 			gpumat::GpuMat& Dci = Dc[i];
 			gpumat::matmulT2_shared(dSub2[i], W[0], Dci);
 		}

@@ -643,6 +643,26 @@ public:
 			}
 		}
 	}
+	void clipRange(T _min, T _max){
+		if(_min > _max){
+			std::swap(_min, _max);
+		}
+#pragma omp parallel for
+		for(int i = 0; i < rows; ++i){
+			T* dM = ptr(i);
+#ifdef __GNUC__
+#pragma omp simd
+#endif
+			for(int j = 0; j < cols; ++j){
+				T &val = dM[j];
+				if(val < _min)
+					val = _min;
+				if(val > _max){
+					val = _max;
+				}
+			}
+		}
+	}
 
 	void swap_dims(){
 		std::swap(rows, cols);

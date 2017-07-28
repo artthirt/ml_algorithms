@@ -277,16 +277,14 @@ public:
 		A1.resize(pX->size());
 
 		if(m_use_transpose){
-//#pragma omp parallel for
-			for(int i = 0; i < Xc.size(); ++i){
+			for(int i = 0; i < (int)Xc.size(); ++i){
 				ct::Mat_<T>& Xi = (*pX)[i];
 				ct::Size szOut;
 
 				im2colT(Xi, convnn_abstract<T>::szA0, convnn_abstract<T>::channels, szW, stride, Xc[i], szOut);
 			}
 		}else{
-//#pragma omp parallel for
-			for(int i = 0; i < Xc.size(); ++i){
+			for(int i = 0; i < (int)Xc.size(); ++i){
 				ct::Mat_<T>& Xi = (*pX)[i];
 				ct::Size szOut;
 
@@ -295,16 +293,14 @@ public:
 		}
 
 
-//#pragma omp parallel for
-		for(int i = 0; i < Xc.size(); ++i){
+		for(int i = 0; i < (int)Xc.size(); ++i){
 			ct::Mat_<T>& Xi = Xc[i];
 			ct::Mat_<T>& A1i = A1[i];
 			ct::matmul(Xi, W[0], A1i);
 			A1i.biasPlus(B[0]);
 		}
 
-//#pragma omp parallel for
-		for(int i = 0; i < A1.size(); ++i){
+		for(int i = 0; i < (int)A1.size(); ++i){
 			ct::Mat_<T>& Ao = A1[i];
 			switch (m_func) {
 				case ct::RELU:
@@ -323,8 +319,7 @@ public:
 		if(m_use_pool){
 			Mask.resize(Xc.size());
 			A2.resize(A1.size());
-//#pragma omp parallel for
-			for(int i = 0; i < A1.size(); ++i){
+			for(int i = 0; i < (int)A1.size(); ++i){
 				ct::Mat_<T> &A1i = A1[i];
 				ct::Mat_<T> &A2i = A2[i];
 				ct::Size szOut;
@@ -342,8 +337,7 @@ public:
 
 	inline void backcnv(const std::vector< ct::Mat_<T> >& D, std::vector< ct::Mat_<T> >& DS){
 		if(D.data() != DS.data()){
-//#pragma omp parallel for
-			for(int i = 0; i < D.size(); ++i){
+			for(int i = 0; i < (int)D.size(); ++i){
 				switch (m_func) {
 					case ct::RELU:
 						ct::elemwiseMult(D[i], derivRelu(A1[i]), DS[i]);
@@ -359,8 +353,7 @@ public:
 				}
 			}
 		}else{
-//#pragma omp parallel for
-			for(int i = 0; i < D.size(); ++i){
+			for(int i = 0; i < (int)D.size(); ++i){
 				switch (m_func) {
 					case ct::RELU:
 						ct::elemwiseMult(DS[i], ct::derivRelu(A1[i]));
@@ -387,8 +380,7 @@ public:
 
 		//printf("1\n");
 		if(m_use_pool){
-//#pragma omp parallel for
-			for(int i = 0; i < D.size(); ++i){
+			for(int i = 0; i < (int)D.size(); ++i){
 				ct::Mat_<T> Di = D[i];
 				//Di.set_dims(szA2.area(), K);
 				upsample(Di, convnn_abstract<T>::kernels, Mask[i],convnn_abstract<T>:: szA2, convnn_abstract<T>::szA1, dSub[i]);
@@ -401,8 +393,7 @@ public:
 		//printf("2\n");
 		vgW.resize(D.size());
 		vgB.resize(D.size());
-//#pragma omp parallel for
-		for(int i = 0; i < D.size(); ++i){
+		for(int i = 0; i < (int)D.size(); ++i){
 			ct::Mat_<T>& Xci = Xc[i];
 			ct::Mat_<T>& dSubi = dSub[i];
 			ct::Mat_<T>& Wi = vgW[i];
@@ -437,8 +428,7 @@ public:
 			//flipW(W, szW, channels, Wf);
 
 			Dc.resize(D.size());
-//#pragma omp parallel for
-			for(int i = 0; i < D.size(); ++i){
+			for(int i = 0; i < (int)D.size(); ++i){
 				ct::matmulT2(dSub[i], W[0], Dc[i]);
 				back_derivT(Dc[i], convnn_abstract<T>::szA1, convnn_abstract<T>::szA0, convnn_abstract<T>::channels, szW, stride, Dlt[i]);
 				//ct::Size sz = (*pX)[i].size();
