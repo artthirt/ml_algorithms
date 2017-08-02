@@ -2,7 +2,7 @@
 
 #include "matops.h"
 
-#include <QDebug>
+//#include <QDebug>
 
 namespace gpumat{
 

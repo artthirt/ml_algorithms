@@ -1,6 +1,7 @@
 #ifndef QT_WORK_MAT_H
 #define QT_WORK_MAT_H
 
+#ifdef QT
 #include <QObject>
 
 #include "custom_types.h"
@@ -34,5 +35,7 @@ void q_load_mat(const QString &filename, ct::Matf& mat);
 void q_load_mat(const QString &filename, gpumat::GpuMat &mat);
 
 }
+
+#endif
 
 #endif // QT_WORK_MAT_H

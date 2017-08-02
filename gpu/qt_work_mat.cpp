@@ -1,5 +1,7 @@
 #include "qt_work_mat.h"
 
+#ifdef QT
+
 #include <QFile>
 #include <QString>
 
@@ -109,3 +111,5 @@ void qt_work_mat::q_load_mat(const QString &filename, gpumat::GpuMat &mat)
 	if(!matf.empty())
 		gpumat::convert_to_gpu(matf, mat);
 }
+
+#endif
