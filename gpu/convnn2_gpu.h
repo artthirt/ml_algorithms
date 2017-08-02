@@ -251,6 +251,13 @@ void vec2mat(const std::vector< GpuMat >& vec, GpuMat& mat);
  */
 void mat2vec(const GpuMat& mat, const ct::Size& szOut, std::vector< GpuMat >& vec);
 
+/**
+ * @brief addvec
+ * @param W
+ * @param vW
+ * @param alpha
+ */
+void addvec(GpuMat& W, const std::vector< GpuMat >& vW, double alpha);
 
 }
 

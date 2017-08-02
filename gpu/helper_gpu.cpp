@@ -584,4 +584,29 @@ void save_gmat10(const GpuMat &mat, const std::string &fn)
 	fs.close();
 }
 
+template< typename T >
+void _cnv2gpu(const std::vector<ct::Mat_<T>> &M, std::vector<GpuMat> &G)
+{
+	if(M.empty())
+		return;
+
+	G.resize(M.size());
+
+	for(size_t i = 0; i < M.size(); ++i){
+		const ct::Mat_<T>& Mi = M[i];
+		gpumat::GpuMat& Gi = G[i];
+		gpumat::convert_to_gpu(Mi, Gi);
+	}
+}
+
+void cnv2gpu(const std::vector<ct::Matf> &M, std::vector<GpuMat> &G)
+{
+	_cnv2gpu<float>(M, G);
+}
+
+void cnv2gpu(const std::vector<ct::Matd> &M, std::vector<GpuMat> &G)
+{
+	_cnv2gpu<double>(M, G);
+}
+
 }

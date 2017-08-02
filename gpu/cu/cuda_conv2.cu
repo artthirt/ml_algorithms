@@ -511,6 +511,26 @@ __global__ void mat2vec(Mtx mat, ct::Size sz, SmallMtxArray vec)
 	}
 }
 
+template< typename T >
+__global__ void addvec(Mtx mat,  SmallMtxArray vec, T alpha)
+{
+	int col = threadIdx.x + blockDim.x * blockIdx.x;
+	int row = threadIdx.y + blockDim.y * blockIdx.y;
+
+
+	if(row < mat.rows && col < mat.cols){
+		T* dM = (T*)mat.data;
+
+		T val = 0;
+		for(int i = 0; i < vec.count; ++i){
+			T* dV = (T*)vec.mtx[i].data;
+			val += dV[row * mat.cols + col];
+		}
+
+		dM[row * mat.cols + col] = val * alpha;
+	}
+}
+
 }	/// @endnamespace internal
 
 }	/// @endnamespace gpumat
@@ -847,3 +867,26 @@ void cuda_mat2vec(const GpuMat& mat, const ct::Size& sz, std::vector< GpuMat >& 
 			break;
 	}
 }
+
+extern "C"
+void cuda_addvec(gpumat::GpuMat &W, const std::vector<gpumat::GpuMat> &vW, double alpha)
+{
+	int rows = W.rows;
+	int cols = W.cols;
+
+	int x1 = cols / BLOCKSIZE + 1;
+	int x2 = rows / BLOCKSIZE + 1;
+
+	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+
+	switch (W.type) {
+		case GPU_DOUBLE:
+			internal::addvec<double> <<<dimGrid, dimBlock>>>(W, vW, alpha);
+			break;
+		case GPU_FLOAT:
+			internal::addvec<float> <<<dimGrid, dimBlock>>>(W, vW, alpha);
+			break;
+	}
+
+}
+

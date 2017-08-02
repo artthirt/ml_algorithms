@@ -391,7 +391,7 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 		gpumat::GpuMat& dSubi	= dSub2[i];
 		gpumat::GpuMat& Wi		= vgW[i];
 		gpumat::GpuMat& vgBi	= vgB[i];
-		gpumat::matmulT1_shared(Xci, dSubi, Wi);
+		gpumat::matmulT1(Xci, dSubi, Wi);
 
 //		gpumat::mulval(Wi, (double)1. / (Xci.total()));
 //		gpumat::save_gmat(Xci, "Xgi.txt");
@@ -405,6 +405,7 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 //	gpumat::save_gmat(vgW[1], "Wg2.txt");
 //	gpumat::save_gmat(vgW[2], "Wg3.txt");
 
+#if 0
 	gW[0].zeros();
 	gB[0].zeros();
 	for(size_t i = 0; i < D.size(); ++i){
@@ -413,6 +414,11 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 	}
 	gpumat::mulval(gW[0], (double)1./(D.size() * channels));
 	gpumat::mulval(gB[0], (double)1./(D.size() * channels));
+#else
+	addvec(gW[0], vgW, (double)1./(D.size() * channels));
+	addvec(gB[0], vgB, (double)1./(D.size() * channels));
+#endif
+
 
 	if(m_lambda > 0){
 		gpumat::add(gW[0], W[0], 1, (double)m_lambda / kernels);
@@ -430,7 +436,7 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 		Dc.resize(D.size());
 		for(int i = 0; i < (int)D.size(); ++i){
 			gpumat::GpuMat& Dci = Dc[i];
-			gpumat::matmulT2_shared(dSub2[i], W[0], Dci);
+			gpumat::matmulT2(dSub2[i], W[0], Dci);
 		}
 
 //		gpumat::write_gmat("Dc5.bin", Dc[0]);
@@ -591,6 +597,9 @@ void cuda_upsample2(const gpumat::GpuMat &Y, const gpumat::GpuMat &Mask, const c
 extern "C"
 void cuda_upsample2vec(const std::vector<gpumat::GpuMat> &Y, const std::vector<gpumat::GpuMat> &Mask,
 			  const ct::Size &szO, const ct::Size &szA, std::vector<gpumat::GpuMat> &X);
+
+extern "C"
+void cuda_addvec(gpumat::GpuMat &W, const std::vector<gpumat::GpuMat> &vW, double alpha);
 
 ///////////////////////////////
 
@@ -861,4 +870,16 @@ void gpumat::conv2::upsample(const std::vector<gpumat::GpuMat> &Y,
 
 	cuda_upsample2vec(Y, Mask, szO, szA, X);
 
+}
+
+void gpumat::conv2::addvec(gpumat::GpuMat &W, const std::vector<gpumat::GpuMat> &vW, double alpha)
+{
+	if(vW.empty() || vW[0].empty())
+		throw new std::invalid_argument("addvec: empty parameters");
+
+	const GpuMat& Wi = vW[0];
+
+	W.resize(Wi);
+
+	cuda_addvec(W, vW, alpha);
 }
