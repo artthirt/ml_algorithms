@@ -239,6 +239,10 @@ void convnn_gpu::forward(const std::vector<gpumat::GpuMat> *_pX, gpumat::etypefu
 		gpumat::GpuMat& Xi = Xc[i];
 		gpumat::GpuMat& A1i = A1[i];
 		gpumat::matmul(Xi, W[0], A1i);
+	}
+
+	for(int i = 0; i < (int)Xc.size(); ++i){
+		gpumat::GpuMat& A1i = A1[i];
 		gpumat::biasPlus(A1i, B[0]);
 	}
 
@@ -801,9 +805,9 @@ void gpumat::conv2::subsample(const std::vector<gpumat::GpuMat> &X,
 
 	for(size_t i = 0; i < X.size(); ++i){
 		Y[i].resize(szO.area(), K, X[i].type);
-		Y[i].zeros();
+		//Y[i].zeros();
 		Mask[i].resize(X[i].rows, X[i].cols, X[i].type);
-		Mask[i].zeros();
+		//Mask[i].zeros();
 	}
 
 	cuda_subsample2_vec(X, szA, Y, Mask, szO);

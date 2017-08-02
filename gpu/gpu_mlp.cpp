@@ -167,9 +167,9 @@ void mlp::backward(const GpuMat &Delta, bool last_layer)
 	}
 
 	if(m_is_dropout && std::abs(m_prob - 1) > 1e-6){
-		matmulT1_shared(XDropout, *pDA1, gW);
+		matmulT1(XDropout, *pDA1, gW);
 	}else{
-		matmulT1_shared(*pA0, *pDA1, gW);
+		matmulT1(*pA0, *pDA1, gW);
 	}
 	mulval(gW, 1. / m);
 
@@ -183,7 +183,7 @@ void mlp::backward(const GpuMat &Delta, bool last_layer)
 	gB.swap_dims();
 
 	if(!last_layer){
-		matmulT2_shared(*pDA1, W, DltA0);
+		matmulT2(*pDA1, W, DltA0);
 	}
 }
 
