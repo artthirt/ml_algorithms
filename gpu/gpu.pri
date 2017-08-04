@@ -11,7 +11,9 @@ HEADERS += \
     $$PWD/gpu_mlp.h \
     $$PWD/cuda_types.h \
     $$PWD/convnn2_gpu.h \
-    $$PWD/qt_work_mat.h
+    $$PWD/qt_work_mat.h \
+    $$PWD/convnn2_mixed.h \
+    $$PWD/mlp_mixed.h
 
 SOURCES += \
     $$PWD/gpumat.cpp \
@@ -21,7 +23,9 @@ SOURCES += \
     $$PWD/cuda_common.cpp \
     $$PWD/cuda_types.cpp \
     $$PWD/convnn2_gpu.cpp \
-    $$PWD/qt_work_mat.cpp
+    $$PWD/qt_work_mat.cpp \
+    $$PWD/convnn2_mixed.cpp \
+    $$PWD/mlp_mixed.cpp
 
 CUDA_SOURCES += $$PWD/cu/cuda_arithm.cu \
                 $$PWD/cu/cuda_conv.cu \
