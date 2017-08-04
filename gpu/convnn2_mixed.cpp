@@ -100,7 +100,8 @@ void convnn2_mixed::init(const ct::Size &_szA0, int _channels, int stride, int _
 	printf("Out=[%dx%dx%d]\n", szOut().width, szOut().height, convnn_abstract<float>::kernels);
 }
 
-void convnn2_mixed::forward(const std::vector<ct::Matf> *_pX, ct::etypefunction func){
+void convnn2_mixed::forward(const std::vector<ct::Matf> *_pX, ct::etypefunction func)
+{
 	if(!_pX)
 		return;
 	pX = (std::vector< ct::Matf>*)_pX;
@@ -154,17 +155,21 @@ void convnn2_mixed::forward(const std::vector<ct::Matf> *_pX, ct::etypefunction 
 		ct::Mat_<float>& Ao = A1[i];
 		switch (m_func) {
 			case ct::RELU:
-				ct::v_relu(Ao);
+				gpumat::convert_to_gpu(Ao, g_A1i);
+				gpumat::reLu(g_A1i);
 				break;
 			case ct::SIGMOID:
-				ct::v_sigmoid(Ao);
+				gpumat::convert_to_gpu(Ao, g_A1i);
+				gpumat::sigmoid(g_A1i);
 				break;
 			case ct::TANH:
-				ct::v_tanh(Ao);
+				gpumat::convert_to_gpu(Ao, g_A1i);
+				gpumat::tanh(g_A1i);
 				break;
 			default:
-				break;
+				continue;
 		}
+		gpumat::convert_to_mat(g_A1i, Ao);
 	}
 	if(m_use_pool){
 		gpumat::GpuMat g_Mask, g_A2i;
@@ -188,42 +193,66 @@ void convnn2_mixed::forward(const std::vector<ct::Matf> *_pX, ct::etypefunction 
 	}
 }
 
-void convnn2_mixed::forward(const convnn<float> &conv, ct::etypefunction func){
+void convnn2_mixed::forward(const convnn<float> &conv, ct::etypefunction func)
+{
 	forward(&conv.XOut(), func);
 }
 
-void convnn2_mixed::backcnv(const std::vector<ct::Matf> &D, std::vector<ct::Matf> &DS){
+void convnn2_mixed::backcnv(const std::vector<ct::Matf> &D, std::vector<ct::Matf> &DS)
+{
+	gpumat::GpuMat g_Di, g_A1i;
 	if(D.data() != DS.data()){
 		for(int i = 0; i < (int)D.size(); ++i){
+			if(m_func == ct::LINEAR){
+				DS[i] = D[i];
+				continue;
+			}
+			gpumat::convert_to_gpu(D[i], g_Di);
+			gpumat::convert_to_gpu(A1[i], g_A1i);
 			switch (m_func) {
 				case ct::RELU:
-					ct::elemwiseMult(D[i], derivRelu(A1[i]), DS[i]);
+					gpumat::deriv_reLu(g_A1i);
+//					ct::elemwiseMult(D[i], derivRelu(A1[i]), DS[i]);
 					break;
 				case ct::SIGMOID:
-					ct::elemwiseMult(D[i], derivSigmoid(A1[i]), DS[i]);
+					gpumat::deriv_sigmoid(g_A1i);
+//					ct::elemwiseMult(D[i], derivSigmoid(A1[i]), DS[i]);
 					break;
 				case ct::TANH:
-					ct::elemwiseMult(D[i], derivTanh(A1[i]), DS[i]);
+					gpumat::deriv_tanh(g_A1i);
+//					ct::elemwiseMult(D[i], derivTanh(A1[i]), DS[i]);
 					break;
 				default:
 					break;
 			}
+			gpumat::elemwiseMult(g_Di, g_A1i);
+			gpumat::convert_to_mat(g_Di, DS[i]);
 		}
 	}else{
 		for(int i = 0; i < (int)D.size(); ++i){
+			if(m_func == ct::LINEAR){
+				continue;
+			}
+			gpumat::convert_to_gpu(D[i], g_Di);
+			gpumat::convert_to_gpu(A1[i], g_A1i);
 			switch (m_func) {
 				case ct::RELU:
-					ct::elemwiseMult(DS[i], ct::derivRelu(A1[i]));
+					gpumat::deriv_reLu(g_A1i);
+//					ct::elemwiseMult(D[i], derivRelu(A1[i]), DS[i]);
 					break;
 				case ct::SIGMOID:
-					ct::elemwiseMult(DS[i], ct::derivSigmoid(A1[i]));
+					gpumat::deriv_sigmoid(g_A1i);
+//					ct::elemwiseMult(D[i], derivSigmoid(A1[i]), DS[i]);
 					break;
 				case ct::TANH:
-					ct::elemwiseMult(DS[i], ct::derivTanh(A1[i]));
+					gpumat::deriv_tanh(g_A1i);
+//					ct::elemwiseMult(D[i], derivTanh(A1[i]), DS[i]);
 					break;
 				default:
 					break;
 			}
+			gpumat::elemwiseMult(g_Di, g_A1i);
+			gpumat::convert_to_mat(g_Di, DS[i]);
 		}
 	}
 }
@@ -331,4 +360,120 @@ void convnn2_mixed::read2(std::fstream &fs){
 
 	ct::read_fs2(fs, W[0]);
 	ct::read_fs2(fs, B[0]);
+}
+
+/////////////////////////////
+/////////////////////////////
+///
+
+AdamOptimizerMixed::AdamOptimizerMixed(): Optimizer<float>()
+{
+	m_betha1 = (float)0.9;
+	m_betha2 = (float)0.999;
+	m_init = false;
+}
+
+float AdamOptimizerMixed::betha1() const
+{
+	return m_betha1;
+}
+
+void AdamOptimizerMixed::setBetha1(float v){
+	m_betha1 = v;
+}
+
+float AdamOptimizerMixed::betha2() const{
+	return m_betha2;
+}
+
+void AdamOptimizerMixed::setBetha2(float v){
+	m_betha2 = v;
+}
+
+bool AdamOptimizerMixed::init(const std::vector<ct::Matf> &W, const std::vector<ct::Matf> &B){
+	if(W.empty() || B.empty())
+		return false;
+
+	using namespace ct;
+
+	Optimizer<float>::m_iteration = 0;
+
+	m_mW.resize(W.size());
+	m_mb.resize(W.size());
+
+	m_vW.resize(W.size());
+	m_vb.resize(W.size());
+
+	for(size_t i = 0; i < W.size(); i++){
+
+		m_mW[i].setSize(W[i].size());
+		m_vW[i].setSize(W[i].size());
+		m_mW[i].fill(0);
+		m_vW[i].fill(0);
+
+		m_mb[i].setSize(B[i].size());
+		m_vb[i].setSize(B[i].size());
+		m_mb[i].fill(0);
+		m_vb[i].fill(0);
+	}
+	m_init = true;
+	return true;
+}
+
+bool AdamOptimizerMixed::pass(const std::vector<ct::Matf> &gradW, const std::vector<ct::Matf> &gradB, std::vector<ct::Matf> &W, std::vector<ct::Matf> &b){
+	if(!gradW.size() || gradW.size() != gradB.size() || gradW.size() != W.size())
+		return false;
+
+	using namespace ct;
+
+	Optimizer<float>::m_iteration++;
+	float sb1 = (float)(1. / (1. - pow(m_betha1, Optimizer<float>::m_iteration)));
+	float sb2 = (float)(1. / (1. - pow(m_betha2, Optimizer<float>::m_iteration)));
+
+	for(size_t i = 0; i < gradW.size(); ++i){
+		gpumat::GpuMat g_m_mW, g_m_vW, g_m_mb, g_m_vb;
+
+		{
+			gpumat::GpuMat g_gW;
+			gpumat::convert_to_gpu(m_mW[i], g_m_mW);
+			gpumat::convert_to_gpu(m_vW[i], g_m_vW);
+			gpumat::convert_to_gpu(gradW[i], g_gW);
+
+			gpumat::add(g_m_mW, g_gW, m_betha1, (1. - m_betha1));
+			gpumat::elemwiseSqr(g_gW, g_gW);
+			gpumat::add(g_m_vW, g_gW, m_betha2, (1. - m_betha2));
+		}
+
+		{
+			gpumat::GpuMat g_gB;
+			gpumat::convert_to_gpu(gradB[i], g_gB);
+			gpumat::convert_to_gpu(m_mb[i], g_m_mb);
+			gpumat::convert_to_gpu(m_vb[i], g_m_vb);
+
+			gpumat::add(g_m_mb, g_gB, m_betha1, (1. - m_betha1));
+			gpumat::elemwiseSqr(g_gB, g_gB);
+			gpumat::add(g_m_vb, g_gB, m_betha2, (1. - m_betha2));
+		}
+
+		/// W = -alpha * (sb1 * mW / (sqrt(sb2 * vW) + eps))
+
+//		gpumat::add(W[i], m_mW[i], 1, -m_alpha);
+//		gpumat::add(b[i], m_mb[i], 1, -m_alpha);
+		{
+			gpumat::GpuMat g_W, g_B;
+			gpumat::convert_to_gpu(W[i], g_W);
+			gpumat::convert_to_gpu(b[i], g_B);
+
+			gpumat::sub_adamGrad(g_W, g_m_mW, g_m_vW, m_alpha, sb1, sb2);
+			gpumat::sub_adamGrad(g_B, g_m_mb, g_m_vb, m_alpha, sb1, sb2);
+
+			gpumat::convert_to_mat(g_W, W[i]);
+			gpumat::convert_to_mat(g_B, b[i]);
+		}
+	}
+	return true;
+}
+
+bool AdamOptimizerMixed::empty() const{
+	return m_mW.empty() || m_mb.empty() || m_vW.empty() || m_vb.empty();
 }

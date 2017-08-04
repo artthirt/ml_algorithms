@@ -2,8 +2,43 @@
 #define CONVNN2_MIXED_H
 
 #include "convnn2.h"
+#include "nn.h"
 
 namespace conv2{
+
+class AdamOptimizerMixed: public ct::Optimizer<float>{
+public:
+	AdamOptimizerMixed();
+
+	float betha1() const;
+
+	void setBetha1(float v);
+
+	float betha2() const;
+
+	void setBetha2(float v);
+
+	bool init(const std::vector< ct::Matf >& W, const std::vector< ct::Matf >& B);
+
+	bool pass(const std::vector< ct::Matf >& gradW, const std::vector< ct::Matf >& gradB,
+			  std::vector< ct::Matf >& W, std::vector< ct::Matf >& b);
+
+	bool empty() const;
+
+
+protected:
+	float m_betha1;
+	float m_betha2;
+	bool m_init;
+
+	std::vector< ct::Matf > m_mW;
+	std::vector< ct::Matf > m_mb;
+	std::vector< ct::Matf > m_vW;
+	std::vector< ct::Matf > m_vb;
+};
+
+
+/////////////////////////////
 
 class convnn2_mixed: public convnn_abstract<float>
 {
@@ -21,7 +56,7 @@ public:
 	std::vector< ct::Matf> vgB;			/// for delta bias
 	std::vector< ct::Matf> Mask;		/// masks for bakward pass (created in forward pass)
 	ct::Optimizer< float > *m_optim;
-	ct::AdamOptimizer<float> m_adam;
+	AdamOptimizerMixed m_adam;
 
 	std::vector< ct::Matf> gW;			/// gradient for weights
 	std::vector< ct::Matf> gB;			/// gradient for biases
