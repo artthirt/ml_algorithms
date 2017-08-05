@@ -279,13 +279,24 @@ void convnn2_mixed::backward(const std::vector<ct::Matf> &D, bool last_level){
 	//printf("2\n");
 	vgW.resize(D.size());
 	vgB.resize(D.size());
+
+	gpumat::GpuMat g_Xci, g_dSubi, g_gWi, g_gBi, g_gW, g_gB;
+
 	for(int i = 0; i < (int)D.size(); ++i){
 		ct::Mat_<float>& Xci = Xc[i];
 		ct::Mat_<float>& dSubi = dSub[i];
 		ct::Mat_<float>& Wi = vgW[i];
 		ct::Mat_<float>& vgBi = vgB[i];
-		matmulT1(Xci, dSubi, Wi);
-		vgBi = ct::sumRows(dSubi, 1.f/dSubi.rows);
+
+		gpumat::convert_to_gpu(Xci, g_Xci);
+		gpumat::convert_to_gpu(dSubi, g_dSubi);
+
+		gpumat::matmulT1(g_Xci, g_dSubi, g_gWi);
+		gpumat::sumRows(g_dSubi, g_gBi, 1.f/dSubi.rows);
+
+		gpumat::convert_to_mat(g_gWi, Wi);
+		gpumat::convert_to_mat(g_gBi, vgBi);
+		//vgBi = ct::sumRows(dSubi, 1.f/dSubi.rows);
 		//Wi *= (1.f/dSubi.total());
 		//vgBi.swap_dims();
 	}
@@ -294,17 +305,31 @@ void convnn2_mixed::backward(const std::vector<ct::Matf> &D, bool last_level){
 	gW[0].fill(0);
 	gB[0].setSize(B[0].size());
 	gB[0].fill(0);
+
+	gpumat::convert_to_gpu(gW[0], g_gW);
+	gpumat::convert_to_gpu(gB[0], g_gB);
+
 	for(size_t i = 0; i < D.size(); ++i){
-		ct::add(gW[0], vgW[i]);
-		ct::add(gB[0], vgB[i]);
+		gpumat::convert_to_gpu(vgW[i], g_gWi);
+		gpumat::convert_to_gpu(vgB[i], g_gBi);
+		gpumat::add(g_gW, g_gWi);
+		gpumat::add(g_gB, g_gBi);
+//		ct::add(gW[0], vgW[i]);
+//		ct::add(gB[0], vgB[i]);
 	}
-	gW[0] *= (float)1./(D.size());
-	gB[0] *= (float)1./(D.size());
+//	gW[0] *= (float)1./(D.size());
+//	gB[0] *= (float)1./(D.size());
+	gpumat::mulval(g_gW, (float)1./(D.size()));
+	gpumat::mulval(g_gB, (float)1./(D.size()));
 
 	//printf("4\n");
 	if(m_Lambda > 0){
-		ct::add<float>(gW[0],  W[0], 1., (m_Lambda / convnn_abstract<float>::kernels));
+		gpumat::GpuMat g_W;
+		gpumat::convert_to_gpu(W[0], g_W);
+		gpumat::add(g_gW,  g_W, 1., (m_Lambda / convnn_abstract<float>::kernels));
 	}
+	gpumat::convert_to_mat(g_gW, gW[0]);
+	gpumat::convert_to_mat(g_gB, gB[0]);
 
 	//printf("5\n");
 	if(!last_level){
@@ -313,10 +338,17 @@ void convnn2_mixed::backward(const std::vector<ct::Matf> &D, bool last_level){
 		//ct::MatfWf;
 		//flipW(W, szW, channels, Wf);
 
+		gpumat::GpuMat g_W, g_Dci, g_Dlti;
+
 		Dc.resize(D.size());
 		for(int i = 0; i < (int)D.size(); ++i){
-			ct::matmulT2(dSub[i], W[0], Dc[i]);
-			back_derivT(Dc[i], convnn_abstract<float>::szA1, convnn_abstract<float>::szA0, convnn_abstract<float>::channels, szW, stride, Dlt[i]);
+			gpumat::convert_to_gpu(dSub[i], g_dSubi);
+			gpumat::convert_to_gpu(W[0], g_W);
+			gpumat::matmulT2(g_dSubi, g_W, g_Dci);
+			gpumat::conv2::back_derivT(g_Dci, convnn_abstract<float>::szA1,
+								convnn_abstract<float>::szA0, convnn_abstract<float>::channels,
+								szW, stride, g_Dlti);
+			gpumat::convert_to_mat(g_Dlti, Dlt[i]);
 			//ct::Size sz = (*pX)[i].size();
 			//Dlt[i].set_dims(sz);
 		}
