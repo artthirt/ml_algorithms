@@ -83,7 +83,7 @@ void convnn2_mixed::init(const ct::Size &_szA0, int _channels, int stride, int _
 
 	ct::get_cnv_sizes(convnn_abstract<float>::szA0, szW, stride, convnn_abstract<float>::szA1, convnn_abstract<float>::szA2);
 
-	float n = (float)1./szW.area();
+	float n = (float)1./sqrt(szW.area() * kernels);
 
 	W.resize(1);
 	B.resize(1);
@@ -109,84 +109,62 @@ void convnn2_mixed::forward(const std::vector<ct::Matf> *_pX, ct::etypefunction 
 
 	Xc.resize(pX->size());
 	A1.resize(pX->size());
-
-	gpumat::GpuMat g_Xi, g_Xci, g_W, g_B, g_A1i;
-	if(m_use_transpose){
-		for(int i = 0; i < (int)Xc.size(); ++i){
-			ct::Mat_<float>& Xi = (*pX)[i];
-			ct::Size szOut;
-
-			gpumat::convert_to_gpu(Xi, g_Xi);
-
-			gpumat::conv2::im2colsT(g_Xi, convnn_abstract<float>::szA0,
-								   convnn_abstract<float>::channels,
-								   szW, stride, g_Xci, szOut);
-			gpumat::convert_to_mat(g_Xci, Xc[i]);
-		}
-	}else{
-		for(int i = 0; i < (int)Xc.size(); ++i){
-			ct::Mat_<float>& Xi = (*pX)[i];
-			ct::Size szOut;
-
-			gpumat::convert_to_gpu(Xi, g_Xi);
-
-			gpumat::conv2::im2cols(g_Xi, convnn_abstract<float>::szA0,
-								   convnn_abstract<float>::channels,
-								   szW, stride, g_Xci, szOut);
-			gpumat::convert_to_mat(g_Xci, Xc[i]);
-		}
+	if(m_use_pool){
+		A2.resize(A1.size());
+		Mask.resize(Xc.size());
 	}
 
+	gpumat::GpuMat g_Xi, g_Xci, g_W, g_B, g_A1i;
 	gpumat::convert_to_gpu(W[0], g_W);
 	gpumat::convert_to_gpu(B[0], g_B);
 
 	for(int i = 0; i < (int)Xc.size(); ++i){
-		ct::Mat_<float>& Xi = Xc[i];
-		ct::Mat_<float>& A1i = A1[i];
+		ct::Mat_<float>& Xi = (*pX)[i];
+		ct::Size szOut;
 
 		gpumat::convert_to_gpu(Xi, g_Xi);
 
-		gpumat::matmul(g_Xi, g_W, g_A1i);
-		gpumat::biasPlus(g_A1i, g_B);
-		gpumat::convert_to_mat(g_A1i, A1i);
-	}
+		if(m_use_transpose){
+			gpumat::conv2::im2colsT(g_Xi, convnn_abstract<float>::szA0,
+								   convnn_abstract<float>::channels,
+								   szW, stride, g_Xci, szOut);
+		}else{
+			gpumat::conv2::im2cols(g_Xi, convnn_abstract<float>::szA0,
+								   convnn_abstract<float>::channels,
+								   szW, stride, g_Xci, szOut);
+		}
+		gpumat::convert_to_mat(g_Xci, Xc[i]);
 
-	for(int i = 0; i < (int)A1.size(); ++i){
-		ct::Mat_<float>& Ao = A1[i];
+		gpumat::matmul(g_Xci, g_W, g_A1i);
+		gpumat::biasPlus(g_A1i, g_B);
+
 		switch (m_func) {
 			case ct::RELU:
-				gpumat::convert_to_gpu(Ao, g_A1i);
 				gpumat::reLu(g_A1i);
 				break;
 			case ct::SIGMOID:
-				gpumat::convert_to_gpu(Ao, g_A1i);
 				gpumat::sigmoid(g_A1i);
 				break;
 			case ct::TANH:
-				gpumat::convert_to_gpu(Ao, g_A1i);
 				gpumat::tanh(g_A1i);
 				break;
 			default:
-				continue;
+				break;
 		}
-		gpumat::convert_to_mat(g_A1i, Ao);
-	}
-	if(m_use_pool){
-		gpumat::GpuMat g_Mask, g_A2i;
+		gpumat::convert_to_mat(g_A1i, A1[i]);
 
-		Mask.resize(Xc.size());
-		A2.resize(A1.size());
-		for(int i = 0; i < (int)A1.size(); ++i){
-			ct::Matf&A1i = A1[i];
+		if(m_use_pool){
+			gpumat::GpuMat g_Mask, g_A2i;
+
 			ct::Matf&A2i = A2[i];
 			ct::Size szOut;
-
-			gpumat::convert_to_gpu(A1i, g_A1i);
-
 			gpumat::conv2::subsample(g_A1i, convnn_abstract<float>::szA1, g_A2i, g_Mask, szOut);
 			gpumat::convert_to_mat(g_Mask, Mask[i]);
 			gpumat::convert_to_mat(g_A2i, A2i);
 		}
+	}
+
+	if(m_use_pool){
 		convnn_abstract<float>::szK = A2[0].size();
 	}else{
 		convnn_abstract<float>::szK = A1[0].size();
@@ -198,62 +176,26 @@ void convnn2_mixed::forward(const convnn<float> &conv, ct::etypefunction func)
 	forward(&conv.XOut(), func);
 }
 
-void convnn2_mixed::backcnv(const std::vector<ct::Matf> &D, std::vector<ct::Matf> &DS)
+void convnn2_mixed::backcnv(const gpumat::GpuMat& D, gpumat::GpuMat& A1, gpumat::GpuMat& DS)
 {
-	gpumat::GpuMat g_Di, g_A1i;
-	if(D.data() != DS.data()){
-		for(int i = 0; i < (int)D.size(); ++i){
-			if(m_func == ct::LINEAR){
-				DS[i] = D[i];
-				continue;
+	switch (m_func) {
+		case ct::RELU:
+			gpumat::deriv_reLu(A1);
+			gpumat::elemwiseMult(D, A1, DS);
+			break;
+		case ct::SIGMOID:
+			gpumat::deriv_sigmoid(A1);
+			gpumat::elemwiseMult(D, A1, DS);
+			break;
+		case ct::TANH:
+			gpumat::deriv_tanh(A1);
+			gpumat::elemwiseMult(D, A1, DS);
+			break;
+		default:
+			if(D.data != DS.data){
+				D.copyTo(DS);
 			}
-			gpumat::convert_to_gpu(D[i], g_Di);
-			gpumat::convert_to_gpu(A1[i], g_A1i);
-			switch (m_func) {
-				case ct::RELU:
-					gpumat::deriv_reLu(g_A1i);
-//					ct::elemwiseMult(D[i], derivRelu(A1[i]), DS[i]);
-					break;
-				case ct::SIGMOID:
-					gpumat::deriv_sigmoid(g_A1i);
-//					ct::elemwiseMult(D[i], derivSigmoid(A1[i]), DS[i]);
-					break;
-				case ct::TANH:
-					gpumat::deriv_tanh(g_A1i);
-//					ct::elemwiseMult(D[i], derivTanh(A1[i]), DS[i]);
-					break;
-				default:
-					break;
-			}
-			gpumat::elemwiseMult(g_Di, g_A1i);
-			gpumat::convert_to_mat(g_Di, DS[i]);
-		}
-	}else{
-		for(int i = 0; i < (int)D.size(); ++i){
-			if(m_func == ct::LINEAR){
-				continue;
-			}
-			gpumat::convert_to_gpu(D[i], g_Di);
-			gpumat::convert_to_gpu(A1[i], g_A1i);
-			switch (m_func) {
-				case ct::RELU:
-					gpumat::deriv_reLu(g_A1i);
-//					ct::elemwiseMult(D[i], derivRelu(A1[i]), DS[i]);
-					break;
-				case ct::SIGMOID:
-					gpumat::deriv_sigmoid(g_A1i);
-//					ct::elemwiseMult(D[i], derivSigmoid(A1[i]), DS[i]);
-					break;
-				case ct::TANH:
-					gpumat::deriv_tanh(g_A1i);
-//					ct::elemwiseMult(D[i], derivTanh(A1[i]), DS[i]);
-					break;
-				default:
-					break;
-			}
-			gpumat::elemwiseMult(g_Di, g_A1i);
-			gpumat::convert_to_mat(g_Di, DS[i]);
-		}
+			break;
 	}
 }
 
@@ -264,72 +206,59 @@ void convnn2_mixed::backward(const std::vector<ct::Matf> &D, bool last_level){
 
 	dSub.resize(D.size());
 
+
 	//printf("1\n");
-	if(m_use_pool){
-		for(int i = 0; i < (int)D.size(); ++i){
-			const ct::Matf &Di = D[i];
-			//Di.set_dims(szA2.area(), K);
-			upsample(Di, convnn_abstract<float>::kernels, Mask[i],convnn_abstract<float>:: szA2, convnn_abstract<float>::szA1, dSub[i]);
-		}
-		backcnv(dSub, dSub);
-	}else{
-		backcnv(D, dSub);
-	}
+	gpumat::GpuMat g_Xci, g_Maski, g_A1i, g_dSubi, g_gW0, g_gB0, g_gWi, g_gBi, g_Di;
 
-	//printf("2\n");
-	vgW.resize(D.size());
-	vgB.resize(D.size());
-
-	gpumat::GpuMat g_Xci, g_dSubi, g_gWi, g_gBi, g_gW, g_gB;
-
-	for(int i = 0; i < (int)D.size(); ++i){
-		ct::Mat_<float>& Xci = Xc[i];
-		ct::Mat_<float>& dSubi = dSub[i];
-		ct::Mat_<float>& Wi = vgW[i];
-		ct::Mat_<float>& vgBi = vgB[i];
-
-		gpumat::convert_to_gpu(Xci, g_Xci);
-		gpumat::convert_to_gpu(dSubi, g_dSubi);
-
-		gpumat::matmulT1(g_Xci, g_dSubi, g_gWi);
-		gpumat::sumRows(g_dSubi, g_gBi, 1.f/dSubi.rows);
-
-		gpumat::convert_to_mat(g_gWi, Wi);
-		gpumat::convert_to_mat(g_gBi, vgBi);
-		//vgBi = ct::sumRows(dSubi, 1.f/dSubi.rows);
-		//Wi *= (1.f/dSubi.total());
-		//vgBi.swap_dims();
-	}
-	//printf("3\n");
 	gW[0].setSize(W[0].size());
 	gW[0].fill(0);
 	gB[0].setSize(B[0].size());
 	gB[0].fill(0);
 
-	gpumat::convert_to_gpu(gW[0], g_gW);
-	gpumat::convert_to_gpu(gB[0], g_gB);
+	gpumat::convert_to_gpu(gW[0], g_gW0);
+	gpumat::convert_to_gpu(gB[0], g_gB0);
 
-	for(size_t i = 0; i < D.size(); ++i){
-		gpumat::convert_to_gpu(vgW[i], g_gWi);
-		gpumat::convert_to_gpu(vgB[i], g_gBi);
-		gpumat::add(g_gW, g_gWi);
-		gpumat::add(g_gB, g_gBi);
-//		ct::add(gW[0], vgW[i]);
-//		ct::add(gB[0], vgB[i]);
+	for(int i = 0; i < (int)D.size(); ++i){
+		const ct::Matf &Di = D[i];
+
+		gpumat::convert_to_gpu(Di, g_Di);
+		if(m_func != ct::LINEAR)
+			gpumat::convert_to_gpu(A1[i], g_A1i);
+
+		if(m_use_pool){
+			gpumat::convert_to_gpu(Mask[i], g_Maski);
+			gpumat::conv2::upsample(g_Di, convnn_abstract<float>::kernels, g_Maski,
+							 convnn_abstract<float>::szA2, convnn_abstract<float>::szA1, g_dSubi);
+			backcnv(g_dSubi, g_A1i, g_dSubi);
+		}else{
+			backcnv(g_Di, g_A1i, g_dSubi);
+		}
+
+		ct::Mat_<float>& Xci = Xc[i];
+		gpumat::convert_to_gpu(Xci, g_Xci);
+
+		gpumat::matmulT1(g_Xci, g_dSubi, g_gWi);
+		gpumat::sumRows(g_dSubi, g_gBi, 1.f/g_dSubi.rows);
+
+		gpumat::add(g_gW0, g_gWi);
+		gpumat::add(g_gB0, g_gBi);
+
+		gpumat::convert_to_mat(g_dSubi, dSub[i]);
+
 	}
-//	gW[0] *= (float)1./(D.size());
-//	gB[0] *= (float)1./(D.size());
-	gpumat::mulval(g_gW, (float)1./(D.size()));
-	gpumat::mulval(g_gB, (float)1./(D.size()));
+	//printf("3\n");
+
+	gpumat::mulval(g_gW0, (float)1./(D.size() * channels));
+	gpumat::mulval(g_gB0, (float)1./(D.size() * channels));
 
 	//printf("4\n");
 	if(m_Lambda > 0){
 		gpumat::GpuMat g_W;
 		gpumat::convert_to_gpu(W[0], g_W);
-		gpumat::add(g_gW,  g_W, 1., (m_Lambda / convnn_abstract<float>::kernels));
+		gpumat::add(g_gW0,  g_W, 1., (m_Lambda / convnn_abstract<float>::kernels));
 	}
-	gpumat::convert_to_mat(g_gW, gW[0]);
-	gpumat::convert_to_mat(g_gB, gB[0]);
+	gpumat::convert_to_mat(g_gW0, gW[0]);
+	gpumat::convert_to_mat(g_gB0, gB[0]);
 
 	//printf("5\n");
 	if(!last_level){

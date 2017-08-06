@@ -160,7 +160,7 @@ void convnn_gpu::init(const ct::Size &_szA0, int _channels, int stride, int _K,
 	gW.resize(1);
 	gB.resize(1);
 
-	float n = (float)1./szW.area();
+	float n = (float)1./sqrtf(szW.area() * kernels);
 
 	for(size_t i = 0; i < W.size(); ++i){
 		ct::Matf Wi(rows, cols), Bi(kernels, 1);

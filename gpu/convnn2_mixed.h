@@ -4,6 +4,8 @@
 #include "convnn2.h"
 #include "nn.h"
 
+#include "gpumat.h"
+
 namespace conv2{
 
 class AdamOptimizerMixed: public ct::Optimizer<float>{
@@ -52,8 +54,8 @@ public:
 	std::vector< ct::Matf> A1;			/// out after appl nonlinear function
 	std::vector< ct::Matf> A2;			/// out after pooling
 	std::vector< ct::Matf> Dlt;			/// delta after backward pass
-	std::vector< ct::Matf> vgW;			/// for delta weights
-	std::vector< ct::Matf> vgB;			/// for delta bias
+	ct::Matf vgW;			/// for delta weights
+	ct::Matf vgB;			/// for delta bias
 	std::vector< ct::Matf> Mask;		/// masks for bakward pass (created in forward pass)
 	ct::Optimizer< float > *m_optim;
 	AdamOptimizerMixed m_adam;
@@ -101,7 +103,7 @@ public:
 
 	void forward(const convnn<float> & conv, ct::etypefunction func);
 
-	inline void backcnv(const std::vector< ct::Matf>& D, std::vector< ct::Matf>& DS);
+	void backcnv(const gpumat::GpuMat& D, gpumat::GpuMat &A1, gpumat::GpuMat& DS);
 
 	void backward(const std::vector< ct::Matf>& D, bool last_level = false);
 
