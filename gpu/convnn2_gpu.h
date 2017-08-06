@@ -27,8 +27,8 @@ public:
 	std::vector< gpumat::GpuMat > A1;		/// out after appl nonlinear function
 	std::vector< gpumat::GpuMat > A2;		/// out after pooling
 	std::vector< gpumat::GpuMat > Dlt;		/// delta after backward pass
-	std::vector< gpumat::GpuMat > vgW;		/// for delta weights
-	std::vector< gpumat::GpuMat > vgB;		/// for delta bias
+	gpumat::GpuMat vgW;						/// for delta weights
+	gpumat::GpuMat vgB;						/// for delta bias
 	std::vector< gpumat::GpuMat > Mask;		/// masks for bakward pass (created in forward pass)
 	gpumat::Optimizer *m_optim;
 

@@ -239,24 +239,18 @@ void convnn_gpu::forward(const std::vector<gpumat::GpuMat> *_pX, gpumat::etypefu
 		gpumat::GpuMat& Xi = Xc[i];
 		gpumat::GpuMat& A1i = A1[i];
 		gpumat::matmul(Xi, W[0], A1i);
-	}
 
-	for(int i = 0; i < (int)Xc.size(); ++i){
-		gpumat::GpuMat& A1i = A1[i];
 		gpumat::biasPlus(A1i, B[0]);
-	}
 
-	for(int i = 0; i < (int)A1.size(); ++i){
-		gpumat::GpuMat& Ao = A1[i];
 		switch (m_func) {
 			case gpumat::RELU:
-				gpumat::reLu(Ao);
+				gpumat::reLu(A1i);
 				break;
 			case gpumat::SIGMOID:
-				gpumat::sigmoid(Ao);
+				gpumat::sigmoid(A1i);
 				break;
 			case gpumat::TANH:
-				gpumat::tanh(Ao);
+				gpumat::tanh(A1i);
 				break;
 			default:
 				break;
@@ -349,34 +343,19 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 		throw new std::invalid_argument("vector D not complies saved parameters");
 	}
 
-//	qDebug("<<<<< backward(channels=%d, kernels=%d, Delta[%dx%d], W[%dx%d], szA0[%dx%d], szA1[%dx%d], szA2[%dx%d]) >>>>>>",
-//		   channels, K, D[0].rows, D[0].cols, W[0].rows, W[0].cols,
-//			szA0.width, szA0.height, szA1.width, szA1.height, szA2.width, szA2.height);
-
 	dSub2.resize(D.size());
 
 	if(m_use_pool){
-//		dSub.resize(D.size());
-//		qDebug("backward: upsample(D[%dx%d])", D[0].rows, D[0].cols);
-
 		gpumat::conv2::upsample(D, kernels, Mask, szA2, szA1, dSub2);
 
-//		qDebug("backward: derivative(D[%dx%d])", dSub2[0].rows, dSub2[0].cols);
-
 		backcnv(dSub2, dSub2);
-
-//		save_vec(dSub);
-
 	}else{
-//		qDebug("backward: derivative(D[%dx%d])", D[0].rows, D[0].cols);
 		backcnv(D, dSub2);
 	}
 
 	if(m_pool_dropout){
 		set_dropout(dSub2, m_Dropout);
 	}
-//	qt_work_mat::q_save_mat(dSub2[0], "testMask.txt");
-
 #if 0
 	if(channels == 3){
 		qt_work_mat::q_save_mat(D[26], "testD26.txt");
@@ -386,29 +365,24 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 	}
 #endif
 
-//	qDebug("backward: Xc[%dx%d]' x D[%dx%d]", Xc[0].rows, Xc[0].cols, dSub2[0].rows, dSub2[0].cols);
-
-	vgW.resize(D.size());
-	vgB.resize(D.size());
+	gW[0].zeros();
+	gB[0].zeros();
 	for(int i = 0; i < (int)D.size(); ++i){
 		gpumat::GpuMat& Xci		= Xc[i];
 		gpumat::GpuMat& dSubi	= dSub2[i];
-		gpumat::GpuMat& Wi		= vgW[i];
-		gpumat::GpuMat& vgBi	= vgB[i];
-		gpumat::matmulT1(Xci, dSubi, Wi);
+		gpumat::matmulT1(Xci, dSubi, vgW);
 
-//		gpumat::mulval(Wi, (double)1. / (Xci.total()));
-//		gpumat::save_gmat(Xci, "Xgi.txt");
-//		gpumat::save_gmat(dSubi, "Dgi.txt");
-//		gpumat::save_gmat(Wi, "Wgi.txt");
-		vgBi.swap_dims();
-		sumRows(dSubi, vgBi /*, (double)1. / (Xci.total())*/);
-		vgBi.swap_dims();
+		vgB.swap_dims();
+		sumRows(dSubi, vgB /*, (double)1. / (Xci.total())*/);
+		vgB.swap_dims();
+
+		gpumat::add(gW[0], vgW);
+		gpumat::add(gB[0], vgB);
 	}
-//	gpumat::save_gmat(vgW[0], "Wg1.txt");
-//	gpumat::save_gmat(vgW[1], "Wg2.txt");
-//	gpumat::save_gmat(vgW[2], "Wg3.txt");
+	gpumat::mulval(gW[0], (double)1./(D.size() * channels));
+	gpumat::mulval(gB[0], (double)1./(D.size() * channels));
 
+#if 0
 #if 0
 	gW[0].zeros();
 	gB[0].zeros();
@@ -422,7 +396,7 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 	addvec(gW[0], vgW, (double)1./(D.size() * channels));
 	addvec(gB[0], vgB, (double)1./(D.size() * channels));
 #endif
-
+#endif
 
 	if(m_lambda > 0){
 		gpumat::add(gW[0], W[0], 1, (double)m_lambda / kernels);
@@ -443,22 +417,14 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 			gpumat::matmulT2(dSub2[i], W[0], Dci);
 		}
 
-//		gpumat::write_gmat("Dc5.bin", Dc[0]);
 		back_derivT(Dc, szA1, szA0, channels, szW, stride, Dlt);
-
 #if 0
 		check_deriv(Dc, szA1, szA0, channels, szW, stride, Dlt);
 #endif
 
-//		gpumat::write_gmat("Dlt5.bin", Dlt[0]);
-		//gpumat::save_gmat(dSub[0], "dSub.txt");
-//		gpumat::save_gmat(Dlt[0], "Dltgi.txt");
-		//gpumat::save_gmat(Dc[0], "Dc.txt");
 	}
 
 	m_optim->pass(gW, gB, W, B);
-
-//	qDebug("<<<<< end backward >>>>>>");
 }
 
 void convnn_gpu::write(std::fstream &fs)
