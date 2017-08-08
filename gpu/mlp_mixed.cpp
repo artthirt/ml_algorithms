@@ -45,48 +45,54 @@ void mlp_mixed::init(int input, int output){
 	m_init = true;
 }
 
-void mlp_mixed::apply_func(const Matf &Z, Matf &A, etypefunction func){
+void mlp_mixed::apply_func(gpumat::GpuMat &Z, etypefunction func)
+{
+	gpumat::GpuMat partZ;
 	switch (func) {
 		default:
 		case LINEAR:
-			A = Z;
 			return;
 		case RELU:
-			v_relu(Z, A);
+			gpumat::reLu(Z);
 			break;
 		case SOFTMAX:
-			v_softmax(Z, A, 1);
+			gpumat::softmax(Z, 1, partZ);
 			break;
 		case SIGMOID:
-			v_sigmoid(Z, A);
+			gpumat::sigmoid(Z);
 			break;
 		case TANH:
-			v_tanh(Z, A);
+			gpumat::tanh(Z);
 			break;
 	}
 }
 
-void mlp_mixed::apply_back_func(const Matf &D1, Matf &D2, etypefunction func){
+void mlp_mixed::apply_back_func(gpumat::GpuMat &D1, etypefunction func)
+{
+	gpumat::GpuMat g_A1;
 	switch (func) {
 		default:
 		case LINEAR:
-			D2 = D1;
+//			D1.copyTo(D2);
 			return;
 		case RELU:
-			v_derivRelu(A1, DA1);
+			gpumat::convert_to_gpu(A1, g_A1);
+			gpumat::deriv_reLu(g_A1);
 			break;
 		case SOFTMAX:
 			//				A = softmax(A, 1);
-			D1.copyTo(D2);
+//			D1.copyTo(D2);
 			return;
 		case SIGMOID:
-			v_derivSigmoid(A1, DA1);
+			gpumat::convert_to_gpu(A1, g_A1);
+			gpumat::deriv_sigmoid(g_A1);
 			break;
 		case TANH:
-			v_derivTanh(A1, DA1);
+			gpumat::convert_to_gpu(A1, g_A1);
+			gpumat::deriv_tanh(g_A1);
 			break;
 	}
-	elemwiseMult(D1, DA1, D2);
+	gpumat::elemwiseMult(D1, g_A1);
 }
 
 etypefunction mlp_mixed::funcType() const{
@@ -99,29 +105,36 @@ void mlp_mixed::forward(const Matf *mat, etypefunction func, bool save_A0){
 	pA0 = (Matf*)mat;
 	m_func = func;
 
-	gpumat::GpuMat g_A0, g_W, g_B, g_XDropout, g_Z;
+	gpumat::GpuMat g_XDropout, g_Z, g_B;
 
-	gpumat::convert_to_gpu(*pA0, g_A0);
-	gpumat::convert_to_gpu(W, g_W);
-	gpumat::convert_to_gpu(B, g_B);
+	{
+		gpumat::GpuMat g_A0, g_W;
 
-	if(m_is_dropout && std::abs(m_prob - 1) > 1e-6){
-		gpumat::GpuMat g_Dropout;
+		gpumat::convert_to_gpu(*pA0, g_A0);
+		gpumat::convert_to_gpu(W, g_W);
+		gpumat::convert_to_gpu(B, g_B);
 
-		ct::dropout(pA0->rows, pA0->cols, m_prob, Dropout);
-		gpumat::convert_to_gpu(Dropout, g_Dropout);
+		if(m_is_dropout && std::abs(m_prob - 1) > 1e-6){
+			gpumat::GpuMat g_Dropout;
 
-		gpumat::elemwiseMult(g_A0, g_Dropout, g_XDropout);
-		gpumat::matmul(g_XDropout, g_W, g_Z);
-		gpumat::convert_to_mat(g_XDropout, XDropout);
-	}else{
-		gpumat::matmul(g_A0, g_W, g_Z);
+			ct::dropout(pA0->rows, pA0->cols, m_prob, Dropout);
+			gpumat::convert_to_gpu(Dropout, g_Dropout);
+
+			gpumat::elemwiseMult(g_A0, g_Dropout, g_XDropout);
+			gpumat::matmul(g_XDropout, g_W, g_Z);
+			gpumat::convert_to_mat(g_XDropout, XDropout);
+		}else{
+			gpumat::matmul(g_A0, g_W, g_Z);
+		}
 	}
 
-	gpumat::biasPlus(g_Z, g_B);
-	gpumat::convert_to_mat(g_Z, Z);
+	{
+		gpumat::biasPlus(g_Z, g_B);
 
-	apply_func(Z, A1, func);
+		apply_func(g_Z, func);
+		gpumat::convert_to_mat(g_Z, A1);
+	}
+	//gpumat::convert_to_mat(g_Z, Z);
 
 	if(!save_A0)
 		pA0 = nullptr;
@@ -131,19 +144,25 @@ void mlp_mixed::backward(const Matf &Delta, bool last_layer){
 	if(!pA0 || !m_init)
 		throw new std::invalid_argument("mlp::backward: not initialized. wrong parameters");
 
-	apply_back_func(Delta, DA1, m_func);
+	gpumat::GpuMat g_DA1;
+
+	gpumat::convert_to_gpu(Delta, g_DA1);
+
+	apply_back_func(g_DA1, m_func);
 
 	float m = Delta.rows;
 
-	gpumat::GpuMat g_XDropout, g_DA1, g_A0, g_gW, g_gB, g_W;
+	gpumat::GpuMat g_gW, g_gB, g_W;
 
 	gpumat::convert_to_gpu(W, g_W);
-	gpumat::convert_to_gpu(DA1, g_DA1);
+//	gpumat::convert_to_gpu(DA1, g_DA1);
 
 	if(m_is_dropout && std::abs(m_prob - 1) > 1e-6){
+		gpumat::GpuMat g_XDropout;
 		gpumat::convert_to_gpu(XDropout, g_XDropout);
 		gpumat::matmulT1(g_XDropout, g_DA1, g_gW);
 	}else{
+		gpumat::GpuMat g_A0;
 		gpumat::convert_to_gpu(*pA0, g_A0);
 		gpumat::matmulT1(g_A0, g_DA1, g_gW);
 	}
@@ -153,7 +172,7 @@ void mlp_mixed::backward(const Matf &Delta, bool last_layer){
 		gpumat::add(g_gW, g_W, 1, m_lambda / m);
 	}
 
-	g_gB.swap_dims();
+//	g_gB.swap_dims();
 	gpumat::sumRows(g_DA1, g_gB, 1.f / m);
 	g_gB.swap_dims();
 

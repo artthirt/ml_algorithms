@@ -178,7 +178,7 @@ void mlp::backward(const GpuMat &Delta, bool last_layer)
 		gpumat::add(gW, W, 1, m_lambda / m);
 	}
 
-	gB.swap_dims();
+//	gB.swap_dims();
 	sumRows(*pDA1, gB, 1.f / m);
 	gB.swap_dims();
 

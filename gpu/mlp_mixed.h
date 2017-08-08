@@ -2,6 +2,7 @@
 #define MLP_   MIXED_H
 
 #include "mlp.h"
+#include "gpumat.h"
 
 namespace ct{
 
@@ -11,7 +12,7 @@ public:
 	Matf *pA0;
 	Matf W;
 	Matf B;
-	Matf Z;
+//	Matf Z;
 	Matf A1;
 	Matf DA1;
 	Matf D1;
@@ -34,8 +35,8 @@ public:
 
 	void init(int input, int output);
 
-	inline void apply_func(const ct::Matf& Z, ct::Matf& A, etypefunction func);
-	inline void apply_back_func(const ct::Matf& D1, ct::Matf& D2, etypefunction func);
+	inline void apply_func(gpumat::GpuMat &Z, etypefunction func);
+	inline void apply_back_func(gpumat::GpuMat& D1, etypefunction func);
 
 	etypefunction funcType() const;
 
