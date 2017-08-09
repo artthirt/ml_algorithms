@@ -88,7 +88,7 @@ private:
 	gpumat::GpuMat m_Dropout;
 	double m_lambda;
 
-	gpumat::AdamOptimizer m_innet_optim;
+	gpumat::AdamOptimizer m_inner_optim;
 
 	std::vector< gpumat::GpuMat > dSub2;
 	std::vector< gpumat::GpuMat > Dc;		///

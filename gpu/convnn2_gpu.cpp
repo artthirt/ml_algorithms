@@ -68,7 +68,7 @@ convnn_gpu::convnn_gpu()
 	m_pool_dropout = false;
 	m_prob_dropout = 0.9;
 	m_lambda = 0;
-	m_optim = &m_innet_optim;
+	m_optim = &m_inner_optim;
 }
 
 void convnn_gpu::setOptimizer(gpumat::Optimizer *optim)
