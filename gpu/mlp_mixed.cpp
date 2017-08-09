@@ -152,38 +152,45 @@ void mlp_mixed::backward(const Matf &Delta, bool last_layer){
 
 	float m = Delta.rows;
 
-	gpumat::GpuMat g_gW, g_gB, g_W;
+	{
+		gpumat::GpuMat g_W;
 
-	gpumat::convert_to_gpu(W, g_W);
-//	gpumat::convert_to_gpu(DA1, g_DA1);
+		gpumat::convert_to_gpu(W, g_W);
+	//	gpumat::convert_to_gpu(DA1, g_DA1);
 
-	if(m_is_dropout && std::abs(m_prob - 1) > 1e-6){
-		gpumat::GpuMat g_XDropout;
-		gpumat::convert_to_gpu(XDropout, g_XDropout);
-		gpumat::matmulT1(g_XDropout, g_DA1, g_gW);
-	}else{
-		gpumat::GpuMat g_A0;
-		gpumat::convert_to_gpu(*pA0, g_A0);
-		gpumat::matmulT1(g_A0, g_DA1, g_gW);
+		{
+			gpumat::GpuMat g_gW;
+			if(m_is_dropout && std::abs(m_prob - 1) > 1e-6){
+				gpumat::GpuMat g_XDropout;
+				gpumat::convert_to_gpu(XDropout, g_XDropout);
+				gpumat::matmulT1(g_XDropout, g_DA1, g_gW);
+			}else{
+				gpumat::GpuMat g_A0;
+				gpumat::convert_to_gpu(*pA0, g_A0);
+				gpumat::matmulT1(g_A0, g_DA1, g_gW);
+			}
+			mulval(g_gW, 1. / m);
+
+			if(m_lambda > 0){
+				gpumat::add(g_gW, g_W, 1, m_lambda / m);
+			}
+			gpumat::convert_to_mat(g_gW, gW);
+		}
+		if(!last_layer){
+			gpumat::GpuMat g_DltA0;
+			matmulT2(g_DA1, g_W, g_DltA0);
+			gpumat::convert_to_mat(g_DltA0, DltA0);
+		}
 	}
-	mulval(g_gW, 1. / m);
 
-	if(m_lambda > 0){
-		gpumat::add(g_gW, g_W, 1, m_lambda / m);
+	{
+		gpumat::GpuMat g_gB;
+	//	g_gB.swap_dims();
+		gpumat::sumRows(g_DA1, g_gB, 1.f / m);
+		g_gB.swap_dims();
+
+		gpumat::convert_to_mat(g_gB, gB);
 	}
-
-//	g_gB.swap_dims();
-	gpumat::sumRows(g_DA1, g_gB, 1.f / m);
-	g_gB.swap_dims();
-
-	if(!last_layer){
-		gpumat::GpuMat g_DltA0;
-		matmulT2(g_DA1, g_W, g_DltA0);
-		gpumat::convert_to_mat(g_DltA0, DltA0);
-	}
-
-	gpumat::convert_to_mat(g_gW, gW);
-	gpumat::convert_to_mat(g_gB, gB);
 }
 
 void mlp_mixed::write(std::fstream &fs){

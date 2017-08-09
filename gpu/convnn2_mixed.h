@@ -39,6 +39,23 @@ protected:
 	std::vector< ct::Matf > m_vb;
 };
 
+/////////////////////////////
+
+class MomentOptimizerMixed: public ct::Optimizer<float>{
+public:
+	MomentOptimizerMixed();
+
+	void setBetha(float val);
+
+	bool pass(const std::vector< ct::Matf > &gradW, const std::vector< ct::Matf > &gradB,
+			  std::vector< ct::Matf > &W, std::vector< ct::Matf > &B);
+
+protected:
+	std::vector< ct::Matf > m_mW;
+	std::vector< ct::Matf > m_mb;
+
+	float m_betha;
+};
 
 /////////////////////////////
 

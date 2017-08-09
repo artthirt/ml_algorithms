@@ -208,7 +208,7 @@ void convnn2_mixed::backward(const std::vector<ct::Matf> &D, bool last_level){
 
 
 	//printf("1\n");
-	gpumat::GpuMat g_Xci, g_Maski, g_A1i, g_dSubi, g_gW0, g_gB0, g_gWi, g_gBi, g_Di;
+	gpumat::GpuMat g_Xci, g_Maski, g_A1i, g_dSubi, g_gW0, g_gB0, g_Di;
 
 	gW[0].setSize(W[0].size());
 	gW[0].fill(0);
@@ -237,11 +237,20 @@ void convnn2_mixed::backward(const std::vector<ct::Matf> &D, bool last_level){
 		ct::Mat_<float>& Xci = Xc[i];
 		gpumat::convert_to_gpu(Xci, g_Xci);
 
-		gpumat::matmulT1(g_Xci, g_dSubi, g_gWi);
-		gpumat::sumRows(g_dSubi, g_gBi, 1.f/g_dSubi.rows);
+		{
+			gpumat::GpuMat g_gWi;
 
-		gpumat::add(g_gW0, g_gWi);
-		gpumat::add(g_gB0, g_gBi);
+			gpumat::matmulT1(g_Xci, g_dSubi, g_gWi);
+			gpumat::add(g_gW0, g_gWi);
+		}
+
+		{
+			gpumat::GpuMat g_gBi;
+
+			gpumat::sumRows(g_dSubi, g_gBi, 1.f/g_dSubi.rows);
+			g_gBi.swap_dims();
+			gpumat::add(g_gB0, g_gBi);
+		}
 
 		gpumat::convert_to_mat(g_dSubi, dSub[i]);
 
@@ -435,6 +444,75 @@ bool AdamOptimizerMixed::pass(const std::vector<ct::Matf> &gradW, const std::vec
 	return true;
 }
 
+//////////////////////////////////////
+
 bool AdamOptimizerMixed::empty() const{
 	return m_mW.empty() || m_mb.empty() || m_vW.empty() || m_vb.empty();
+}
+
+MomentOptimizerMixed::MomentOptimizerMixed(): Optimizer<float>(){
+	Optimizer<float>::m_alpha = float(0.01);
+	m_betha = float(0.9);
+}
+
+void MomentOptimizerMixed::setBetha(float val){
+	m_betha = val;
+}
+
+bool MomentOptimizerMixed::pass(const std::vector<ct::Matf> &gradW, const std::vector<ct::Matf> &gradB, std::vector<ct::Matf> &W, std::vector<ct::Matf> &B)
+{
+	if(W.empty() || gradW.size() != W.size() || gradB.empty() || gradB.size() != gradW.size())
+		throw new std::invalid_argument("MomentOptimizer: wrong parameters");
+	if(m_mW.empty()){
+		m_mW.resize(W.size());
+		m_mb.resize(W.size());
+		for(int i = 0; i < m_mW.size(); ++i){
+			m_mW[i] = ct::Matf::zeros(W[i].rows, W[i].cols);
+			m_mb[i] = ct::Matf::zeros(B[i].rows, B[i].cols);
+		}
+	}
+
+	for(int i = 0; i < m_mW.size(); ++i){
+		gpumat::GpuMat g_m_mW;
+		gpumat::convert_to_gpu(m_mW[i], g_m_mW);
+		{
+			gpumat::GpuMat g_gradW;
+			gpumat::convert_to_gpu(gradW[i], g_gradW);
+
+			gpumat::add(g_m_mW, g_gradW, m_betha, 1. - m_betha);
+		}
+
+		{
+			gpumat::GpuMat g_W;
+			gpumat::convert_to_gpu(W[i], g_W);
+
+			gpumat::add(g_W, g_m_mW, 1., Optimizer<float>::m_alpha);
+
+			gpumat::convert_to_mat(g_m_mW, m_mW[i]);
+			gpumat::convert_to_mat(g_W, W[i]);
+		}
+
+	}
+	for(int i = 0; i < m_mW.size(); ++i){
+		gpumat::GpuMat g_m_mB;
+		gpumat::convert_to_gpu(m_mb[i], g_m_mB);
+		{
+			gpumat::GpuMat g_gradB;
+			gpumat::convert_to_gpu(gradB[i], g_gradB);
+
+			gpumat::add(g_m_mB, g_gradB, m_betha, 1. - m_betha);
+		}
+
+		{
+			gpumat::GpuMat g_B;
+			gpumat::convert_to_gpu(B[i], g_B);
+
+			gpumat::add(g_B, g_m_mB, 1., Optimizer<float>::m_alpha);
+
+			gpumat::convert_to_mat(g_m_mB, m_mb[i]);
+			gpumat::convert_to_mat(g_B, B[i]);
+		}
+
+	}
+	return true;
 }
