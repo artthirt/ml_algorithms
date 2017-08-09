@@ -486,7 +486,7 @@ bool MomentOptimizerMixed::pass(const std::vector<ct::Matf> &gradW, const std::v
 			gpumat::GpuMat g_W;
 			gpumat::convert_to_gpu(W[i], g_W);
 
-			gpumat::add(g_W, g_m_mW, 1., Optimizer<float>::m_alpha);
+			gpumat::add(g_W, g_m_mW, 1., -Optimizer<float>::m_alpha);
 
 			gpumat::convert_to_mat(g_m_mW, m_mW[i]);
 			gpumat::convert_to_mat(g_W, W[i]);
@@ -507,7 +507,7 @@ bool MomentOptimizerMixed::pass(const std::vector<ct::Matf> &gradW, const std::v
 			gpumat::GpuMat g_B;
 			gpumat::convert_to_gpu(B[i], g_B);
 
-			gpumat::add(g_B, g_m_mB, 1., Optimizer<float>::m_alpha);
+			gpumat::add(g_B, g_m_mB, 1., -Optimizer<float>::m_alpha);
 
 			gpumat::convert_to_mat(g_m_mB, m_mb[i]);
 			gpumat::convert_to_mat(g_B, B[i]);
