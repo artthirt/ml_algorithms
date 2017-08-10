@@ -439,6 +439,14 @@ void sub_adamGrad(GpuMat& A, const GpuMat& mA, const GpuMat& vA, double alpha, d
 void subIndOne(const GpuMat& A, const GpuMat& Ind, GpuMat& B);
 
 /**
+ * @brief subIndOne
+ * @param vA
+ * @param Ind
+ * @param B
+ */
+void subIndOne(const std::vector< GpuMat >& vA, const GpuMat& Ind, std::vector<GpuMat> &B);
+
+/**
  * @brief hconcat
  * @param list
  * @param res

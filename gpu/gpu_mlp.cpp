@@ -20,6 +20,7 @@ mlp::mlp(){
 	m_is_dropout = false;
 	m_prob = 0.95;
 	pA0 = nullptr;
+	pVecA0 = nullptr;
 	m_lambda = 0.;
 }
 
@@ -82,25 +83,25 @@ void mlp::apply_func(const GpuMat &Z, GpuMat &A, etypefunction func){
 	}
 }
 
-void mlp::apply_back_func(const GpuMat &D1, GpuMat &D2, etypefunction func){
+void mlp::apply_back_func(const GpuMat &D1, const GpuMat& A1, GpuMat &D2, etypefunction func)
+{
 	switch (func) {
 		case RELU:
-			deriv_reLu(A1, DA1);
+			deriv_reLu(A1, D2);
 			break;
-		case SOFTMAX:
-			//				A = softmax(A, 1);
-			D1.copyTo(D2);
-			return;
 		case SIGMOID:
-			deriv_sigmoid(A1, DA1);
+			deriv_sigmoid(A1, D2);
 			break;
 		case TANH:
-			deriv_tanh(A1, DA1);
+			deriv_tanh(A1, D2);
 			break;
 		default:
-			return;
+			if(D1.data == D2.data)
+				return;
+			else
+				D1.copyTo(D2);
 	}
-	elemwiseMult(D1, DA1, D2);
+	elemwiseMult(D1, D2, D2);
 }
 
 etypefunction mlp::funcType() const{
@@ -158,10 +159,10 @@ void mlp::backward(const GpuMat &Delta, bool last_layer)
 
 	double m = Delta.rows;
 
-	gpumat::GpuMat* pDA1 = &DA1;
+	gpumat::GpuMat* pDA1 = &A1;
 
 	if(m_func != gpumat::SOFTMAX && m_func != gpumat::LINEAR){
-		apply_back_func(Delta, DA1, m_func);
+		apply_back_func(Delta, A1, A1, m_func);
 	}else{
 		pDA1 = (GpuMat*)&Delta;
 	}
@@ -184,6 +185,118 @@ void mlp::backward(const GpuMat &Delta, bool last_layer)
 
 	if(!last_layer){
 		matmulT2(*pDA1, W, DltA0);
+	}
+}
+
+void mlp::forward(const std::vector<GpuMat> *mat, etypefunction func, bool save_A0)
+{
+	if(!m_init || !mat)
+		throw new std::invalid_argument("mlp::forward: not initialized. wrong parameters");
+	pVecA0 = (std::vector<GpuMat>*)mat;
+	m_func = func;
+
+	vecA1.resize(pVecA0->size());
+	if(m_is_dropout && std::abs(m_prob - 1) > 1e-6){
+		vecXDropout.resize(pVecA0->size());
+		for(size_t i = 0; i < mat->size(); ++i){
+			gpumat::GpuMat& A0i = (*pVecA0)[i];
+
+			int rows = A0i.rows;
+			int cols = A0i.cols;
+			A0i.rows = 1;
+			A0i.cols = rows * cols;
+
+			apply_dropout(A0i, m_prob, vecXDropout[i], Dropout);
+			matmul(vecXDropout[i], W, vecA1[i]);
+			biasPlus(vecA1[i], B);
+
+			if(func != LINEAR)
+				apply_func(vecA1[i], vecA1[i], func);
+
+			A0i.rows = rows;
+			A0i.cols = cols;
+		}
+	}else{
+		for(size_t i = 0; i < mat->size(); ++i){
+			gpumat::GpuMat& A0i = (*pVecA0)[i];
+
+			int rows = A0i.rows;
+			int cols = A0i.cols;
+			A0i.rows = 1;
+			A0i.cols = rows * cols;
+
+			matmul(A0i, W, vecA1[i]);
+			biasPlus(vecA1[i], B);
+
+			A0i.rows = rows;
+			A0i.cols = cols;
+
+			if(func != LINEAR)
+				apply_func(vecA1[i], vecA1[i], func);
+		}
+	}
+
+	if(!save_A0)
+		pA0 = nullptr;
+}
+
+void mlp::backward(const std::vector<GpuMat> &Delta, bool last_layer)
+{
+	if(!pVecA0 || !m_init)
+		throw new std::invalid_argument("mlp::backward: not initialized. wrong parameters");
+
+//	apply_back_func(Delta, DA1, m_func);
+
+	double m = Delta.size();
+
+	std::vector< gpumat::GpuMat>* pDA1 = &vecA1;
+
+	if(m_func == gpumat::SOFTMAX || m_func == gpumat::LINEAR){
+		pDA1 = (std::vector< gpumat::GpuMat>*)&Delta;
+	}
+
+//	vecDA1.resize(Delta.size());
+
+	gW.resize(W);
+	gB.resize(B);
+
+	gW.zeros();
+	gB.zeros();
+
+	for(size_t i = 0; i < Delta.size(); ++i){
+		if(m_func != gpumat::SOFTMAX && m_func != gpumat::LINEAR){
+			apply_back_func(Delta[i], vecA1[i], vecA1[i], m_func);
+		}
+
+		if(m_is_dropout && std::abs(m_prob - 1) > 1e-6){
+			matmulT1(vecXDropout[i], (*pDA1)[i], gWi);
+		}else{
+			matmulT1((*pVecA0)[i], (*pDA1)[i], gWi);
+		}
+		add(gW, gWi);
+
+		gBi.swap_dims();
+		sumRows((*pDA1)[i], gBi);
+		gBi.swap_dims();
+
+		add(gB, gBi);
+	}
+
+//	gWi.release();
+//	gBi.release();
+
+	mulval(gW, 1. / m);
+	mulval(gB, 1. / m);
+
+	if(m_lambda > 0){
+		gpumat::add(gW, W, 1, m_lambda / m);
+	}
+
+	if(!last_layer){
+		vecDltA0.resize(Delta.size());
+		for(size_t i = 0; i < Delta.size(); ++i){
+			matmulT2((*pDA1)[i], W, vecDltA0[i]);
+		}
 	}
 }
 
@@ -268,6 +381,9 @@ bool MlpOptim::pass(std::vector<mlp> &_mlp)
 		gpumat::elemwiseSqr(mlpi.gW, sW[i]);
 		gpumat::elemwiseSqr(mlpi.gB, sB[i]);
 
+//		mlpi.gW.release();
+//		mlpi.gB.release();
+
 		gpumat::add(m_vW[i], sW[i], m_betha2, (1. - m_betha2));
 		gpumat::add(m_vb[i], sB[i], m_betha2, (1. - m_betha2));
 
@@ -277,6 +393,7 @@ bool MlpOptim::pass(std::vector<mlp> &_mlp)
 //		gpumat::add(b[i], m_mb[i], 1, -m_alpha);
 		gpumat::sub_adamGrad(mlpi.W, m_mW[i], m_vW[i], m_alpha, sb1, sb2);
 		gpumat::sub_adamGrad(mlpi.B, m_mb[i], m_vb[i], m_alpha, sb1, sb2);
+
 	}
 	return true;
 }

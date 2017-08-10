@@ -1312,6 +1312,26 @@ __global__ void subIndOne(Mtx A, Mtx Ind, Mtx B)
 	}
 }
 
+template< typename T >
+__global__ void subIndOne(SmallMtxArray vecA, Mtx Ind, SmallMtxArray vecB)
+{
+	int row = threadIdx.y + blockIdx.y * blockDim.y;
+	int col = threadIdx.x + blockIdx.x * blockDim.x;
+
+	if(row < vecA.count && col < vecA.mtx[0].cols){
+		Mtx &A = vecA.mtx[row];
+		Mtx &B = vecB.mtx[row];
+		T *dA = (T*)A.data;
+		T *dI = (T*)Ind.data;
+		T *dB = (T*)B.data;
+
+		if((int)dI[row * Ind.cols] == col)
+			dB[1 * A.cols + col] = dA[1 * A.cols + col] - 1.;
+		else
+			dB[1 * A.cols + col] = dA[1 * A.cols + col];
+	}
+}
+
 template<typename T>
 __global__ void hconcat2(const SmallMtxArray list, Mtx A)
 {
@@ -2606,6 +2626,31 @@ void cuda_subIndOne(const GpuMat& A, const GpuMat& Ind, GpuMat& B)
 		break;
 	}
 }
+
+/**
+ * @brief cuda_vecSubIndOne
+ * @param vecA
+ * @param Ind
+ * @param B = A : A[row, col == Ind[row]] - 1
+ */
+extern "C"
+void cuda_vecSubIndOne(const std::vector< GpuMat >& vecA, const GpuMat& Ind, std::vector< GpuMat >& B)
+{
+	int x1 = vecA[0].cols / BLOCKSIZE + 1;
+	int x2 = vecA.size() / BLOCKSIZE + 1;
+
+	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+
+	switch (vecA[0].type) {
+	case GPU_DOUBLE:
+		internal::subIndOne<double> <<<dimGrid, dimBlock>>>(vecA, Ind, B);
+		break;
+	case GPU_FLOAT:
+		internal::subIndOne<float> <<<dimGrid, dimBlock>>>(vecA, Ind, B);
+		break;
+	}
+}
+
 
 /**
  * @brief cuda_hconcat2

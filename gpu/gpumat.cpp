@@ -412,6 +412,15 @@ extern "C"
 void cuda_subIndOne(const GpuMat& A, const GpuMat& Ind, GpuMat& B);
 
 /**
+ * @brief cuda_vecSubIndOne
+ * @param vecA
+ * @param Ind
+ * @param B = A : A[row, col == Ind[row]] - 1
+ */
+extern "C"
+void cuda_vecSubIndOne(const std::vector< GpuMat >& vecA, const GpuMat& Ind, std::vector< GpuMat >& B);
+
+/**
  * @brief cuda_hconcat
  * @param list
  * @param res
@@ -1269,6 +1278,20 @@ void subIndOne(const GpuMat &A, const GpuMat &Ind, GpuMat &B)
 	B.resize(A);
 
 	cuda_subIndOne(A, Ind, B);
+}
+
+void subIndOne(const std::vector< GpuMat > &vA, const GpuMat &Ind, std::vector< GpuMat > &B)
+{
+	if(vA.empty() || Ind.empty() || vA.size() != Ind.rows || Ind.cols != 1){
+		throw new std::invalid_argument("subIndOne");
+	}
+
+	B.resize(vA.size());
+	for(size_t i = 0; i < B.size(); ++i){
+		B[i].resize(vA[i]);
+	}
+
+	cuda_vecSubIndOne(vA, Ind, B);
 }
 
 void hconcat2(const std::vector<GpuMat> &list, GpuMat &res)

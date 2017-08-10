@@ -15,13 +15,21 @@ public:
 	GpuMat B;
 	GpuMat Z;
 	GpuMat A1;
-	GpuMat DA1;
+//	GpuMat DA1;
 	GpuMat PartZ;
 	GpuMat DltA0;
 	GpuMat Dropout;
 	GpuMat XDropout;
 	GpuMat gW;
 	GpuMat gB;
+
+	std::vector< GpuMat > vecXDropout;
+	std::vector< GpuMat > *pVecA0;
+	std::vector< GpuMat > vecA1;
+//	std::vector< GpuMat > vecDA1;
+	std::vector< GpuMat > vecDltA0;
+	GpuMat gWi;
+	GpuMat gBi;
 
 	mlp();
 
@@ -59,19 +67,19 @@ public:
 	 * @param func
 	 */
 	inline void apply_func(const GpuMat& Z, GpuMat& A, etypefunction func);
-	/**
-	 * @brief apply_func
-	 * @param A
-	 * @param func
-	 */
-	inline void apply_func(GpuMat& A, etypefunction func);
+//	/**
+//	 * @brief apply_func
+//	 * @param A
+//	 * @param func
+//	 */
+//	inline void apply_func(GpuMat& A, etypefunction func);
 	/**
 	 * @brief apply_back_func
 	 * @param D1
 	 * @param D2
 	 * @param func
 	 */
-	inline void apply_back_func(const GpuMat& D1, GpuMat& D2, etypefunction func);
+	inline void apply_back_func(const GpuMat& D1, const GpuMat &A1, GpuMat& D2, etypefunction func);
 	/**
 	 * @brief funcType
 	 * @return
@@ -90,6 +98,25 @@ public:
 	 * @param last_layer
 	 */
 	void backward(const GpuMat &Delta, bool last_layer = false);
+
+	//////////
+
+	/**
+	 * @brief forward
+	 * @param mat
+	 * @param func
+	 * @param save_A0
+	 */
+	void forward(const std::vector< GpuMat > *mat, etypefunction func = RELU, bool save_A0 = true);
+	/**
+	 * @brief backward
+	 * @param Delta
+	 * @param last_layer
+	 */
+	void backward(const std::vector< GpuMat > &Delta, bool last_layer = false);
+
+	//////////
+
 	/**
 	 * @brief Y
 	 * @return
