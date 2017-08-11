@@ -625,7 +625,7 @@ __global__ void deriv_leakReLu(Mtx A, T x, Mtx C)
 
 	if(row < A.rows && col < A.cols){
 		T val = dA[row * A.cols + col];
-		dC[row * C.cols + col] = (val > 0)? 1 : x;
+		dC[row * C.cols + col] = (val >= 0)? 1 : x;
 	}
 }
 
@@ -639,7 +639,7 @@ __global__ void deriv_leakReLu(Mtx A, T x)
 
 	if(row < A.rows && col < A.cols){
 		T val = dA[row * A.cols + col];
-		dA[row * A.cols + col] = (val > 0)? 1 : x;
+		dA[row * A.cols + col] = (val >= 0)? 1 : x;
 	}
 }
 

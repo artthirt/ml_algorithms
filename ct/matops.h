@@ -941,7 +941,7 @@ inline Mat_<T> leakRelu(const Mat_<T>& m, T x)
 #endif
 		for(int j = 0; j < m.cols; j++){
 			int offset = i * m.cols + j;
-			res_val[offset] =  m_val[offset] > 0? m_val[offset] : x * m_val[offset];
+			res_val[offset] =  m_val[offset] >= 0? m_val[offset] : x * m_val[offset];
 		}
 	}
 	return res;
@@ -965,7 +965,7 @@ inline void v_leakRelu(const Mat_<T>& m, T x, Mat_<T>& r)
 #endif
 		for(int j = 0; j < m.cols; j++){
 			int offset = i * m.cols + j;
-			r_val[offset] = m_val[offset] > 0? m_val[offset] : x * m_val[offset];
+			r_val[offset] = m_val[offset] >= 0? m_val[offset] : x * m_val[offset];
 		}
 	}
 }
@@ -991,7 +991,7 @@ inline Mat_<T> derivLeakRelu(const Mat_<T>& m, T x)
 #endif
 		for(int j = 0; j < m.cols; j++){
 			int offset = i * m.cols + j;
-			res_val[offset] = m_val[offset] > T(0) ? T(1) : T(x);
+			res_val[offset] = m_val[offset] >= T(0) ? T(1) : T(x);
 		}
 	}
 	return res;
@@ -1015,7 +1015,7 @@ inline void v_derivLeakRelu(Mat_<T>& m, T x)
 #endif
 		for(int j = 0; j < m.cols; j++){
 			int offset = i * m.cols + j;
-			m_val[offset] = m_val[offset] > T(0) ? T(1) : T(x);
+			m_val[offset] = m_val[offset] >= T(0) ? T(1) : T(x);
 		}
 	}
 }
@@ -1040,7 +1040,7 @@ inline void v_derivLeakRelu(const Mat_<T>& m, T x, Mat_<T>& C)
 #endif
 		for(int j = 0; j < m.cols; j++){
 			int offset = i * m.cols + j;
-			res_val[offset] = m_val[offset] > T(0) ? T(1) : T(x);
+			res_val[offset] = m_val[offset] >= T(0) ? T(1) : T(x);
 		}
 	}
 }
