@@ -23,7 +23,7 @@ mlp::mlp(){
 	pVecA0 = nullptr;
 	m_lambda = 0.;
 
-	m_params[LEAKRELU] = 0.1;
+	m_params[LEAKYRELU] = 0.1;
 }
 
 void mlp::setParams(etypefunction type, double param)
@@ -87,8 +87,8 @@ void mlp::apply_func(const GpuMat &Z, GpuMat &A, etypefunction func){
 		case TANH:
 			tanh(Z, A);
 			break;
-		case LEAKRELU:
-			leakyReLu(Z, m_params[LEAKRELU], A);
+		case LEAKYRELU:
+			leakyReLu(Z, m_params[LEAKYRELU], A);
 			break;
 	}
 }
@@ -105,8 +105,8 @@ void mlp::apply_back_func(const GpuMat &D1, const GpuMat& A1, GpuMat &D2, etypef
 		case TANH:
 			deriv_tanh(A1, D2);
 			break;
-		case LEAKRELU:
-			deriv_leakyReLu(A1, m_params[LEAKRELU], D2);
+		case LEAKYRELU:
+			deriv_leakyReLu(A1, m_params[LEAKYRELU], D2);
 			break;
 		default:
 			if(D1.data == D2.data)

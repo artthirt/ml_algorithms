@@ -18,7 +18,7 @@ namespace gpumat{
 		SIGMOID,
 		SOFTMAX,
 		TANH,
-		LEAKRELU
+		LEAKYRELU
 	};
 
 	namespace internal{

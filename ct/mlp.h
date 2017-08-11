@@ -185,7 +185,7 @@ public:
 		pA0 = nullptr;
 		m_lambda = 0;
 
-		m_params[LEAKRELU] = T(0.1);
+		m_params[LEAKYRELU] = T(0.1);
 	}
 
 	Mat_<T>& Y(){
@@ -197,7 +197,7 @@ public:
 	}
 
 	void setParams(etypefunction func, T param){
-		m_params[LEAKRELU] = param;
+		m_params[LEAKYRELU] = param;
 	}
 
 	void setDropout(bool val){
@@ -240,8 +240,8 @@ public:
 			case TANH:
 				v_tanh(Z, A);
 				break;
-			case LEAKRELU:
-				v_leakyRelu(Z, m_params[LEAKRELU], A);
+			case LEAKYRELU:
+				v_leakyRelu(Z, m_params[LEAKYRELU], A);
 				break;
 		}
 	}
@@ -264,8 +264,8 @@ public:
 			case TANH:
 				v_derivTanh(A1, DA1);
 				break;
-			case LEAKRELU:
-				v_derivLeakyRelu(A1, m_params[LEAKRELU], DA1);
+			case LEAKYRELU:
+				v_derivLeakyRelu(A1, m_params[LEAKYRELU], DA1);
 		}
 		elemwiseMult(D1, DA1, D2);
 	}

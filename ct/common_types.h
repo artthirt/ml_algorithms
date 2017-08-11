@@ -11,7 +11,7 @@ enum etypefunction{
 	SOFTMAX,
 	SIGMOID,
 	TANH,
-	LEAKRELU
+	LEAKYRELU
 };
 
 struct Size{
