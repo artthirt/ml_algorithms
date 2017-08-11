@@ -920,15 +920,15 @@ inline void v_derivRelu(const Mat_<T>& m, Mat_<T>& C)
 	}
 }
 
-///////////// leak relu ///
+///////////// leaky relu ///
 
 /**
- * @brief leakRelu
+ * @brief leakyRelu
  * @param m
  * @return
  */
 template< typename T >
-inline Mat_<T> leakRelu(const Mat_<T>& m, T x)
+inline Mat_<T> leakyRelu(const Mat_<T>& m, T x)
 {
 	Mat_<T> res(m.rows, m.cols);
 
@@ -948,12 +948,12 @@ inline Mat_<T> leakRelu(const Mat_<T>& m, T x)
 }
 
 /**
- * @brief v_leakRelu
+ * @brief v_leakyRelu
  * @param m
  * @return
  */
 template< typename T >
-inline void v_leakRelu(const Mat_<T>& m, T x, Mat_<T>& r)
+inline void v_leakyRelu(const Mat_<T>& m, T x, Mat_<T>& r)
 {
 	r.setSize(m.size());
 	T *m_val = m.ptr();
@@ -971,12 +971,12 @@ inline void v_leakRelu(const Mat_<T>& m, T x, Mat_<T>& r)
 }
 
 /**
- * @brief derivLeakRelu
+ * @brief derivLeakyRelu
  * @param m
  * @return
  */
 template< typename T >
-inline Mat_<T> derivLeakRelu(const Mat_<T>& m, T x)
+inline Mat_<T> derivLeakyRelu(const Mat_<T>& m, T x)
 {
 	Mat_<T> res(m.rows, m.cols);
 
@@ -998,12 +998,12 @@ inline Mat_<T> derivLeakRelu(const Mat_<T>& m, T x)
 }
 
 /**
- * @brief derivLeakRelu
+ * @brief derivLeakyRelu
  * @param m
  * @return
  */
 template< typename T >
-inline void v_derivLeakRelu(Mat_<T>& m, T x)
+inline void v_derivLeakyRelu(Mat_<T>& m, T x)
 {
 	T* m_val = &(*m.val)[0];
 
@@ -1021,12 +1021,12 @@ inline void v_derivLeakRelu(Mat_<T>& m, T x)
 }
 
 /**
- * @brief v_derivLeakRelu
+ * @brief v_derivLeakyRelu
  * @param m
  * @return
  */
 template< typename T >
-inline void v_derivLeakRelu(const Mat_<T>& m, T x, Mat_<T>& C)
+inline void v_derivLeakyRelu(const Mat_<T>& m, T x, Mat_<T>& C)
 {
 	C.setSize(m.size());
 

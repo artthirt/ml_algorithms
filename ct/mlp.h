@@ -241,7 +241,7 @@ public:
 				v_tanh(Z, A);
 				break;
 			case LEAKRELU:
-				v_leakRelu(Z, m_params[LEAKRELU], A);
+				v_leakyRelu(Z, m_params[LEAKRELU], A);
 				break;
 		}
 	}
@@ -265,7 +265,7 @@ public:
 				v_derivTanh(A1, DA1);
 				break;
 			case LEAKRELU:
-				v_derivLeakRelu(A1, m_params[LEAKRELU], DA1);
+				v_derivLeakyRelu(A1, m_params[LEAKRELU], DA1);
 		}
 		elemwiseMult(D1, DA1, D2);
 	}

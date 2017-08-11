@@ -342,30 +342,30 @@ void deriv_reLu(GpuMat& A);
 ////
 
 /**
- * @brief leakReLu
+ * @brief leakyReLu
  * @param A
  * @param C - out C = reLu(A)
  */
-void leakReLu(const GpuMat& A, double x, GpuMat& C);
+void leakyReLu(const GpuMat& A, double x, GpuMat& C);
 
 /**
- * @brief leakReLu
+ * @brief leakyReLu
  * @param A
  */
-void leakReLu(GpuMat& A, double x);
+void leakyReLu(GpuMat& A, double x);
 
 /**
- * @brief deriv_leakReLu
+ * @brief deriv_leakyReLu
  * @param A
  * @param C - out C = deriv_reLu(A)
  */
-void deriv_leakReLu(const GpuMat& A, double x, GpuMat& C);
+void deriv_leakyReLu(const GpuMat& A, double x, GpuMat& C);
 
 /**
- * @brief deriv_leakReLu
+ * @brief deriv_leakyReLu
  * @param A
  */
-void deriv_leakReLu(GpuMat& A, double x);
+void deriv_leakyReLu(GpuMat& A, double x);
 
 ////
 
