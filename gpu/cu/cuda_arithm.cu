@@ -567,6 +567,82 @@ __global__ void deriv_reLu(Mtx A)
 		dA[row * A.cols + col] = (dA[row * A.cols + col] > 0)? 1 : 0;
 }
 
+//////////leakRelu
+
+/**
+ * @brief leakReLu
+ * @param A
+ * @param x
+ * @param C = leakReLu(A)
+ */
+template< class T >
+__global__ void leakReLu(Mtx A, T x, Mtx C)
+{
+	int row = threadIdx.y + blockIdx.y * blockDim.y;
+	int col = threadIdx.x + blockIdx.x * blockDim.x;
+
+	T* dA = (T*)A.data;
+	T* dC = (T*)C.data;
+
+	if(row < A.rows && col < A.cols){
+		T val = dA[row * A.cols + col];
+		dC[row * C.cols + col] =  val >= 0 ? val : val * x;
+	}
+}
+
+/**
+ * @brief leakReLu
+ * @param A = leakReLu(A)
+ * @param x
+ */
+template< class T >
+__global__ void leakReLu(Mtx A, T x)
+{
+	int row = threadIdx.y + blockIdx.y * blockDim.y;
+	int col = threadIdx.x + blockIdx.x * blockDim.x;
+
+	T* dA = (T*)A.data;
+
+	if(row < A.rows && col < A.cols){
+		T val = dA[row * A.cols + col];
+		dA[row * A.cols + col] = val >= 0 ? val : val * x;
+	}
+}
+
+/**
+ * @brief deriv_leakReLu
+ * @param A
+ * @param C = deriv_leakReLu(A)
+ */
+template< class T >
+__global__ void deriv_leakReLu(Mtx A, T x, Mtx C)
+{
+	int row = threadIdx.y + blockIdx.y * blockDim.y;
+	int col = threadIdx.x + blockIdx.x * blockDim.x;
+
+	T* dA = (T*)A.data;
+	T* dC = (T*)C.data;
+
+	if(row < A.rows && col < A.cols){
+		T val = dA[row * A.cols + col];
+		dC[row * C.cols + col] = (val > 0)? 1 : x;
+	}
+}
+
+template< class T >
+__global__ void deriv_leakReLu(Mtx A, T x)
+{
+	int row = threadIdx.y + blockIdx.y * blockDim.y;
+	int col = threadIdx.x + blockIdx.x * blockDim.x;
+
+	T* dA = (T*)A.data;
+
+	if(row < A.rows && col < A.cols){
+		T val = dA[row * A.cols + col];
+		dA[row * A.cols + col] = (val > 0)? 1 : x;
+	}
+}
+
 //////////
 
 /**
@@ -2231,6 +2307,95 @@ void cuda_derivReLu2(GpuMat& A)
 		break;
 	case GPU_FLOAT:
 		internal::deriv_reLu<float> <<<dimGrid, dimBlock>>>(A);
+		break;
+	}
+}
+
+////////////////////
+
+/**
+ * @brief cuda_leakReLu
+ * @param A
+ * @param C = leakReLu(A)
+ */
+extern "C"
+void cuda_leakReLu(const GpuMat& A, double x, GpuMat& C)
+{
+	int x1 = A.cols / BLOCKSIZE + 1;
+	int x2 = A.rows / BLOCKSIZE + 1;
+
+	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+
+	switch (A.type) {
+	case GPU_DOUBLE:
+		internal::leakReLu<double> <<<dimGrid, dimBlock>>>(A, x, C);
+		break;
+	case GPU_FLOAT:
+		internal::leakReLu<float> <<<dimGrid, dimBlock>>>(A, x, C);
+		break;
+	}
+}
+
+/**
+ * @brief cuda_reLu
+ * @param A
+ * @param C = leakReLu(A)
+ */
+extern "C"
+void cuda_leakReLu2(GpuMat& A, double x)
+{
+	int x1 = A.cols / BLOCKSIZE + 1;
+	int x2 = A.rows / BLOCKSIZE + 1;
+
+	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+
+	switch (A.type) {
+	case GPU_DOUBLE:
+		internal::leakReLu<double> <<<dimGrid, dimBlock>>>(A, x);
+		break;
+	case GPU_FLOAT:
+		internal::leakReLu<float> <<<dimGrid, dimBlock>>>(A, x);
+		break;
+	}
+}
+
+/**
+ * @brief cuda_derivLeakReLu
+ * @param A
+ * @param C = derivLeakRelu(A)
+ */
+extern "C"
+void cuda_derivLeakReLu(const GpuMat& A, double x, GpuMat& C)
+{
+	int x1 = A.cols / BLOCKSIZE + 1;
+	int x2 = A.rows / BLOCKSIZE + 1;
+
+	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+
+	switch (A.type) {
+	case GPU_DOUBLE:
+		internal::deriv_leakReLu<double> <<<dimGrid, dimBlock>>>(A, x, C);
+		break;
+	case GPU_FLOAT:
+		internal::deriv_leakReLu<float> <<<dimGrid, dimBlock>>>(A, x, C);
+		break;
+	}
+}
+
+extern "C"
+void cuda_derivLeakReLu2(GpuMat& A, double x)
+{
+	int x1 = A.cols / BLOCKSIZE + 1;
+	int x2 = A.rows / BLOCKSIZE + 1;
+
+	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+
+	switch (A.type) {
+	case GPU_DOUBLE:
+		internal::deriv_leakReLu<double> <<<dimGrid, dimBlock>>>(A, x);
+		break;
+	case GPU_FLOAT:
+		internal::deriv_leakReLu<float> <<<dimGrid, dimBlock>>>(A, x);
 		break;
 	}
 }

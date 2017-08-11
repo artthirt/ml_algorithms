@@ -6,6 +6,7 @@
 #include "qt_work_mat.h"
 
 using namespace gpumat;
+using namespace gpumat::legacy;
 
 convnn::convnn()
 {
@@ -78,11 +79,11 @@ void convnn::forward(const GpuMat *mat, etypefunction func)
 	if(!m_init || !mat)
 		throw new std::invalid_argument("convnn::forward: not initialized. wrong parameters");
 	pA0 = (GpuMat*)mat;//mat.copyTo(A0);
-	gpumat::conv2D(*pA0, szA0, stride, W, B, A1, func);
+	conv2D(*pA0, szA0, stride, W, B, A1, func);
 
 	if(m_use_pool){
 		ct::Size sztmp;
-		gpumat::subsample(A1, szA1, A2, Masks, sztmp);
+		subsample(A1, szA1, A2, Masks, sztmp);
 	}
 }
 
@@ -132,7 +133,7 @@ void convnn::backward(const std::vector<GpuMat> &Delta, etypefunction func, int 
 		throw new std::invalid_argument("convnn::backward: not initialized");
 
 	if(m_use_pool){
-		gpumat::upsample(Delta, szA2, szA1, Masks, dA2, first, last);
+		gpumat::legacy::upsample(Delta, szA2, szA1, Masks, dA2, first, last);
 		back2conv(A1, dA2, dA1, func);
 	}else{
 		back2conv(A1, Delta, first, last, dA1, func);
@@ -145,10 +146,10 @@ void convnn::backward(const std::vector<GpuMat> &Delta, etypefunction func, int 
 
 	ct::Size szW(weight_size, weight_size);
 
-	gpumat::deriv_conv2D(*pA0, dA1, szA0, szA1, szW, stride, gradW, gradB, &m_tmp1);
+	deriv_conv2D(*pA0, dA1, szA0, szA1, szW, stride, gradW, gradB, &m_tmp1);
 
 	if(!last_layer)
-		gpumat::deriv_prev_cnv(dA1, W, szA1, szA0, stride, DltA0);
+		deriv_prev_cnv(dA1, W, szA1, szA0, stride, DltA0);
 
 //	for(int i = 0; i < gradW.size(); ++i){
 //		std::stringstream ss;
@@ -181,10 +182,10 @@ void convnn::backward(const std::vector<convnn> &Delta, etypefunction func, int 
 
 	ct::Size szW(weight_size, weight_size);
 
-	gpumat::deriv_conv2D(*pA0, dA1, szA0, szA1, szW, stride, gradW, gradB, &m_tmp1);
+	deriv_conv2D(*pA0, dA1, szA0, szA1, szW, stride, gradW, gradB, &m_tmp1);
 
 	if(!last_layer)
-		gpumat::deriv_prev_cnv(dA1, W, szA1, szA0, stride, DltA0);
+		deriv_prev_cnv(dA1, W, szA1, szA0, stride, DltA0);
 //	m_optim.pass(gradW, gradB, W, B);
 }
 
@@ -195,9 +196,9 @@ void convnn::hconcat(const std::vector<convnn> &cnv, GpuMat &_out)
 
 	slice.resize(cnv.size());
 	for(size_t i = 0; i < cnv.size(); ++i){
-		gpumat::hconcat(cnv[i].A2, slice[i]);
+		gpumat::legacy::hconcat(cnv[i].A2, slice[i]);
 	}
-	gpumat::hconcat(slice, _out);
+	gpumat::legacy::hconcat(slice, _out);
 }
 
 void convnn::upsample(const std::vector<convnn> &A1, ct::Size &szA1, const ct::Size &szA0, const std::vector<GpuMat> &Masks, std::vector<GpuMat> &A0, int first, int last)
@@ -214,7 +215,7 @@ void convnn::upsample(const std::vector<convnn> &A1, ct::Size &szA1, const ct::S
 	}
 
 	for(int i = first, j = 0; i < last; ++i, ++j){
-		gpumat::upsample(A1[i].DltA0, szA1, szA0, Masks[j], A0[j]);
+		gpumat::legacy::upsample(A1[i].DltA0, szA1, szA0, Masks[j], A0[j]);
 	}
 }
 
@@ -364,19 +365,19 @@ void ConvNN::conv(const GpuMat &X,GpuMat &XOut)
 		return;
 
 	for(size_t i = 0; i < m_conv.size(); ++i){
-		std::vector< gpumat::convnn >& ls = m_conv[i];
+		std::vector< convnn >& ls = m_conv[i];
 
 		if(i == 0){
-			gpumat::convnn& m0 = ls[0];
+			convnn& m0 = ls[0];
 			m0.forward(&X, gpumat::RELU);
 		}else{
 //#pragma omp parallel for
 			for(int j = 0; j < (int)m_conv[i - 1].size(); ++j){
 				size_t off1 = j * m_cnvlayers[i - 1];
-				gpumat::convnn& m0 = m_conv[i - 1][j];
+				convnn& m0 = m_conv[i - 1][j];
 				for(int k = 0; k < m_cnvlayers[i - 1]; ++k){
 					size_t col = off1 + k;
-					gpumat::convnn& mi = ls[col];
+					convnn& mi = ls[col];
 					if(m0.use_pool())
 						mi.forward(&m0.A2[k], gpumat::RELU);
 					else
@@ -434,7 +435,7 @@ void ConvNN::write(std::fstream &fs)
 
 	for(size_t i = 0; i < m_conv.size(); ++i){
 		for(size_t j = 0; j < m_conv[i].size(); ++j){
-			gpumat::convnn& cnv = m_conv[i][j];
+			convnn& cnv = m_conv[i][j];
 			cnv.write(fs);
 		}
 	}
@@ -447,7 +448,7 @@ void ConvNN::read(std::fstream &fs)
 
 	for(size_t i = 0; i < m_conv.size(); ++i){
 		for(size_t j = 0; j < m_conv[i].size(); ++j){
-			gpumat::convnn& cnv = m_conv[i][j];
+			convnn& cnv = m_conv[i][j];
 			cnv.read(fs);
 		}
 	}
@@ -508,6 +509,8 @@ void cuda_reduce_all(const GpuMat& A, GpuMat &res);
 /////////////////////////////
 
 namespace gpumat{
+
+namespace legacy{
 
 ct::Size conv2D(const GpuMat &A0,
 			const ct::Size &szI,
@@ -719,5 +722,6 @@ void reduce(const GpuMat &mat, GpuMat &res)
 	cuda_reduce_all(mat, res);
 }
 
+} /// @endnamespace legacy
 
-}
+} /// @endnamespace gpumat

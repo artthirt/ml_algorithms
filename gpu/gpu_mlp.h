@@ -6,6 +6,8 @@
 #include "cuda_common.h"
 #include "helper_gpu.h"
 
+#include <map>
+
 namespace gpumat{
 
 class mlp{
@@ -33,6 +35,7 @@ public:
 
 	mlp();
 
+	void setParams(etypefunction type, double param);
 	/**
 	 * @brief setLambda
 	 * @param val
@@ -156,6 +159,7 @@ private:
 	bool m_is_dropout;
 	double m_prob;
 	double m_lambda;
+	std::map< etypefunction, double > m_params;
 	etypefunction m_func;
 };
 

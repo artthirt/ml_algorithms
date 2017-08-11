@@ -605,7 +605,7 @@ void v_sigmoid(const Mat_<T>& m, Mat_<T>& r)
 }
 
 /**
- * @brief derivRelu
+ * @brief v_derivSigmoid
  * @param m
  * @return
  */
@@ -631,7 +631,7 @@ inline void v_derivSigmoid(const Mat_<T>& m, Mat_<T>& C)
 }
 
 /**
- * @brief derivRelu
+ * @brief v_derivSigmoid
  * @param m
  * @return
  */
@@ -774,6 +774,8 @@ inline void v_derivTanh(Mat_<T>& m)
 	}
 }
 
+///////// relu ///////////////
+
 /**
  * @brief relu
  * @param m
@@ -871,6 +873,181 @@ inline Mat_<T> derivRelu(const Mat_<T>& m)
 }
 
 /**
+ * @brief derivRelu
+ * @param m
+ * @return
+ */
+template< typename T >
+inline void v_derivRelu(Mat_<T>& m)
+{
+	T* m_val = &(*m.val)[0];
+
+	//#pragma omp parallel for
+#pragma omp parallel for
+	for(int i = 0; i < m.rows; ++i){
+#ifdef __GNUC__
+#pragma omp simd
+#endif
+		for(int j = 0; j < m.cols; j++){
+			int offset = i * m.cols + j;
+			m_val[offset] = m_val[offset] > T(0) ? T(1) : T(0);
+		}
+	}
+}
+
+/**
+ * @brief derivRelu
+ * @param m
+ * @return
+ */
+template< typename T >
+inline void v_derivRelu(const Mat_<T>& m, Mat_<T>& C)
+{
+	C.setSize(m.size());
+
+	T* res_val = C.ptr();
+	T* m_val = m.ptr();
+
+#pragma omp parallel for
+	for(int i = 0; i < m.rows; ++i){
+#ifdef __GNUC__
+#pragma omp simd
+#endif
+		for(int j = 0; j < m.cols; j++){
+			int offset = i * m.cols + j;
+			res_val[offset] = m_val[offset] > T(0) ? T(1) : T(0);
+		}
+	}
+}
+
+///////////// leak relu ///
+
+/**
+ * @brief leakRelu
+ * @param m
+ * @return
+ */
+template< typename T >
+inline Mat_<T> leakRelu(const Mat_<T>& m, T x)
+{
+	Mat_<T> res(m.rows, m.cols);
+
+	T* res_val = &(*res.val)[0];
+	T* m_val = &(*m.val)[0];
+#pragma omp parallel for
+	for(int i = 0; i < m.rows; ++i){
+#ifdef __GNUC__
+#pragma omp simd
+#endif
+		for(int j = 0; j < m.cols; j++){
+			int offset = i * m.cols + j;
+			res_val[offset] =  m_val[offset] > 0? m_val[offset] : x * m_val[offset];
+		}
+	}
+	return res;
+}
+
+/**
+ * @brief v_leakRelu
+ * @param m
+ * @return
+ */
+template< typename T >
+inline void v_leakRelu(const Mat_<T>& m, T x, Mat_<T>& r)
+{
+	r.setSize(m.size());
+	T *m_val = m.ptr();
+	T *r_val = r.ptr();
+#pragma omp parallel for
+	for(int i = 0; i < m.rows; ++i){
+#ifdef __GNUC__
+#pragma omp simd
+#endif
+		for(int j = 0; j < m.cols; j++){
+			int offset = i * m.cols + j;
+			r_val[offset] = m_val[offset] > 0? m_val[offset] : x * m_val[offset];
+		}
+	}
+}
+
+/**
+ * @brief derivLeakRelu
+ * @param m
+ * @return
+ */
+template< typename T >
+inline Mat_<T> derivLeakRelu(const Mat_<T>& m, T x)
+{
+	Mat_<T> res(m.rows, m.cols);
+
+	T* res_val = &(*res.val)[0];
+	T* m_val = &(*m.val)[0];
+
+	//#pragma omp parallel for
+#pragma omp parallel for
+	for(int i = 0; i < m.rows; ++i){
+#ifdef __GNUC__
+#pragma omp simd
+#endif
+		for(int j = 0; j < m.cols; j++){
+			int offset = i * m.cols + j;
+			res_val[offset] = m_val[offset] > T(0) ? T(1) : T(x);
+		}
+	}
+	return res;
+}
+
+/**
+ * @brief derivLeakRelu
+ * @param m
+ * @return
+ */
+template< typename T >
+inline void v_derivLeakRelu(Mat_<T>& m, T x)
+{
+	T* m_val = &(*m.val)[0];
+
+	//#pragma omp parallel for
+#pragma omp parallel for
+	for(int i = 0; i < m.rows; ++i){
+#ifdef __GNUC__
+#pragma omp simd
+#endif
+		for(int j = 0; j < m.cols; j++){
+			int offset = i * m.cols + j;
+			m_val[offset] = m_val[offset] > T(0) ? T(1) : T(x);
+		}
+	}
+}
+
+/**
+ * @brief v_derivLeakRelu
+ * @param m
+ * @return
+ */
+template< typename T >
+inline void v_derivLeakRelu(const Mat_<T>& m, T x, Mat_<T>& C)
+{
+	C.setSize(m.size());
+
+	T* res_val = C.ptr();
+	T* m_val = m.ptr();
+
+#pragma omp parallel for
+	for(int i = 0; i < m.rows; ++i){
+#ifdef __GNUC__
+#pragma omp simd
+#endif
+		for(int j = 0; j < m.cols; j++){
+			int offset = i * m.cols + j;
+			res_val[offset] = m_val[offset] > T(0) ? T(1) : T(x);
+		}
+	}
+}
+
+////////// derivative sigmoid ///////////////
+
+/**
  * @brief derivSigmoid
  * @param m
  * @return
@@ -922,54 +1099,6 @@ inline Mat_<T> derivTanh(const Mat_<T>& m)
 		}
 	}
 	return res;
-}
-
-/**
- * @brief derivRelu
- * @param m
- * @return
- */
-template< typename T >
-inline void v_derivRelu(Mat_<T>& m)
-{
-	T* m_val = &(*m.val)[0];
-
-	//#pragma omp parallel for
-#pragma omp parallel for
-	for(int i = 0; i < m.rows; ++i){
-#ifdef __GNUC__
-#pragma omp simd
-#endif
-		for(int j = 0; j < m.cols; j++){
-			int offset = i * m.cols + j;
-			m_val[offset] = m_val[offset] > T(0) ? T(1) : T(0);
-		}
-	}
-}
-
-/**
- * @brief derivRelu
- * @param m
- * @return
- */
-template< typename T >
-inline void v_derivRelu(const Mat_<T>& m, Mat_<T>& C)
-{
-	C.setSize(m.size());
-
-	T* res_val = C.ptr();
-	T* m_val = m.ptr();
-
-#pragma omp parallel for
-	for(int i = 0; i < m.rows; ++i){
-#ifdef __GNUC__
-#pragma omp simd
-#endif
-		for(int j = 0; j < m.cols; j++){
-			int offset = i * m.cols + j;
-			res_val[offset] = m_val[offset] > T(0) ? T(1) : T(0);
-		}
-	}
 }
 
 namespace math{

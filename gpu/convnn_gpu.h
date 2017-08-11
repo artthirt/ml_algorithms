@@ -9,6 +9,8 @@
 
 namespace gpumat{
 
+namespace legacy{
+
 typedef std::vector< GpuMat > tvmat;
 
 class convnn
@@ -87,26 +89,26 @@ class ConvOptim{
 public:
 	std::vector< std::vector< gpumat::AdamOptimizer > > m_optim;
 
-	void init(const std::vector< std::vector< gpumat::convnn > >& cnv);
-	void pass(std::vector< std::vector< gpumat::convnn > >& cnv);
+	void init(const std::vector< std::vector< convnn > >& cnv);
+	void pass(std::vector< std::vector< convnn > >& cnv);
 	void setAlpha(double val);
 };
 
 ///////////////////////////////////
 
-typedef std::vector< gpumat::convnn > tvconvnn;
+typedef std::vector< convnn > tvconvnn;
 
 class ConvNN{
 public:
 	std::vector< int > m_cnvlayers;
 	std::vector< int > m_cnvweights;
 	std::vector< char > m_cnvpooling;
-	std::vector< std::vector< gpumat::convnn > > m_conv;
+	std::vector< std::vector< convnn > > m_conv;
 
 	ConvOptim m_optim;
 
 	ct::Size m_szA0;
-	gpumat::convnn m_adds;
+	convnn m_adds;
 
 	std::vector< GpuMat > m_features;
 
@@ -279,6 +281,8 @@ void hconcat(const std::vector< GpuMat >& list, GpuMat& res);
  * @param res
  */
 void reduce(const GpuMat& mat, GpuMat &res);
+
+} /// @endnamespace legacy
 
 }/* @end gpumat */
 

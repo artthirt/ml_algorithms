@@ -10,6 +10,11 @@
 
 namespace conv2{
 
+enum TYPE_CONV{
+	SAME,
+	VALID
+};
+
 /**
  * @brief im2col
  * @param X -> [channels, szA0.height * szA0.width]
@@ -26,6 +31,21 @@ void im2col(const ct::Matd& X, const ct::Size& szA0, int channels, const ct::Siz
 			int stride, ct::Matd& Res, ct::Size& szOut);
 
 /**
+ * @brief im2col_same
+ * @param X
+ * @param szA0
+ * @param channels
+ * @param szW
+ * @param stride
+ * @param Res
+ * @param szOut
+ */
+void im2col_same(const ct::Matf& X, const ct::Size& szA0, int channels, const ct::Size& szW,
+			int stride, ct::Matf& Res, ct::Size& szOut);
+void im2col_same(const ct::Matd& X, const ct::Size& szA0, int channels, const ct::Size& szW,
+			int stride, ct::Matd& Res, ct::Size& szOut);
+
+/**
  * @brief im2colT
  * @param X -> [szA0.height * szA0.width, channels]
  * @param szA0
@@ -39,6 +59,21 @@ void im2colT(const ct::Matf& X, const ct::Size& szA0, int channels, const ct::Si
 			int stride, ct::Matf& Res, ct::Size& szOut);
 void im2colT(const ct::Matd& X, const ct::Size& szA0, int channels, const ct::Size& szW,
 			int stride, ct::Matd& Res, ct::Size& szOut);
+
+/**
+ * @brief conv2
+ * @param A
+ * @param szA
+ * @param channels
+ * @param stride
+ * @param B
+ * @param szB
+ * @param C
+ */
+void conv2(const ct::Matf& A, const ct::Size &szA, int channels, int stride, const ct::Matf &B,
+		   ct::Size &szB, ct::Matf &C, ct::Size &szOut, TYPE_CONV type = VALID, bool transpose = false);
+void conv2(const ct::Matd& A, const ct::Size &szA, int channels, int stride, const ct::Matd &B,
+		   ct::Size &szB, ct::Matd &C, ct::Size &szOut, TYPE_CONV type = VALID, bool transpose = false);
 
 /**
  * @brief back_deriv

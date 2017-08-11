@@ -4,6 +4,7 @@
 #include "custom_types.h"
 #include "common_types.h"
 #include "nn.h"
+#include <map>
 
 namespace ct{
 
@@ -183,6 +184,8 @@ public:
 		m_prob = (T)0.95;
 		pA0 = nullptr;
 		m_lambda = 0;
+
+		m_params[LEAKRELU] = T(0.1);
 	}
 
 	Mat_<T>& Y(){
@@ -191,6 +194,10 @@ public:
 
 	void setLambda(T val){
 		m_lambda = val;
+	}
+
+	void setParams(etypefunction func, T param){
+		m_params[LEAKRELU] = param;
 	}
 
 	void setDropout(bool val){
@@ -233,6 +240,9 @@ public:
 			case TANH:
 				v_tanh(Z, A);
 				break;
+			case LEAKRELU:
+				v_leakRelu(Z, m_params[LEAKRELU], A);
+				break;
 		}
 	}
 	inline void apply_back_func(const ct::Mat_<T>& D1, ct::Mat_<T>& D2, etypefunction func){
@@ -254,6 +264,8 @@ public:
 			case TANH:
 				v_derivTanh(A1, DA1);
 				break;
+			case LEAKRELU:
+				v_derivLeakRelu(A1, m_params[LEAKRELU], DA1);
 		}
 		elemwiseMult(D1, DA1, D2);
 	}
@@ -338,6 +350,7 @@ private:
 	T m_prob;
 	T m_lambda;
 	etypefunction m_func;
+	std::map< etypefunction, T > m_params;
 };
 
 typedef mlp<float> mlpf;

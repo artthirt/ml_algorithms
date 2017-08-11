@@ -125,11 +125,11 @@ void convnn2_mixed::forward(const std::vector<ct::Matf> *_pX, ct::etypefunction 
 		gpumat::convert_to_gpu(Xi, g_Xi);
 
 		if(m_use_transpose){
-			gpumat::conv2::im2colsT(g_Xi, convnn_abstract<float>::szA0,
+			gpumat::im2colsT(g_Xi, convnn_abstract<float>::szA0,
 								   convnn_abstract<float>::channels,
 								   szW, stride, g_Xci, szOut);
 		}else{
-			gpumat::conv2::im2cols(g_Xi, convnn_abstract<float>::szA0,
+			gpumat::im2cols(g_Xi, convnn_abstract<float>::szA0,
 								   convnn_abstract<float>::channels,
 								   szW, stride, g_Xci, szOut);
 		}
@@ -158,7 +158,7 @@ void convnn2_mixed::forward(const std::vector<ct::Matf> *_pX, ct::etypefunction 
 
 			ct::Matf&A2i = A2[i];
 			ct::Size szOut;
-			gpumat::conv2::subsample(g_A1i, convnn_abstract<float>::szA1, g_A2i, g_Mask, szOut);
+			gpumat::subsample(g_A1i, convnn_abstract<float>::szA1, g_A2i, g_Mask, szOut);
 			gpumat::convert_to_mat(g_Mask, Mask[i]);
 			gpumat::convert_to_mat(g_A2i, A2i);
 		}
@@ -227,7 +227,7 @@ void convnn2_mixed::backward(const std::vector<ct::Matf> &D, bool last_level){
 
 		if(m_use_pool){
 			gpumat::convert_to_gpu(Mask[i], g_Maski);
-			gpumat::conv2::upsample(g_Di, convnn_abstract<float>::kernels, g_Maski,
+			gpumat::upsample(g_Di, convnn_abstract<float>::kernels, g_Maski,
 							 convnn_abstract<float>::szA2, convnn_abstract<float>::szA1, g_dSubi);
 			backcnv(g_dSubi, g_A1i, g_dSubi);
 		}else{
@@ -283,7 +283,7 @@ void convnn2_mixed::backward(const std::vector<ct::Matf> &D, bool last_level){
 			gpumat::convert_to_gpu(dSub[i], g_dSubi);
 			gpumat::convert_to_gpu(W[0], g_W);
 			gpumat::matmulT2(g_dSubi, g_W, g_Dci);
-			gpumat::conv2::back_derivT(g_Dci, convnn_abstract<float>::szA1,
+			gpumat::back_derivT(g_Dci, convnn_abstract<float>::szA1,
 								convnn_abstract<float>::szA0, convnn_abstract<float>::channels,
 								szW, stride, g_Dlti);
 			gpumat::convert_to_mat(g_Dlti, Dlt[i]);

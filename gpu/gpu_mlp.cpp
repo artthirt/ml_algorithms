@@ -22,6 +22,13 @@ mlp::mlp(){
 	pA0 = nullptr;
 	pVecA0 = nullptr;
 	m_lambda = 0.;
+
+	m_params[LEAKRELU] = 0.1;
+}
+
+void mlp::setParams(etypefunction type, double param)
+{
+	m_params[type] = param;
 }
 
 void mlp::setLambda(double val)
@@ -80,6 +87,9 @@ void mlp::apply_func(const GpuMat &Z, GpuMat &A, etypefunction func){
 		case TANH:
 			tanh(Z, A);
 			break;
+		case LEAKRELU:
+			leakReLu(Z, m_params[LEAKRELU], A);
+			break;
 	}
 }
 
@@ -94,6 +104,9 @@ void mlp::apply_back_func(const GpuMat &D1, const GpuMat& A1, GpuMat &D2, etypef
 			break;
 		case TANH:
 			deriv_tanh(A1, D2);
+			break;
+		case LEAKRELU:
+			deriv_leakReLu(A1, m_params[LEAKRELU], D2);
 			break;
 		default:
 			if(D1.data == D2.data)
@@ -408,7 +421,7 @@ void _norm(GpuMat& A, T &s)
 	gpumat::GpuMat res;
 	ct::Mat_<T> mA;
 
-	gpumat::reduce(A, res);
+	gpumat::legacy::reduce(A, res);
 
 	gpumat::convert_to_mat(res, mA);
 	s = sqrt(mA.at(0));

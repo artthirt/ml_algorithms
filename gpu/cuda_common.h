@@ -17,7 +17,8 @@ namespace gpumat{
 		RELU = 1,
 		SIGMOID,
 		SOFTMAX,
-		TANH
+		TANH,
+		LEAKRELU
 	};
 
 	namespace internal{

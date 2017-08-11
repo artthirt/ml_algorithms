@@ -10,7 +10,8 @@ enum etypefunction{
 	RELU,
 	SOFTMAX,
 	SIGMOID,
-	TANH
+	TANH,
+	LEAKRELU
 };
 
 struct Size{

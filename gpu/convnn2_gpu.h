@@ -7,8 +7,6 @@
 
 namespace gpumat{
 
-namespace conv2{
-
 class convnn_gpu
 {
 public:
@@ -148,6 +146,61 @@ void im2cols(const std::vector< gpumat::GpuMat > & X, const ct::Size& szA0, int 
 void im2colsT(const std::vector< gpumat::GpuMat > & X, const ct::Size& szA0, int channels, const ct::Size& szW,
 			 int stride, std::vector< gpumat::GpuMat > & Res, ct::Size& szOut);
 
+/////// same ///////
+
+/**
+ * @brief im2cols_same
+ * @param X
+ * @param szA0
+ * @param channels
+ * @param szW
+ * @param stride
+ * @param Res
+ * @param szOut
+ */
+void im2cols_same(const gpumat::GpuMat & X, const ct::Size& szA0, int channels, const ct::Size& szW,
+			 int stride, gpumat::GpuMat & Res, ct::Size& szOut);
+
+/**
+ * @brief im2colsT_same
+ * @param X
+ * @param szA0
+ * @param channels
+ * @param szW
+ * @param stride
+ * @param Res
+ * @param szOut
+ */
+void im2colsT_same(const gpumat::GpuMat & X, const ct::Size& szA0, int channels, const ct::Size& szW,
+			 int stride, gpumat::GpuMat & Res, ct::Size& szOut);
+
+/**
+ * @brief im2cols_same
+ * @param X
+ * @param szA0
+ * @param channels
+ * @param szW
+ * @param stride
+ * @param Res
+ * @param szOut
+ */
+void im2cols_same(const std::vector< gpumat::GpuMat > & X, const ct::Size& szA0, int channels, const ct::Size& szW,
+			 int stride, std::vector< gpumat::GpuMat > & Res, ct::Size& szOut);
+
+/**
+ * @brief im2colsT_same
+ * @param X
+ * @param szA0
+ * @param channels
+ * @param szW
+ * @param stride
+ * @param Res
+ * @param szOut
+ */
+void im2colsT_same(const std::vector< gpumat::GpuMat > & X, const ct::Size& szA0, int channels, const ct::Size& szW,
+			 int stride, std::vector< gpumat::GpuMat > & Res, ct::Size& szOut);
+
+//////////////////// back convolution ////////////////
 /**
  * @brief back_deriv
  * @param Delta
@@ -210,6 +263,28 @@ void back_derivT(const std::vector< gpumat::GpuMat >& Delta,
 				int stride,
 				std::vector< gpumat::GpuMat >& X);
 
+/////////////// conv2 ////////////////////////
+
+enum TYPE_CONV{
+	SAME,
+	VALID
+};
+
+/**
+ * @brief conv2
+ * @param A
+ * @param szA
+ * @param channels
+ * @param stride
+ * @param B
+ * @param szB
+ * @param C
+ */
+void conv2(const GpuMat& A, const ct::Size &szA, int channels, int stride, const GpuMat &B,
+		   ct::Size &szB, GpuMat &C, ct::Size &szOut, TYPE_CONV type = VALID, bool transpose = false);
+
+/////////////// subsample 2x2 ////////////////
+
 /**
  * @brief subsample
  * @param X
@@ -230,11 +305,15 @@ void subsample(const GpuMat& X, const ct::Size& szA, GpuMat& Y, GpuMat& Mask, ct
  */
 void subsample(const std::vector< GpuMat >& X, const ct::Size& szA, std::vector< GpuMat >& Y, std::vector< GpuMat >& Mask, ct::Size& szO);
 
+//////////// upsample 2x2 /////////////////////
+
 void upsample(const GpuMat& Y,int K, const GpuMat& Mask, const ct::Size& szO,
 			  const ct::Size& szA, GpuMat& X);
 
 void upsample(const std::vector< GpuMat >& Y, int K, const std::vector< GpuMat >& Mask, const ct::Size& szO,
 			  const ct::Size& szA, std::vector< GpuMat >& X);
+
+//////////// vector of row to matrix //////////////////////
 
 /**
  * @brief vec2mat
@@ -251,6 +330,8 @@ void vec2mat(const std::vector< GpuMat >& vec, GpuMat& mat);
  */
 void mat2vec(const GpuMat& mat, const ct::Size& szOut, std::vector< GpuMat >& vec);
 
+////////// addition all matrices in vector /////////////
+
 /**
  * @brief addvec
  * @param W
@@ -258,8 +339,6 @@ void mat2vec(const GpuMat& mat, const ct::Size& szOut, std::vector< GpuMat >& ve
  * @param alpha
  */
 void addvec(GpuMat& W, const std::vector< GpuMat >& vW, double alpha);
-
-}
 
 }
 

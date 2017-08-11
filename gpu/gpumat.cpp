@@ -306,6 +306,36 @@ void cuda_derivReLu(const GpuMat& A, GpuMat& C);
 extern "C"
 void cuda_derivReLu2(GpuMat& A);
 
+///////
+
+/**
+ * @brief cuda_leakReLu
+ * @param A
+ * @param C = leakReLu(A)
+ */
+extern "C"
+void cuda_leakReLu(const GpuMat& A, double x, GpuMat& C);
+
+/**
+ * @brief cuda_reLu
+ * @param A
+ * @param C = leakReLu(A)
+ */
+extern "C"
+void cuda_leakReLu2(GpuMat& A, double x);
+
+/**
+ * @brief cuda_derivLeakReLu
+ * @param A
+ * @param C = derivLeakRelu(A)
+ */
+extern "C"
+void cuda_derivLeakReLu(const GpuMat& A, double x, GpuMat& C);
+extern "C"
+void cuda_derivLeakReLu2(GpuMat& A, double x);
+
+///////
+
 /**
  * @brief cuda_sigmoid
  * @param A
@@ -1075,9 +1105,55 @@ void deriv_reLu(GpuMat &A)
 		throw new std::invalid_argument("deriv_reLu");
 	}
 
-
 	cuda_derivReLu2(A);
 }
+
+/////////////
+
+
+void leakReLu(const GpuMat& A, double x, GpuMat& C)
+{
+	if(A.empty()){
+		throw new std::invalid_argument("reLu");
+	}
+
+	if(C.rows != A.rows || C.cols != A.cols || C.type != A.type)
+		C.resize(A);
+
+	cuda_leakReLu(A, x, C);
+}
+
+void leakReLu(GpuMat& A, double x)
+{
+	if(A.empty()){
+		throw new std::invalid_argument("reLu");
+	}
+
+	cuda_leakReLu2(A, x);
+}
+
+void deriv_leakReLu(const GpuMat& A, double x, GpuMat& C)
+{
+	if(A.empty()){
+		throw new std::invalid_argument("deriv_reLu");
+	}
+
+	if(C.rows != A.rows || C.cols != A.cols || C.type != A.type)
+		C.resize(A);
+
+	cuda_derivLeakReLu(A, x, C);
+}
+
+void deriv_leakReLu(GpuMat& A, double x)
+{
+	if(A.empty()){
+		throw new std::invalid_argument("deriv_reLu");
+	}
+
+	cuda_derivLeakReLu2(A, x);
+}
+
+/////////////
 
 void sigmoid(const GpuMat &A, GpuMat &C)
 {
