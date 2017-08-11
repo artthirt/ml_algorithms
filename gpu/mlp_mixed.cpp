@@ -12,6 +12,7 @@ mlp_mixed::mlp_mixed(){
 	m_prob = (float)0.95;
 	pA0 = nullptr;
 	m_lambda = 0;
+	m_params[LEAKYRELU] = 0.1;
 }
 
 Matf &mlp_mixed::Y(){
@@ -20,6 +21,11 @@ Matf &mlp_mixed::Y(){
 
 void mlp_mixed::setLambda(float val){
 	m_lambda = val;
+}
+
+void mlp_mixed::setParams(etypefunction type, double params)
+{
+	m_params[LEAKYRELU] = params;
 }
 
 void mlp_mixed::setDropout(bool val){
@@ -64,6 +70,9 @@ void mlp_mixed::apply_func(gpumat::GpuMat &Z, etypefunction func)
 		case TANH:
 			gpumat::tanh(Z);
 			break;
+		case LEAKYRELU:
+			gpumat::leakyReLu(Z, m_params[LEAKYRELU]);
+			break;
 	}
 }
 
@@ -90,6 +99,10 @@ void mlp_mixed::apply_back_func(gpumat::GpuMat &D1, etypefunction func)
 		case TANH:
 			gpumat::convert_to_gpu(A1, g_A1);
 			gpumat::deriv_tanh(g_A1);
+			break;
+		case LEAKYRELU:
+			gpumat::convert_to_gpu(A1, g_A1);
+			gpumat::deriv_leakyReLu(g_A1, m_params[LEAKYRELU]);
 			break;
 	}
 	gpumat::elemwiseMult(D1, g_A1);

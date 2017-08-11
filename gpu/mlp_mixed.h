@@ -3,6 +3,7 @@
 
 #include "mlp.h"
 #include "gpumat.h"
+#include <map>
 
 namespace ct{
 
@@ -27,6 +28,7 @@ public:
 	Matf& Y();
 
 	void setLambda(float val);
+	void setParams(etypefunction type, double params);
 
 	void setDropout(bool val);
 	void setDropout(float val);
@@ -57,6 +59,7 @@ private:
 	float m_prob;
 	float m_lambda;
 	etypefunction m_func;
+	std::map< etypefunction, double > m_params;
 };
 
 ////////////////////////
