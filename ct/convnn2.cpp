@@ -270,7 +270,7 @@ void conv2(const ct::Matf &A, const ct::Size &szA, int channels, int stride, con
 	if(X.empty())
 		return;
 
-	ct::Matf& W = (ct::Matf)B;
+	ct::Matf& W = (ct::Matf&)B;
 	int rows = W.rows;
 	int cols = W.cols;
 	W.rows = szB.area();
@@ -304,7 +304,7 @@ void conv2(const ct::Matd &A, const ct::Size &szA, int channels, int stride, con
 	if(X.empty())
 		return;
 
-	ct::Matd& W = (ct::Matd)B;
+	ct::Matd& W = (ct::Matd&)B;
 	int rows = W.rows;
 	int cols = W.cols;
 	W.rows = szB.area();
