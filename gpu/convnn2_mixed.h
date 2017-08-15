@@ -87,6 +87,8 @@ public:
 
 	void setOptimizer(ct::Optimizer<float>* optim);
 
+	void setParams(ct::etypefunction type, float param);
+
 	std::vector< ct::Matf>& XOut();
 
 	const std::vector< ct::Matf>& XOut() const;
@@ -118,7 +120,7 @@ public:
 
 	void forward(const std::vector< ct::Matf>* _pX, ct::etypefunction func);
 
-	void forward(const convnn<float> & conv, ct::etypefunction func);
+	void forward(const convnn2_mixed & conv, ct::etypefunction func);
 
 	void backcnv(const gpumat::GpuMat& D, gpumat::GpuMat &A1, gpumat::GpuMat& DS);
 
@@ -136,6 +138,7 @@ private:
 	ct::etypefunction m_func;
 	bool m_use_transpose;
 	float m_Lambda;
+	std::map< ct::etypefunction, float > m_params;
 };
 
 }

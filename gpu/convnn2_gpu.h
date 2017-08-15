@@ -4,6 +4,7 @@
 #include "gpumat.h"
 #include "helper_gpu.h"
 #include "cuda_common.h"
+#include <map>
 
 namespace gpumat{
 
@@ -46,6 +47,8 @@ public:
 	void setDropout(bool val);
 	void setDropout(double val);
 
+	void setParams(etypefunction type, double param);
+
 	std::vector<gpumat::GpuMat> &XOut();
 	/**
 	 * @brief XOut1
@@ -85,6 +88,7 @@ private:
 	gpumat::etypefunction m_func;
 	gpumat::GpuMat m_Dropout;
 	double m_lambda;
+	std::map< etypefunction, double > m_params;
 
 	gpumat::AdamOptimizer m_inner_optim;
 

@@ -971,6 +971,27 @@ inline void v_leakyRelu(const Mat_<T>& m, T x, Mat_<T>& r)
 }
 
 /**
+ * @brief v_leakyRelu
+ * @param m
+ * @return
+ */
+template< typename T >
+inline void v_leakyRelu(Mat_<T>& m, T x)
+{
+	T *m_val = m.ptr();
+#pragma omp parallel for
+	for(int i = 0; i < m.rows; ++i){
+#ifdef __GNUC__
+#pragma omp simd
+#endif
+		for(int j = 0; j < m.cols; j++){
+			int offset = i * m.cols + j;
+			m_val[offset] = m_val[offset] >= 0? m_val[offset] : x * m_val[offset];
+		}
+	}
+}
+
+/**
  * @brief derivLeakyRelu
  * @param m
  * @return

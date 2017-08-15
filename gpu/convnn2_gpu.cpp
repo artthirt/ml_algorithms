@@ -69,6 +69,8 @@ convnn_gpu::convnn_gpu()
 	m_prob_dropout = 0.9;
 	m_lambda = 0;
 	m_optim = &m_inner_optim;
+
+	m_params[LEAKYRELU] = 0.1;
 }
 
 void convnn_gpu::setOptimizer(gpumat::Optimizer *optim)
@@ -95,6 +97,11 @@ void convnn_gpu::setDropout(bool val)
 void convnn_gpu::setDropout(double val)
 {
 	m_prob_dropout = val;
+}
+
+void convnn_gpu::setParams(etypefunction type, double param)
+{
+	m_params[type] = param;
 }
 
 std::vector<gpumat::GpuMat> &convnn_gpu::XOut()
@@ -246,6 +253,9 @@ void convnn_gpu::forward(const std::vector<gpumat::GpuMat> *_pX, gpumat::etypefu
 			case gpumat::RELU:
 				gpumat::reLu(A1i);
 				break;
+			case gpumat::LEAKYRELU:
+				gpumat::leakyReLu(A1i, m_params[LEAKYRELU]);
+				break;
 			case gpumat::SIGMOID:
 				gpumat::sigmoid(A1i);
 				break;
@@ -310,6 +320,9 @@ void convnn_gpu::backcnv(const std::vector<gpumat::GpuMat> &D, std::vector<gpuma
 				break;
 			case ct::RELU:
 				gpumat::deriv_reLu(A1[i]/*, DA1[i]*/);
+				break;
+			case ct::LEAKYRELU:
+				gpumat::deriv_leakyReLu(A1[i], m_params[LEAKYRELU]/*, DA1[i]*/);
 				break;
 			case ct::SIGMOID:
 				gpumat::deriv_sigmoid(A1[i]/*, DA1[i]*/);

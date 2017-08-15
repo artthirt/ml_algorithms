@@ -12,12 +12,18 @@ convnn2_mixed::convnn2_mixed(){
 	m_use_transpose = true;
 	m_Lambda = 0;
 	m_optim = &m_adam;
+	m_params[ct::LEAKYRELU] = 0.1;
 }
 
 void convnn2_mixed::setOptimizer(ct::Optimizer<float> *optim){
 	if(!optim)
 		return;
 	m_optim = optim;
+}
+
+void convnn2_mixed::setParams(ct::etypefunction type, float param)
+{
+	m_params[type] = param;
 }
 
 std::vector<ct::Matf> &convnn2_mixed::XOut(){
@@ -142,6 +148,9 @@ void convnn2_mixed::forward(const std::vector<ct::Matf> *_pX, ct::etypefunction 
 			case ct::RELU:
 				gpumat::reLu(g_A1i);
 				break;
+			case ct::LEAKYRELU:
+				gpumat::leakyReLu(g_A1i, m_params[ct::LEAKYRELU]);
+				break;
 			case ct::SIGMOID:
 				gpumat::sigmoid(g_A1i);
 				break;
@@ -171,7 +180,7 @@ void convnn2_mixed::forward(const std::vector<ct::Matf> *_pX, ct::etypefunction 
 	}
 }
 
-void convnn2_mixed::forward(const convnn<float> &conv, ct::etypefunction func)
+void convnn2_mixed::forward(const convnn2_mixed &conv, ct::etypefunction func)
 {
 	forward(&conv.XOut(), func);
 }
@@ -181,6 +190,10 @@ void convnn2_mixed::backcnv(const gpumat::GpuMat& D, gpumat::GpuMat& A1, gpumat:
 	switch (m_func) {
 		case ct::RELU:
 			gpumat::deriv_reLu(A1);
+			gpumat::elemwiseMult(D, A1, DS);
+			break;
+		case ct::LEAKYRELU:
+			gpumat::deriv_leakyReLu(A1, m_params[ct::LEAKYRELU]);
 			gpumat::elemwiseMult(D, A1, DS);
 			break;
 		case ct::SIGMOID:

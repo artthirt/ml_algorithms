@@ -4,6 +4,7 @@
 #include "custom_types.h"
 #include "matops.h"
 #include <vector>
+#include <map>
 #include "nn.h"
 
 #include <exception>
@@ -186,8 +187,8 @@ public:
 	std::vector< ct::Mat_<T> > A1;			/// out after appl nonlinear function
 	std::vector< ct::Mat_<T> > A2;			/// out after pooling
 	std::vector< ct::Mat_<T> > Dlt;			/// delta after backward pass
-	std::vector< ct::Mat_<T> > vgW;			/// for delta weights
-	std::vector< ct::Mat_<T> > vgB;			/// for delta bias
+	ct::Mat_<T> vgW;						/// for delta weights
+	ct::Mat_<T> vgB;						/// for delta bias
 	std::vector< ct::Mat_<T> > Mask;		/// masks for bakward pass (created in forward pass)
 	ct::Optimizer< T > *m_optim;
 	ct::AdamOptimizer<T> m_adam;
@@ -205,12 +206,17 @@ public:
 		m_use_transpose = true;
 		m_Lambda = 0;
 		m_optim = &m_adam;
+		m_params[ct::LEAKYRELU] = 0.1;
 	}
 
 	void setOptimizer(ct::Optimizer<T>* optim){
 		if(!optim)
 			return;
 		m_optim = optim;
+	}
+
+	void setParams(ct::etypefunction type, T param){
+		m_params[type] = param;
 	}
 
 	std::vector< ct::Mat_<T> >& XOut(){
@@ -333,19 +339,19 @@ public:
 			ct::Mat_<T>& A1i = A1[i];
 			ct::matmul(Xi, W[0], A1i);
 			A1i.biasPlus(B[0]);
-		}
 
-		for(int i = 0; i < (int)A1.size(); ++i){
-			ct::Mat_<T>& Ao = A1[i];
 			switch (m_func) {
 				case ct::RELU:
-					ct::v_relu(Ao);
+					ct::v_relu(A1i);
+					break;
+				case ct::LEAKYRELU:
+					ct::v_leakyRelu(A1i, m_params[ct::LEAKYRELU]);
 					break;
 				case ct::SIGMOID:
-					ct::v_sigmoid(Ao);
+					ct::v_sigmoid(A1i);
 					break;
 				case ct::TANH:
-					ct::v_tanh(Ao);
+					ct::v_tanh(A1i);
 					break;
 				default:
 					break;
@@ -377,6 +383,9 @@ public:
 					case ct::RELU:
 						ct::elemwiseMult(D[i], derivRelu(A1[i]), DS[i]);
 						break;
+					case ct::LEAKYRELU:
+						ct::elemwiseMult(D[i], ct::derivLeakyRelu(A1[i], m_params[ct::LEAKYRELU]), DS[i]);
+						break;
 					case ct::SIGMOID:
 						ct::elemwiseMult(D[i], derivSigmoid(A1[i]), DS[i]);
 						break;
@@ -392,6 +401,9 @@ public:
 				switch (m_func) {
 					case ct::RELU:
 						ct::elemwiseMult(DS[i], ct::derivRelu(A1[i]));
+						break;
+					case ct::LEAKYRELU:
+						ct::elemwiseMult(DS[i], ct::derivLeakyRelu(A1[i], m_params[ct::LEAKYRELU]));
 						break;
 					case ct::SIGMOID:
 						ct::elemwiseMult(DS[i], ct::derivSigmoid(A1[i]));
@@ -426,27 +438,25 @@ public:
 		}
 
 		//printf("2\n");
-		vgW.resize(D.size());
-		vgB.resize(D.size());
-		for(int i = 0; i < (int)D.size(); ++i){
-			ct::Mat_<T>& Xci = Xc[i];
-			ct::Mat_<T>& dSubi = dSub[i];
-			ct::Mat_<T>& Wi = vgW[i];
-			ct::Mat_<T>& vgBi = vgB[i];
-			matmulT1(Xci, dSubi, Wi);
-			vgBi = ct::sumRows(dSubi, 1.f/dSubi.rows);
-			//Wi *= (1.f/dSubi.total());
-			//vgBi.swap_dims();
-		}
-		//printf("3\n");
 		gW[0].setSize(W[0].size());
 		gW[0].fill(0);
 		gB[0].setSize(B[0].size());
 		gB[0].fill(0);
-		for(size_t i = 0; i < D.size(); ++i){
-			ct::add(gW[0], vgW[i]);
-			ct::add(gB[0], vgB[i]);
+
+		for(int i = 0; i < (int)D.size(); ++i){
+			ct::Mat_<T>& Xci = Xc[i];
+			ct::Mat_<T>& dSubi = dSub[i];
+			//ct::Mat_<T>& Wi = vgW;
+			//ct::Mat_<T>& vgBi = vgB;
+			matmulT1(Xci, dSubi, vgW);
+			vgB = ct::sumRows(dSubi, 1.f/dSubi.rows);
+
+			ct::add(gW[0], vgW);
+			ct::add(gB[0], vgB);
+			//Wi *= (1.f/dSubi.total());
+			//vgBi.swap_dims();
 		}
+		//printf("3\n");
 		gW[0] *= (T)1./(D.size());
 		gB[0] *= (T)1./(D.size());
 
@@ -514,6 +524,7 @@ private:
 	bool m_use_pool;
 	ct::etypefunction m_func;
 	bool m_use_transpose;
+	std::map< ct::etypefunction, T > m_params;
 	T m_Lambda;
 };
 
