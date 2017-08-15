@@ -211,8 +211,9 @@ public:
 		return m_init;
 	}
 
-	void init(int input, int output){
+	void init(int input, int output, etypefunction func){
 		double n = 1./sqrt(input);
+		m_func = func;
 
 		W.setSize(input, output);
 		W.randn(0., n);
@@ -274,11 +275,10 @@ public:
 		return m_func;
 	}
 
-	void forward(const ct::Mat_<T> *mat, etypefunction func = RELU, bool save_A0 = true){
+	void forward(const ct::Mat_<T> *mat, bool save_A0 = true){
 		if(!m_init || !mat)
 			throw new std::invalid_argument("mlp::forward: not initialized. wrong parameters");
 		pA0 = (Mat_<T>*)mat;
-		m_func = func;
 
 		if(m_is_dropout && std::abs(m_prob - 1) > 1e-6){
 			ct::dropout(pA0->rows, pA0->cols, m_prob, Dropout);
@@ -289,7 +289,7 @@ public:
 		}
 
 		Z.biasPlus(B);
-		apply_func(Z, A1, func);
+		apply_func(Z, A1, m_func);
 
 		if(!save_A0)
 			pA0 = nullptr;

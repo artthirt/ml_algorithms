@@ -51,8 +51,10 @@ bool mlp::isInit() const
 	return m_init;
 }
 
-void mlp::init(int input, int output, int type){
+void mlp::init(int input, int output, int type, etypefunction func)
+{
 	double n = 1./sqrt(input);
+	m_func = func;
 
 	W.resize(input, output, type);
 	B.resize(output, 1, type);
@@ -141,12 +143,11 @@ inline void apply_dropout(const GpuMat& X, double prob, GpuMat& XDropout, GpuMat
 	}
 }
 
-void mlp::forward(const GpuMat *mat, etypefunction func, bool save_A0)
+void mlp::forward(const GpuMat *mat, bool save_A0)
 {
 	if(!m_init || !mat)
 		throw new std::invalid_argument("mlp::forward: not initialized. wrong parameters");
 	pA0 = (GpuMat*)mat;
-	m_func = func;
 
 	if(m_is_dropout && std::abs(m_prob - 1) > 1e-6){
 		apply_dropout(*pA0, m_prob, XDropout, Dropout);
@@ -156,8 +157,8 @@ void mlp::forward(const GpuMat *mat, etypefunction func, bool save_A0)
 	}
 
 	biasPlus(A1, B);
-	if(func != LINEAR)
-		apply_func(A1, A1, func);
+	if(m_func != LINEAR)
+		apply_func(A1, A1, m_func);
 
 	if(!save_A0)
 		pA0 = nullptr;

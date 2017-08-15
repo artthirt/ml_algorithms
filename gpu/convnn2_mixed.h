@@ -115,12 +115,12 @@ public:
 
 	void setLambda(float val);
 
-	void init(const ct::Size& _szA0, int _channels, int stride, int _K, const ct::Size& _szW,
+	void init(const ct::Size& _szA0, int _channels, int stride, int _K, const ct::Size& _szW, ct::etypefunction func,
 			  bool use_pool = true, bool use_transpose = true);
 
-	void forward(const std::vector< ct::Matf>* _pX, ct::etypefunction func);
+	void forward(const std::vector< ct::Matf>* _pX);
 
-	void forward(const convnn2_mixed & conv, ct::etypefunction func);
+	void forward(const convnn2_mixed & conv);
 
 	void backcnv(const gpumat::GpuMat& D, gpumat::GpuMat &A1, gpumat::GpuMat& DS);
 

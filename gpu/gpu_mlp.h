@@ -62,7 +62,7 @@ public:
 	 * @param output
 	 * @param type
 	 */
-	void init(int input, int output, int type);
+	void init(int input, int output, int type, etypefunction func);
 	/**
 	 * @brief apply_func
 	 * @param Z
@@ -94,7 +94,7 @@ public:
 	 * @param func
 	 * @param save_A0
 	 */
-	void forward(const GpuMat *mat, etypefunction func = RELU, bool save_A0 = true);
+	void forward(const GpuMat *mat, bool save_A0 = true);
 	/**
 	 * @brief backward
 	 * @param Delta

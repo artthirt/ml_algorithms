@@ -276,11 +276,12 @@ public:
 		m_Lambda = val;
 	}
 
-	void init(const ct::Size& _szA0, int _channels, int stride, int _K, const ct::Size& _szW,
+	void init(const ct::Size& _szA0, int _channels, int stride, int _K, const ct::Size& _szW, ct::etypefunction func,
 			  bool use_pool = true, bool use_transpose = true){
 		szW = _szW;
 		m_use_pool = use_pool;
 		m_use_transpose = use_transpose;
+		m_func = func;
 		convnn_abstract<T>::kernels = _K;
 		convnn_abstract<T>::channels = _channels;
 		convnn_abstract<T>::szA0 = _szA0;
@@ -308,11 +309,10 @@ public:
 		printf("Out=[%dx%dx%d]\n", szOut().width, szOut().height, convnn_abstract<T>::kernels);
 	}
 
-	void forward(const std::vector< ct::Mat_<T> >* _pX, ct::etypefunction func){
+	void forward(const std::vector< ct::Mat_<T> >* _pX){
 		if(!_pX)
 			return;
 		pX = (std::vector< ct::Mat_<T> >*)_pX;
-		m_func = func;
 
 		Xc.resize(pX->size());
 		A1.resize(pX->size());

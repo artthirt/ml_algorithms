@@ -75,7 +75,7 @@ void convnn2_mixed::setLambda(float val){
 	m_Lambda = val;
 }
 
-void convnn2_mixed::init(const ct::Size &_szA0, int _channels, int stride, int _K, const ct::Size &_szW, bool use_pool, bool use_transpose){
+void convnn2_mixed::init(const ct::Size &_szA0, int _channels, int stride, int _K, const ct::Size &_szW, ct::etypefunction func, bool use_pool, bool use_transpose){
 	szW = _szW;
 	m_use_pool = use_pool;
 	m_use_transpose = use_transpose;
@@ -83,6 +83,7 @@ void convnn2_mixed::init(const ct::Size &_szA0, int _channels, int stride, int _
 	convnn_abstract<float>::channels = _channels;
 	convnn_abstract<float>::szA0 = _szA0;
 	this->stride = stride;
+	this->m_func = func;
 
 	int rows = szW.area() * convnn_abstract<float>::channels;
 	int cols = convnn_abstract<float>::kernels;
@@ -106,12 +107,11 @@ void convnn2_mixed::init(const ct::Size &_szA0, int _channels, int stride, int _
 	printf("Out=[%dx%dx%d]\n", szOut().width, szOut().height, convnn_abstract<float>::kernels);
 }
 
-void convnn2_mixed::forward(const std::vector<ct::Matf> *_pX, ct::etypefunction func)
+void convnn2_mixed::forward(const std::vector<ct::Matf> *_pX)
 {
 	if(!_pX)
 		return;
 	pX = (std::vector< ct::Matf>*)_pX;
-	m_func = func;
 
 	Xc.resize(pX->size());
 	A1.resize(pX->size());
@@ -180,9 +180,9 @@ void convnn2_mixed::forward(const std::vector<ct::Matf> *_pX, ct::etypefunction 
 	}
 }
 
-void convnn2_mixed::forward(const convnn2_mixed &conv, ct::etypefunction func)
+void convnn2_mixed::forward(const convnn2_mixed &conv)
 {
-	forward(&conv.XOut(), func);
+	forward(&conv.XOut());
 }
 
 void convnn2_mixed::backcnv(const gpumat::GpuMat& D, gpumat::GpuMat& A1, gpumat::GpuMat& DS)

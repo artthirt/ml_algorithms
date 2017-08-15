@@ -35,14 +35,14 @@ public:
 
 	bool isInit() const;
 
-	void init(int input, int output);
+	void init(int input, int output, etypefunction func);
 
 	inline void apply_func(gpumat::GpuMat &Z, etypefunction func);
 	inline void apply_back_func(gpumat::GpuMat& D1, etypefunction func);
 
 	etypefunction funcType() const;
 
-	void forward(const ct::Matf *mat, etypefunction func = RELU, bool save_A0 = true);
+	void forward(const ct::Matf *mat, bool save_A0 = true);
 	void backward(const ct::Matf &Delta, bool last_layer = false);
 
 	void write(std::fstream& fs);

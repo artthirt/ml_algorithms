@@ -146,7 +146,7 @@ ct::Size convnn_gpu::szOut() const
 }
 
 void convnn_gpu::init(const ct::Size &_szA0, int _channels, int stride, int _K,
-					  const ct::Size &_szW, bool use_pool, bool use_transpose)
+					  const ct::Size &_szW, etypefunction func, bool use_pool, bool use_transpose)
 {
 	szW = _szW;
 	kernels = _K;
@@ -155,6 +155,7 @@ void convnn_gpu::init(const ct::Size &_szA0, int _channels, int stride, int _K,
 	m_use_transpose = use_transpose;
 	szA0 = _szA0;
 	this->stride = stride;
+	m_func = func;
 
 	int rows = szW.area() * channels;
 	int cols = kernels;
@@ -224,12 +225,11 @@ void set_dropout(std::vector<gpumat::GpuMat>& X, const gpumat::GpuMat& Dropout)
 //	qDebug("set_dropout: pool dropout applied");
 }
 
-void convnn_gpu::forward(const std::vector<gpumat::GpuMat> *_pX, gpumat::etypefunction func)
+void convnn_gpu::forward(const std::vector<gpumat::GpuMat> *_pX)
 {
 	if(!_pX)
 		return;
 	pX = (std::vector< gpumat::GpuMat >*)_pX;
-	m_func = func;
 
 	Xc.resize(pX->size());
 	A1.resize(pX->size());

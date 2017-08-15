@@ -40,8 +40,9 @@ bool mlp_mixed::isInit() const{
 	return m_init;
 }
 
-void mlp_mixed::init(int input, int output){
+void mlp_mixed::init(int input, int output, etypefunction func){
 	double n = 1./sqrt(input);
+	m_func = func;
 
 	W.setSize(input, output);
 	W.randn(0., n);
@@ -112,11 +113,10 @@ etypefunction mlp_mixed::funcType() const{
 	return m_func;
 }
 
-void mlp_mixed::forward(const Matf *mat, etypefunction func, bool save_A0){
+void mlp_mixed::forward(const Matf *mat, bool save_A0){
 	if(!m_init || !mat)
 		throw new std::invalid_argument("mlp::forward: not initialized. wrong parameters");
 	pA0 = (Matf*)mat;
-	m_func = func;
 
 	gpumat::GpuMat g_XDropout, g_Z, g_B;
 
@@ -144,7 +144,7 @@ void mlp_mixed::forward(const Matf *mat, etypefunction func, bool save_A0){
 	{
 		gpumat::biasPlus(g_Z, g_B);
 
-		apply_func(g_Z, func);
+		apply_func(g_Z, m_func);
 		gpumat::convert_to_mat(g_Z, A1);
 	}
 	//gpumat::convert_to_mat(g_Z, Z);
