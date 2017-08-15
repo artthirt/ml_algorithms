@@ -291,7 +291,7 @@ public:
 
 		ct::get_cnv_sizes(convnn_abstract<T>::szA0, szW, stride, convnn_abstract<T>::szA1, convnn_abstract<T>::szA2);
 
-		T n = (T)1./szW.area();
+		T n = (T)1./sqrt(kernels);
 
 		W.resize(1);
 		B.resize(1);

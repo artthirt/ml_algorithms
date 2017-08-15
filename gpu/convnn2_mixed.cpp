@@ -89,7 +89,7 @@ void convnn2_mixed::init(const ct::Size &_szA0, int _channels, int stride, int _
 
 	ct::get_cnv_sizes(convnn_abstract<float>::szA0, szW, stride, convnn_abstract<float>::szA1, convnn_abstract<float>::szA2);
 
-	float n = (float)1./sqrt(szW.area() * kernels);
+	float n = (float)1./sqrt(kernels);
 
 	W.resize(1);
 	B.resize(1);
