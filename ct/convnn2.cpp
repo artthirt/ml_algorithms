@@ -248,7 +248,7 @@ void im2colT_same(const ct::Matd& X, const ct::Size& szA0, int channels, const c
 
 //////////////////////////////////////////
 
-void conv2(const ct::Matf &A, const ct::Size &szA, int channels, int stride, const ct::Matf &B, ct::Size &szB, ct::Matf &C, ct::Size &szOut, TYPE_CONV type, bool transpose)
+void conv2(const ct::Matf &A, const ct::Size &szA, int channels, int stride, const ct::Matf &B, const ct::Size &szB, ct::Matf &C, ct::Size &szOut, TYPE_CONV type, bool transpose)
 {
 	if(A.empty() || B.empty())
 		return;
@@ -282,7 +282,7 @@ void conv2(const ct::Matf &A, const ct::Size &szA, int channels, int stride, con
 	W.cols = cols;
 }
 
-void conv2(const ct::Matd &A, const ct::Size &szA, int channels, int stride, const ct::Matd &B, ct::Size &szB, ct::Matd &C, ct::Size& szOut, TYPE_CONV type, bool transpose)
+void conv2(const ct::Matd &A, const ct::Size &szA, int channels, int stride, const ct::Matd &B, const ct::Size &szB, ct::Matd &C, ct::Size& szOut, TYPE_CONV type, bool transpose)
 {
 	if(A.empty() || B.empty())
 		return;

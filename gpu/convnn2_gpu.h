@@ -285,7 +285,7 @@ enum TYPE_CONV{
  * @param C
  */
 void conv2(const GpuMat& A, const ct::Size &szA, int channels, int stride, const GpuMat &B,
-		   ct::Size &szB, GpuMat &C, ct::Size &szOut, TYPE_CONV type = VALID, bool transpose = false);
+		   const ct::Size &szB, GpuMat &C, ct::Size &szOut, TYPE_CONV type = VALID, bool transpose = false);
 
 /////////////// subsample 2x2 ////////////////
 

@@ -1002,7 +1002,7 @@ void gpumat::im2colsT_same(const std::vector<gpumat::GpuMat> &X, const ct::Size 
 
 
 void gpumat::conv2(const gpumat::GpuMat &A, const ct::Size &szA, int channels, int stride,
-		   const gpumat::GpuMat &B, ct::Size &szB, gpumat::GpuMat &C, ct::Size &szOut, TYPE_CONV type, bool transpose)
+		   const gpumat::GpuMat &B, const ct::Size &szB, gpumat::GpuMat &C, ct::Size &szOut, TYPE_CONV type, bool transpose)
 {
 	if(A.empty() || B.empty())
 		return;

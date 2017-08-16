@@ -72,9 +72,9 @@ void im2colT(const ct::Matd& X, const ct::Size& szA0, int channels, const ct::Si
  * @param C
  */
 void conv2(const ct::Matf& A, const ct::Size &szA, int channels, int stride, const ct::Matf &B,
-		   ct::Size &szB, ct::Matf &C, ct::Size &szOut, TYPE_CONV type = VALID, bool transpose = false);
+		   const ct::Size &szB, ct::Matf &C, ct::Size &szOut, TYPE_CONV type = VALID, bool transpose = false);
 void conv2(const ct::Matd& A, const ct::Size &szA, int channels, int stride, const ct::Matd &B,
-		   ct::Size &szB, ct::Matd &C, ct::Size &szOut, TYPE_CONV type = VALID, bool transpose = false);
+		   const ct::Size &szB, ct::Matd &C, ct::Size &szOut, TYPE_CONV type = VALID, bool transpose = false);
 
 /**
  * @brief back_deriv
@@ -292,7 +292,7 @@ public:
 
 		ct::get_cnv_sizes(convnn_abstract<T>::szA0, szW, stride, convnn_abstract<T>::szA1, convnn_abstract<T>::szA2);
 
-		T n = (T)1./sqrt(kernels);
+		T n = (T)10.1;
 
 		W.resize(1);
 		B.resize(1);
