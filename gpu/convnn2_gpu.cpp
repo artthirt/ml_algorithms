@@ -387,7 +387,7 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 		gpumat::add2matmulT1(Xci, dSubi, gW[0]);
 
 //		vgB.swap_dims();
-		add2sumRows(dSubi, gB[0], 1.0 /*, (double)1. / (Xci.total())*/);
+		add2sumRows(dSubi, gB[0], 1./dSubi.rows /*, (double)1. / (Xci.total())*/);
 //		vgB.swap_dims();
 
 		//gpumat::add(gW[0], vgW);
