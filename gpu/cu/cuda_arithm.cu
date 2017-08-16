@@ -170,6 +170,33 @@ __global__ void matmul(Mtx A, Mtx B, Mtx C)
 }
 
 /**
+ * @brief add2matmul
+ * @param A
+ * @param B
+ * @param C - out C += A * B
+ */
+template< class T >
+__global__ void add2matmul(Mtx A, Mtx B, Mtx C)
+{
+	int row = threadIdx.y + blockIdx.y * blockDim.y;
+	int col = threadIdx.x + blockIdx.x * blockDim.x;
+
+	T* DA = (T*)A.data;
+	T* DB = (T*)B.data;
+	T* DC = (T*)C.data;
+
+	T sC = 0;
+
+	if(row < A.rows && col < B.cols){
+		for(int i = 0; i < B.rows; i++){
+			sC += DA[row * A.cols + i] * DB[i * B.cols + col];
+		}
+		DC[row * B.cols + col] += sC;
+	}
+}
+
+
+/**
  * @brief matmulT1
  * @param At - used as transposed matrix
  * @param B
@@ -193,6 +220,34 @@ __global__ void matmulT1(Mtx At, Mtx B, Mtx C)
 			sC += DA[i * At.cols + row] * DB[i * B.cols + col];
 		}
 		DC[row * C.cols + col] = sC;
+	}
+
+}
+
+/**
+ * @brief add2matmulT1
+ * @param At - used as transposed matrix
+ * @param B
+ * @param C - out C += A' * B
+ */
+template< class T >
+__global__ void add2matmulT1(Mtx At, Mtx B, Mtx C)
+{
+	int row = threadIdx.y + blockIdx.y * blockDim.y;
+	int col = threadIdx.x + blockIdx.x * blockDim.x;
+
+	T* DA = (T*)At.data;
+	T* DB = (T*)B.data;
+	T* DC = (T*)C.data;
+
+	T sC = 0;
+
+//	s += val1[j * At.cols + i]/*at(i, j)*/ * val2[j * B.cols + k];
+	if(row < At.cols && col < B.cols){
+		for(int i = 0; i < B.rows; i++){
+			sC += DA[i * At.cols + row] * DB[i * B.cols + col];
+		}
+		DC[row * C.cols + col] += sC;
 	}
 
 }
@@ -222,6 +277,34 @@ __global__ void matmulT2(Mtx A, Mtx Bt, Mtx C)
 			sC += DA[row * A.cols + i] * DB[col * Bt.cols + i];
 		}
 		DC[row * C.cols + col] = sC;
+	}
+}
+
+/**
+ * @brief add2matmulT2
+ * @param A
+ * @param Bt - used as transposed matrix
+ * @param C - out C += A * B'
+ */
+template< class T >
+__global__ void add2matmulT2(Mtx A, Mtx Bt, Mtx C)
+{
+	int row = threadIdx.y + blockIdx.y * blockDim.y;
+	int col = threadIdx.x + blockIdx.x * blockDim.x;
+
+	T* DA = (T*)A.data;
+	T* DB = (T*)Bt.data;
+	T* DC = (T*)C.data;
+
+	T sC = 0;
+
+//	s += val1[i * A.cols + j]/*at(i, j)*/ * val2[k * Bt.cols + j]/*at(j, k)*/;
+	if(row < A.rows && col < C.cols){
+		for(int i = 0; i < A.cols; i++){
+//			sC += DA[row * B.rows + i] * DB[i * B.cols + col];
+			sC += DA[row * A.cols + i] * DB[col * Bt.cols + i];
+		}
+		DC[row * C.cols + col] += sC;
 	}
 }
 
@@ -1046,7 +1129,7 @@ __global__ void sub_ln_cols(Mtx A, Mtx Max)
 ////
 
 /**
- * @brief sum_col
+ * @brief sum_rows
  * @param A
  * @param C = exp(A)
  * @param rows = sum(C)
@@ -1068,8 +1151,33 @@ __global__ void sum_rows(Mtx C, Mtx cols, T val = (T)1.)
 		dZ[col] *= val;
 	}
 }
+
 /**
- * @brief sum_row
+ * @brief add2sum_rows
+ * @param A
+ * @param C = exp(A)
+ * @param rows = sum(C)
+ */
+template< class T >
+__global__ void add2sum_rows(Mtx C, Mtx cols, T val = (T)1.)
+{
+	//int row = threadIdx.y + blockIdx.y * blockDim.y;
+	int col = threadIdx.x + blockIdx.x * blockDim.x;
+
+	T* dC = (T*)C.data;
+	T* dZ = (T*)cols.data;
+
+	if(col < C.cols){
+		T s = 0;
+		for(int i = 0; i < C.rows; i++){
+			s += dC[i * C.cols + col];
+		}
+		dZ[col] += s * val;
+	}
+}
+
+/**
+ * @brief sum_cols
  * @param A
  * @param C = exp(A)
  * @param rows = sum(C)
@@ -1725,6 +1833,30 @@ void cuda_matmul(const GpuMat& A, const GpuMat& B, GpuMat& C)
 }
 
 /**
+ * @brief add2matmul
+ * @param A
+ * @param B
+ * @param C - out C += A * B
+ */
+extern "C"
+void cuda_add2matmul(const GpuMat& A, const GpuMat& B, GpuMat& C)
+{
+	int x1 = C.cols / BLOCKSIZE + 1;
+	int x2 = C.rows / BLOCKSIZE + 1;
+
+	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+
+	switch (A.type) {
+	case GPU_DOUBLE:
+		internal::add2matmul<double> <<<dimGrid, dimBlock>>>(A, B, C);
+		break;
+	case GPU_FLOAT:
+		internal::add2matmul<float> <<<dimGrid, dimBlock>>>(A, B, C);
+		break;
+	}
+}
+
+/**
  * @brief matmul_shared
  * @param A
  * @param B
@@ -1776,6 +1908,33 @@ void cuda_matmulT1(const GpuMat& At, const GpuMat& B, GpuMat& C)
 }
 
 /**
+ * @brief add2matmulT1
+ * @param At - used as transposed matrix
+ * @param B
+ * @param C - out C += A' * B
+ */
+extern "C"
+void cuda_add2matmulT1(const GpuMat& At, const GpuMat& B, GpuMat& C)
+{
+	//	int r = At.cols;
+	//	int c = B.cols;
+
+	int x1 = C.cols / BLOCKSIZE + 1;
+	int x2 = C.rows / BLOCKSIZE + 1;
+
+	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+
+	switch (At.type) {
+	case GPU_DOUBLE:
+		internal::add2matmulT1<double> <<<dimGrid, dimBlock>>>(At, B, C);
+		break;
+	case GPU_FLOAT:
+		internal::add2matmulT1<float> <<<dimGrid, dimBlock>>>(At, B, C);
+		break;
+	}
+}
+
+/**
  * @brief matmulT1_shared
  * @param At - used as transposed matrix
  * @param B
@@ -1822,6 +1981,30 @@ void cuda_matmulT2(const GpuMat& A, const GpuMat& Bt, GpuMat& C)
 		break;
 	case GPU_FLOAT:
 		internal::matmulT2<float> <<<dimGrid, dimBlock>>>(A, Bt, C);
+		break;
+	}
+}
+
+/**
+ * @brief add2matmulT2
+ * @param A
+ * @param Bt - used as transposed matrix
+ * @param C - out C += A * B'
+ */
+extern "C"
+void cuda_add2matmulT2(const GpuMat& A, const GpuMat& Bt, GpuMat& C)
+{
+	int x1 = C.cols / BLOCKSIZE + 1;
+	int x2 = C.rows / BLOCKSIZE + 1;
+
+	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+
+	switch (A.type) {
+	case GPU_DOUBLE:
+		internal::add2matmulT2<double> <<<dimGrid, dimBlock>>>(A, Bt, C);
+		break;
+	case GPU_FLOAT:
+		internal::add2matmulT2<float> <<<dimGrid, dimBlock>>>(A, Bt, C);
 		break;
 	}
 }
@@ -2241,6 +2424,27 @@ void cuda_sumrows(const GpuMat& A, GpuMat& sums, double val)
 		break;
 	case GPU_FLOAT:
 			internal::sum_rows<float> <<<dim3(x1, 1), dim3(BLOCKSIZE, 1)>>>(A, sums, (float)val);
+		break;
+	}
+}
+
+/**
+ * @brief cuda_add2sumrows
+ * @param A
+ * @param C - out C[i] += sum(A[i, j])(j = [1..cols])
+ */
+extern "C"
+void cuda_add2sumrows(const GpuMat& A, GpuMat& sums, double val)
+{
+	int x1 = A.cols / BLOCKSIZE + 1;
+//	int x2 = A.rows / BLOCKSIZE + 1;
+
+	switch (A.type) {
+	case GPU_DOUBLE:
+			internal::add2sum_rows<double> <<<dim3(x1, 1), dim3(BLOCKSIZE, 1)>>>(A, sums, (double)val);
+		break;
+	case GPU_FLOAT:
+			internal::add2sum_rows<float> <<<dim3(x1, 1), dim3(BLOCKSIZE, 1)>>>(A, sums, (float)val);
 		break;
 	}
 }

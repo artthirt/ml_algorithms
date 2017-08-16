@@ -91,6 +91,15 @@ extern "C"
 void cuda_matmul(const GpuMat& A, const GpuMat& B, GpuMat& C);
 
 /**
+ * @brief add2matmul
+ * @param A
+ * @param B
+ * @param C - out C += A * B
+ */
+extern "C"
+void cuda_add2matmul(const GpuMat& A, const GpuMat& B, GpuMat& C);
+
+/**
  * @brief matmul_shared
  * @param A
  * @param B
@@ -107,6 +116,16 @@ void cuda_matmul_shared(const GpuMat& A, const GpuMat& B, GpuMat& C);
  */
 extern "C"
 void cuda_matmulT1(const GpuMat& At, const GpuMat& B, GpuMat& C);
+
+/**
+ * @brief add2matmulT1
+ * @param At - used as transposed matrix
+ * @param B
+ * @param C - out C += A' * B
+ */
+extern "C"
+void cuda_add2matmulT1(const GpuMat& At, const GpuMat& B, GpuMat& C);
+
 
 /**
  * @brief matmulT1_shared
@@ -126,6 +145,15 @@ void cuda_matmulT1_shared(const GpuMat& At, const GpuMat& B, GpuMat& C);
  */
 extern "C"
 void cuda_matmulT2(const GpuMat& A, const GpuMat& Bt, GpuMat& C);
+
+/**
+ * @brief add2matmulT2
+ * @param A
+ * @param Bt - used as transposed matrix
+ * @param C - out C += A * B'
+ */
+extern "C"
+void cuda_add2matmulT2(const GpuMat& A, const GpuMat& Bt, GpuMat& C);
 
 /**
  * @brief matmulT2_shared
@@ -263,6 +291,15 @@ void cuda_elemwiseSqr(const GpuMat& A, GpuMat& C);
  */
 extern "C"
 void cuda_sumrows(const GpuMat& A, GpuMat& C, double val);
+
+/**
+ * @brief cuda_add2sumrows
+ * @param A
+ * @param C - out C[i] += sum(A[i, j])(j = [1..cols])
+ */
+extern "C"
+void cuda_add2sumrows(const GpuMat& A, GpuMat& sums, double val);
+
 
 /**
  * @brief cuda_sumrows_shared
@@ -881,6 +918,20 @@ void matmul(const GpuMat &A, const GpuMat &B, GpuMat &C)
 	cuda_matmul(A, B, C);
 }
 
+void add2matmul(const GpuMat &A, const GpuMat &B, GpuMat &C)
+{
+	if(A.cols != B.rows || A.type != B.type){
+		throw new std::invalid_argument("add2matmul");
+	}
+
+	if(C.rows != A.rows || C.cols != B.cols || C.type != A.type){
+		C.resize(A.rows, B.cols, A.type);
+		C.zeros();
+	}
+
+	cuda_add2matmul(A, B, C);
+}
+
 void matmul_shared(const GpuMat &A, const GpuMat &B, GpuMat &C)
 {
 	if(A.cols != B.rows || A.type != B.type){
@@ -903,6 +954,20 @@ void matmulT1(const GpuMat &At, const GpuMat &B, GpuMat &C)
 		C.resize(At.cols, B.cols, At.type);
 
 	cuda_matmulT1(At, B, C);
+}
+
+void add2matmulT1(const GpuMat &At, const GpuMat &B, GpuMat &C)
+{
+	if(At.rows != B.rows || At.type != B.type){
+		throw new std::invalid_argument("add2matmulT1");
+	}
+
+	if(C.rows != At.cols || C.cols != B.cols || C.type != At.type){
+		C.resize(At.cols, B.cols, At.type);
+		C.zeros();
+	}
+
+	cuda_add2matmulT1(At, B, C);
 }
 
 void matmulT1_shared(const GpuMat &At, const GpuMat &B, GpuMat &C)
@@ -928,6 +993,20 @@ void matmulT2(const GpuMat &A, const GpuMat &Bt, GpuMat &C)
 		C.resize(A.rows, Bt.rows, A.type);
 
 	cuda_matmulT2(A, Bt, C);
+}
+
+void add2matmulT2(const GpuMat &A, const GpuMat &Bt, GpuMat &C)
+{
+	if(A.cols != Bt.cols || A.type != Bt.type){
+		throw new std::invalid_argument("add2matmulT2");
+	}
+
+	if(C.rows != A.rows || C.cols != Bt.rows || C.type != A.type){
+		C.resize(A.rows, Bt.rows, A.type);
+		C.zeros();
+	}
+
+	cuda_add2matmulT2(A, Bt, C);
 }
 
 void matmulT2_shared(const GpuMat &A, const GpuMat &Bt, GpuMat &C)
@@ -1328,6 +1407,20 @@ void sumRows(const GpuMat &A, GpuMat &C, double val)
 	}
 
 	cuda_sumrows(A, C, val);
+}
+
+void add2sumRows(const GpuMat &A, GpuMat &C, double val)
+{
+	if(A.empty()){
+		throw new std::invalid_argument("add2sumRows");
+	}
+
+	if(C.rows != 1 || C.cols != A.cols || A.type != C.type){
+		C.resize(1, A.cols, A.type);
+		C.zeros();
+	}
+
+	cuda_add2sumrows(A, C, val);
 }
 
 void sumRows_shared(const GpuMat &A, GpuMat &C, double val)

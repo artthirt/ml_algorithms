@@ -268,18 +268,18 @@ void convnn2_mixed::backward(const std::vector<ct::Matf> &D, bool last_level){
 		gpumat::convert_to_gpu(Xci, g_Xci);
 
 		{
-			gpumat::GpuMat g_gWi;
+			//gpumat::GpuMat g_gWi;
 
-			gpumat::matmulT1(g_Xci, g_dSubi, g_gWi);
-			gpumat::add(g_gW0, g_gWi);
+			gpumat::add2matmulT1(g_Xci, g_dSubi, g_gW0);
+//			gpumat::add(g_gW0, g_gWi);
 		}
 
 		{
-			gpumat::GpuMat g_gBi;
+			//gpumat::GpuMat g_gBi;
 
-			gpumat::sumRows(g_dSubi, g_gBi, 1.f/g_dSubi.rows);
+			gpumat::add2sumRows(g_dSubi, g_gB0, 1.f/g_dSubi.rows);
 //			g_gBi.swap_dims();
-			gpumat::add(g_gB0, g_gBi);
+			//gpumat::add(g_gB0, g_gBi);
 		}
 
 		gpumat::convert_to_mat(g_dSubi, dSub[i]);
