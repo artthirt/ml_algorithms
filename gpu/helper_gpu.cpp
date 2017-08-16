@@ -451,7 +451,7 @@ void SimpleAutoencoder::init(GpuMat &_W, GpuMat &_b, int samples, int neurons, S
 	b[0] = _b;
 
 	transpose(_W, W[1]);
-	b[1].resize(samples, 1, _W.type);
+	b[1].resize(1, samples, _W.type);
 	b[1].zeros();
 
 	adam.init(W, b);
@@ -509,7 +509,7 @@ void SimpleAutoencoder::pass(const GpuMat &X)
 //		PRINT_GMAT10(d);
 		sumRows_shared(d, db[i], 1./m);
 //		PRINT_GMAT10(db[i]);
-		db[i].swap_dims();
+//		db[i].swap_dims();
 		if(i > 0)
 			d = di;
 	}

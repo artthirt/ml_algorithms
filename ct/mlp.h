@@ -217,7 +217,7 @@ public:
 
 		W.setSize(input, output);
 		W.randn(0., n);
-		B.setSize(output, 1);
+		B.setSize(1, output);
 		B.randn(0, n);
 
 		m_init = true;
@@ -315,7 +315,7 @@ public:
 		}
 
 		v_sumRows(DA1, gB, 1.f / m);
-		gB.swap_dims();
+//		gB.swap_dims();
 
 		if(!last_layer){
 			matmulT2(DA1, W, DltA0);

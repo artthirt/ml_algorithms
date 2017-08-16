@@ -171,7 +171,7 @@ void convnn_gpu::init(const ct::Size &_szA0, int _channels, int stride, int _K,
 	float n = (float)1./sqrtf(kernels);
 
 	for(size_t i = 0; i < W.size(); ++i){
-		ct::Matf Wi(rows, cols), Bi(kernels, 1);
+		ct::Matf Wi(rows, cols), Bi(1, kernels);
 		Wi.randn(0, n);
 		gpumat::convert_to_gpu(Wi, W[i]);
 		Bi.randn(0, n);
@@ -314,39 +314,40 @@ void convnn_gpu::backcnv(const std::vector<gpumat::GpuMat> &D, std::vector<gpuma
 //	DA1.resize(A1.size());
 	/// A1 -> DA1
 	for(int i = 0; i < (int)D.size(); ++i){
-		switch (m_func) {
-			case ct::LINEAR:
-				D[i].copyTo(DS[i]);
-				break;
-			case ct::RELU:
-				gpumat::deriv_reLu(A1[i]/*, DA1[i]*/);
-				break;
-			case ct::LEAKYRELU:
-				gpumat::deriv_leakyReLu(A1[i], m_params[LEAKYRELU]/*, DA1[i]*/);
-				break;
-			case ct::SIGMOID:
-				gpumat::deriv_sigmoid(A1[i]/*, DA1[i]*/);
-				break;
-			case ct::TANH:
-				gpumat::deriv_tanh(A1[i]/*, DA1[i]*/);
-				break;
-			default:
-				break;
-		}
-	}
+		gpumat::mul2deriv(D[i], A1[i], m_func, DS[i], m_params[gpumat::LEAKYRELU]);
+//		switch (m_func) {
+//			case ct::LINEAR:
+//				D[i].copyTo(DS[i]);
+//				break;
+//			case ct::RELU:
+//				gpumat::deriv_reLu(A1[i]/*, DA1[i]*/);
+//				break;
+//			case ct::LEAKYRELU:
+//				gpumat::deriv_leakyReLu(A1[i], m_params[LEAKYRELU]/*, DA1[i]*/);
+//				break;
+//			case ct::SIGMOID:
+//				gpumat::deriv_sigmoid(A1[i]/*, DA1[i]*/);
+//				break;
+//			case ct::TANH:
+//				gpumat::deriv_tanh(A1[i]/*, DA1[i]*/);
+//				break;
+//			default:
+//				break;
+//		}
+//	}
 
-	if(m_func == gpumat::LINEAR)
-		return;
+//	if(m_func == gpumat::LINEAR)
+//		return;
 
-	/// D * DA1
-	if(D.data() != DS.data()){
-		for(int i = 0; i < (int)D.size(); ++i){
-			gpumat::elemwiseMult(D[i], A1[i], DS[i]);
-		}
-	}else{
-		for(int i = 0; i < (int)D.size(); ++i){
-			gpumat::elemwiseMult(DS[i], A1[i]);
-		}
+//	/// D * DA1
+//	if(D.data() != DS.data()){
+//		for(int i = 0; i < (int)D.size(); ++i){
+//			gpumat::elemwiseMult(D[i], A1[i], DS[i]);
+//		}
+//	}else{
+//		for(int i = 0; i < (int)D.size(); ++i){
+//			gpumat::elemwiseMult(DS[i], A1[i]);
+//		}
 	}
 }
 
@@ -385,9 +386,9 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 		gpumat::GpuMat& dSubi	= dSub2[i];
 		gpumat::matmulT1(Xci, dSubi, vgW);
 
-		vgB.swap_dims();
+//		vgB.swap_dims();
 		sumRows(dSubi, vgB /*, (double)1. / (Xci.total())*/);
-		vgB.swap_dims();
+//		vgB.swap_dims();
 
 		gpumat::add(gW[0], vgW);
 		gpumat::add(gB[0], vgB);
@@ -475,6 +476,9 @@ void convnn_gpu::read2(std::fstream &fs)
 
 	gpumat::read_fs2(fs, W[0]);
 	gpumat::read_fs2(fs, B[0]);
+
+	if(B[0].rows != 1)
+		B[0].swap_dims();
 }
 
 ///////////////////////////////

@@ -5,9 +5,11 @@
 
 namespace ct{
 
+
+
 enum etypefunction{
-	LINEAR,
-	RELU,
+	LINEAR = 0,
+	RELU = 1,
 	SOFTMAX,
 	SIGMOID,
 	TANH,

@@ -46,7 +46,7 @@ void mlp_mixed::init(int input, int output, etypefunction func){
 
 	W.setSize(input, output);
 	W.randn(0., n);
-	B.setSize(output, 1);
+	B.setSize(1, output);
 	B.randn(0, n);
 
 	m_init = true;
@@ -79,34 +79,40 @@ void mlp_mixed::apply_func(gpumat::GpuMat &Z, etypefunction func)
 
 void mlp_mixed::apply_back_func(gpumat::GpuMat &D1, etypefunction func)
 {
+	if(func == LINEAR || func == SOFTMAX)
+		return;
+
 	gpumat::GpuMat g_A1;
-	switch (func) {
-		default:
-		case LINEAR:
-//			D1.copyTo(D2);
-			return;
-		case RELU:
-			gpumat::convert_to_gpu(A1, g_A1);
-			gpumat::deriv_reLu(g_A1);
-			break;
-		case SOFTMAX:
-			//				A = softmax(A, 1);
-//			D1.copyTo(D2);
-			return;
-		case SIGMOID:
-			gpumat::convert_to_gpu(A1, g_A1);
-			gpumat::deriv_sigmoid(g_A1);
-			break;
-		case TANH:
-			gpumat::convert_to_gpu(A1, g_A1);
-			gpumat::deriv_tanh(g_A1);
-			break;
-		case LEAKYRELU:
-			gpumat::convert_to_gpu(A1, g_A1);
-			gpumat::deriv_leakyReLu(g_A1, m_params[LEAKYRELU]);
-			break;
-	}
-	gpumat::elemwiseMult(D1, g_A1);
+	gpumat::convert_to_gpu(A1, g_A1);
+
+	gpumat::mul2deriv(D1, g_A1, (gpumat::etypefunction)func, D1, m_params[LEAKYRELU]);
+//	switch (func) {
+//		default:
+//		case LINEAR:
+////			D1.copyTo(D2);
+//			return;
+//		case RELU:
+//			gpumat::convert_to_gpu(A1, g_A1);
+//			gpumat::deriv_reLu(g_A1);
+//			break;
+//		case SOFTMAX:
+//			//				A = softmax(A, 1);
+////			D1.copyTo(D2);
+//			return;
+//		case SIGMOID:
+//			gpumat::convert_to_gpu(A1, g_A1);
+//			gpumat::deriv_sigmoid(g_A1);
+//			break;
+//		case TANH:
+//			gpumat::convert_to_gpu(A1, g_A1);
+//			gpumat::deriv_tanh(g_A1);
+//			break;
+//		case LEAKYRELU:
+//			gpumat::convert_to_gpu(A1, g_A1);
+//			gpumat::deriv_leakyReLu(g_A1, m_params[LEAKYRELU]);
+//			break;
+//	}
+//	gpumat::elemwiseMult(D1, g_A1);
 }
 
 etypefunction mlp_mixed::funcType() const{
@@ -198,9 +204,9 @@ void mlp_mixed::backward(const Matf &Delta, bool last_layer){
 
 	{
 		gpumat::GpuMat g_gB;
-	//	g_gB.swap_dims();
+//		g_gB.swap_dims();
 		gpumat::sumRows(g_DA1, g_gB, 1.f / m);
-		g_gB.swap_dims();
+//		g_gB.swap_dims();
 
 		gpumat::convert_to_mat(g_gB, gB);
 	}
@@ -226,6 +232,9 @@ void mlp_mixed::read2(std::fstream &fs)
 {
 	read_fs2(fs, W);
 	read_fs2(fs, B);
+
+	if(B.rows != 1)
+		B.swap_dims();
 }
 
 //////////////////////////////////////

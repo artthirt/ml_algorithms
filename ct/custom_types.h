@@ -805,7 +805,7 @@ public:
 	}
 
 	inline Mat_<T>& biasPlus(const Mat_<T > & m){
-		if(m.cols != 1 || cols != m.rows)
+		if((m.cols != 1 && m.rows != cols) || (m.rows != 1 || m.cols != cols))
 			return *this;
 		T* val1 = &(*this->val)[0];
 		T* val2 = &(*m.val)[0];

@@ -466,6 +466,16 @@ void cuda_hconcat2(const std::vector< GpuMat > &list, GpuMat& res);
 extern "C"
 void cuda_hsplit2(const GpuMat& res, std::vector< GpuMat > &list);
 
+/**
+ * @brief cuda_mul2deriv
+ * @param D
+ * @param A
+ * @param func
+ * @param DA
+ */
+extern "C"
+void cuda_mul2deriv(const GpuMat &D, const GpuMat &A, etypefunction func, GpuMat &DA, double param1, double param2, double param3);
+
 
 /////////////////////////////////////////////////
 
@@ -1417,6 +1427,17 @@ void hsplit2(const GpuMat &res, std::vector<int> cols, std::vector<GpuMat > &lis
 	}
 
 	cuda_hsplit2(res, list);
+}
+
+void mul2deriv(const GpuMat &D, const GpuMat &A, etypefunction func, GpuMat &DA, double param1, double param2, double param3)
+{
+	if(D.empty() || A.empty() || D.cols != A.cols || D.rows != A.rows || D.type != A.type)
+		throw new std::invalid_argument("mul2deriv: wrong parameters");
+
+	if(DA.rows != D.rows || DA.cols != D.cols || DA.type != D.type)
+		DA.resize(D);
+
+	cuda_mul2deriv(D, A, func, DA, param1, param2, param3);
 }
 
 

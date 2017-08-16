@@ -7,6 +7,15 @@ namespace gpumat{
 
 class GpuMat;
 
+enum etypefunction{
+	LINEAR = 0,
+	RELU = 1,
+	SIGMOID,
+	SOFTMAX,
+	TANH,
+	LEAKYRELU
+};
+
 namespace internal{
 
 struct Mtx;

@@ -5,7 +5,8 @@
 
 using namespace conv2;
 
-convnn2_mixed::convnn2_mixed(){
+convnn2_mixed::convnn2_mixed()
+{
 	m_use_pool = false;
 	pX = nullptr;
 	stride = 1;
@@ -15,7 +16,8 @@ convnn2_mixed::convnn2_mixed(){
 	m_params[ct::LEAKYRELU] = 0.1;
 }
 
-void convnn2_mixed::setOptimizer(ct::Optimizer<float> *optim){
+void convnn2_mixed::setOptimizer(ct::Optimizer<float> *optim)
+{
 	if(!optim)
 		return;
 	m_optim = optim;
@@ -32,25 +34,30 @@ std::vector<ct::Matf> &convnn2_mixed::XOut(){
 	return A1;
 }
 
-const std::vector<ct::Matf> &convnn2_mixed::XOut() const{
+const std::vector<ct::Matf> &convnn2_mixed::XOut() const
+{
 	if(m_use_pool)
 		return A2;
 	return A1;
 }
 
-std::vector<ct::Matf> &convnn2_mixed::XOut1(){
+std::vector<ct::Matf> &convnn2_mixed::XOut1()
+{
 	return A1;
 }
 
-std::vector<ct::Matf> &convnn2_mixed::XOut2(){
+std::vector<ct::Matf> &convnn2_mixed::XOut2()
+{
 	return A2;
 }
 
-bool convnn2_mixed::use_pool() const{
+bool convnn2_mixed::use_pool() const
+{
 	return m_use_pool;
 }
 
-int convnn2_mixed::outputFeatures() const{
+int convnn2_mixed::outputFeatures() const
+{
 	if(m_use_pool){
 		int val = convnn_abstract<float>::szA2.area() * convnn_abstract<float>::kernels;
 		return val;
@@ -60,22 +67,28 @@ int convnn2_mixed::outputFeatures() const{
 	}
 }
 
-ct::Size convnn2_mixed::szOut() const{
+ct::Size convnn2_mixed::szOut() const
+{
 	if(m_use_pool)
 		return convnn_abstract<float>::szA2;
 	else
 		return convnn_abstract<float>::szA1;
 }
 
-void convnn2_mixed::setAlpha(float alpha){
+void convnn2_mixed::setAlpha(float alpha)
+{
 	m_optim->setAlpha(alpha);
 }
 
-void convnn2_mixed::setLambda(float val){
+void convnn2_mixed::setLambda(float val)
+{
 	m_Lambda = val;
 }
 
-void convnn2_mixed::init(const ct::Size &_szA0, int _channels, int stride, int _K, const ct::Size &_szW, ct::etypefunction func, bool use_pool, bool use_transpose){
+void convnn2_mixed::init(const ct::Size &_szA0, int _channels, int stride,
+						 int _K, const ct::Size &_szW, ct::etypefunction func,
+						 bool use_pool, bool use_transpose)
+{
 	szW = _szW;
 	m_use_pool = use_pool;
 	m_use_transpose = use_transpose;
@@ -88,9 +101,10 @@ void convnn2_mixed::init(const ct::Size &_szA0, int _channels, int stride, int _
 	int rows = szW.area() * convnn_abstract<float>::channels;
 	int cols = convnn_abstract<float>::kernels;
 
-	ct::get_cnv_sizes(convnn_abstract<float>::szA0, szW, stride, convnn_abstract<float>::szA1, convnn_abstract<float>::szA2);
+	ct::get_cnv_sizes(convnn_abstract<float>::szA0, szW, stride,
+					  convnn_abstract<float>::szA1, convnn_abstract<float>::szA2);
 
-	float n = (float)1./sqrt(kernels);
+	float n = 0.1;//(float)1./sqrt(kernels);
 
 	W.resize(1);
 	B.resize(1);
@@ -99,7 +113,7 @@ void convnn2_mixed::init(const ct::Size &_szA0, int _channels, int stride, int _
 
 	W[0].setSize(rows, cols);
 	W[0].randn(0, n);
-	B[0].setSize(convnn_abstract<float>::kernels, 1);
+	B[0].setSize(1, convnn_abstract<float>::kernels);
 	B[0].randn(0, n);
 
 	m_optim->init(W, B);
@@ -187,29 +201,32 @@ void convnn2_mixed::forward(const convnn2_mixed &conv)
 
 void convnn2_mixed::backcnv(const gpumat::GpuMat& D, gpumat::GpuMat& A1, gpumat::GpuMat& DS)
 {
-	switch (m_func) {
-		case ct::RELU:
-			gpumat::deriv_reLu(A1);
-			gpumat::elemwiseMult(D, A1, DS);
-			break;
-		case ct::LEAKYRELU:
-			gpumat::deriv_leakyReLu(A1, m_params[ct::LEAKYRELU]);
-			gpumat::elemwiseMult(D, A1, DS);
-			break;
-		case ct::SIGMOID:
-			gpumat::deriv_sigmoid(A1);
-			gpumat::elemwiseMult(D, A1, DS);
-			break;
-		case ct::TANH:
-			gpumat::deriv_tanh(A1);
-			gpumat::elemwiseMult(D, A1, DS);
-			break;
-		default:
-			if(D.data != DS.data){
-				D.copyTo(DS);
-			}
-			break;
-	}
+	gpumat::mul2deriv(D, A1, (gpumat::etypefunction)m_func, DS, m_params[ct::LEAKYRELU]);
+//	gpumat::save_gmat(DS, "test/mul2deriv_.txt");
+//	switch (m_func) {
+//		case ct::RELU:
+//			gpumat::deriv_reLu(A1);
+//			gpumat::elemwiseMult(D, A1, DS);
+//			break;
+//		case ct::LEAKYRELU:
+//			gpumat::deriv_leakyReLu(A1, m_params[ct::LEAKYRELU]);
+//			gpumat::elemwiseMult(D, A1, DS);
+//			break;
+//		case ct::SIGMOID:
+//			gpumat::deriv_sigmoid(A1);
+//			gpumat::elemwiseMult(D, A1, DS);
+//			break;
+//		case ct::TANH:
+//			gpumat::deriv_tanh(A1);
+//			gpumat::elemwiseMult(D, A1, DS);
+//			break;
+//		default:
+//			if(D.data != DS.data){
+//				D.copyTo(DS);
+//			}
+//			break;
+//	}
+//	gpumat::save_gmat(DS, "test/old.txt");
 }
 
 void convnn2_mixed::backward(const std::vector<ct::Matf> &D, bool last_level){
@@ -261,7 +278,7 @@ void convnn2_mixed::backward(const std::vector<ct::Matf> &D, bool last_level){
 			gpumat::GpuMat g_gBi;
 
 			gpumat::sumRows(g_dSubi, g_gBi, 1.f/g_dSubi.rows);
-			g_gBi.swap_dims();
+//			g_gBi.swap_dims();
 			gpumat::add(g_gB0, g_gBi);
 		}
 
@@ -343,6 +360,9 @@ void convnn2_mixed::read2(std::fstream &fs){
 
 	ct::read_fs2(fs, W[0]);
 	ct::read_fs2(fs, B[0]);
+
+	if(B[0].rows != 1)
+		B[0].swap_dims();
 }
 
 /////////////////////////////

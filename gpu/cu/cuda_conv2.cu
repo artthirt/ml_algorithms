@@ -364,18 +364,19 @@ __device__ void _back_derivT(const Mtx& Delta,
 		for(int a = 0; a < szW.height; ++a){
 			if((y - a) % stride == 0){
 				int y0 = (y - a) / stride;
-				for(int b = 0; b < szW.width; ++b){
+				if(y0 >= 0 && y0 < szOut.height){
+					for(int b = 0; b < szW.width; ++b){
 
-					if((x - b) % stride == 0){
+						if((x - b) % stride == 0){
 
-						int x0 = (x - b) / stride;
+							int x0 = (x - b) / stride;
 
-						if(y0 >= 0 && y0 < szOut.height &&
-								x0 >= 0 && x0 < szOut.width){
-							int row2 = y0 * szOut.width + x0;
-							int col2 = c * szWarea + (a * szW.width + b);
-							T val = dR[row2 * Delta.cols + col2];
-							sum += val;
+							if(x0 >= 0 && x0 < szOut.width){
+								int row2 = y0 * szOut.width + x0;
+								int col2 = c * szWarea + (a * szW.width + b);
+								T val = dR[row2 * Delta.cols + col2];
+								sum += val;
+							}
 						}
 					}
 				}

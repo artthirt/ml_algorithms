@@ -57,7 +57,7 @@ void mlp::init(int input, int output, int type, etypefunction func)
 	m_func = func;
 
 	W.resize(input, output, type);
-	B.resize(output, 1, type);
+	B.resize(1, output, type);
 
 	switch (type) {
 		case GPU_DOUBLE:
@@ -97,26 +97,33 @@ void mlp::apply_func(const GpuMat &Z, GpuMat &A, etypefunction func){
 
 void mlp::apply_back_func(const GpuMat &D1, const GpuMat& A1, GpuMat &D2, etypefunction func)
 {
-	switch (func) {
-		case RELU:
-			deriv_reLu(A1, D2);
-			break;
-		case SIGMOID:
-			deriv_sigmoid(A1, D2);
-			break;
-		case TANH:
-			deriv_tanh(A1, D2);
-			break;
-		case LEAKYRELU:
-			deriv_leakyReLu(A1, m_params[LEAKYRELU], D2);
-			break;
-		default:
-			if(D1.data == D2.data)
-				return;
-			else
-				D1.copyTo(D2);
+	if(m_func == LINEAR || m_func == SOFTMAX){
+		if(D1.data != D2.data)
+			D1.copyTo(D2);
+		return;
 	}
-	elemwiseMult(D1, D2, D2);
+
+	gpumat::mul2deriv(D1, A1, m_func, D2, m_params[LEAKYRELU]);
+//	switch (func) {
+//		case RELU:
+//			deriv_reLu(A1, D2);
+//			break;
+//		case SIGMOID:
+//			deriv_sigmoid(A1, D2);
+//			break;
+//		case TANH:
+//			deriv_tanh(A1, D2);
+//			break;
+//		case LEAKYRELU:
+//			deriv_leakyReLu(A1, m_params[LEAKYRELU], D2);
+//			break;
+//		default:
+//			if(D1.data == D2.data)
+//				return;
+//			else
+//				D1.copyTo(D2);
+//	}
+//	elemwiseMult(D1, D2, D2);
 }
 
 etypefunction mlp::funcType() const{
@@ -193,9 +200,9 @@ void mlp::backward(const GpuMat &Delta, bool last_layer)
 		gpumat::add(gW, W, 1, m_lambda / m);
 	}
 
-	gB.swap_dims();
+//	gB.swap_dims();
 	sumRows(*pDA1, gB, 1.f / m);
-	gB.swap_dims();
+//	gB.swap_dims();
 
 	if(!last_layer){
 		matmulT2(*pDA1, W, DltA0);
@@ -289,9 +296,9 @@ void mlp::backward(const std::vector<GpuMat> &Delta, bool last_layer)
 		}
 		add(gW, gWi);
 
-		gBi.swap_dims();
+//		gBi.swap_dims();
 		sumRows((*pDA1)[i], gBi);
-		gBi.swap_dims();
+//		gBi.swap_dims();
 
 		add(gB, gBi);
 	}
@@ -336,6 +343,9 @@ void mlp::read2(std::fstream &fs)
 {
 	gpumat::read_fs2(fs, W);
 	gpumat::read_fs2(fs, B);
+
+	if(B.rows != 1)
+		B.swap_dims();
 }
 
 ///**************************

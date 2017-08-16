@@ -491,6 +491,9 @@ void hconcat2(const std::vector<GpuMat> &list, gpumat::GpuMat& res);
  */
 void hsplit2(const GpuMat& res, std::vector< int > cols, std::vector< GpuMat >& list);
 
+void mul2deriv(const GpuMat& D, const gpumat::GpuMat& A, gpumat::etypefunction func, gpumat::GpuMat& DA,
+			   double param1 = 0, double param2 = 0, double param3 = 0);
+
 }
 
 #endif // GPU_H

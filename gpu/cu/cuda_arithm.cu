@@ -1476,7 +1476,51 @@ __global__ void hsplit2(Mtx A, SmallMtxArray list)
 	}
 }
 
+template< typename T >
+__global__ void mul2deriv(Mtx D, Mtx A, gpumat::etypefunction func, Mtx DA, T param1 = 0, T param2 = 0, T param3 = 0)
+{
+	int row = threadIdx.y + blockIdx.y * blockDim.y;
+	int col = threadIdx.x + blockIdx.x * blockDim.x;
+
+	if(row < D.rows && col < D.cols){
+		T *dD = (T*)D.data;
+		T *dA = (T*)A.data;
+		T *dDA = (T*)DA.data;
+
+		int off = row * DA.cols + col;
+		switch (func) {
+			default:
+			case LINEAR:
+				dDA[off] = dD[off];
+				break;
+			case RELU:{
+				T val = dA[off] > 0.? 1. : 0.;
+				dDA[off] = val * dD[off];
+				break;
+			}
+			case LEAKYRELU:{
+				T val = dA[off] > 0.? 1. : param1;
+				dDA[off] = val * dD[off];
+				break;
+			}
+			case SIGMOID:{
+				T val = dA[off];
+				val = val * (1 - val);
+				dDA[off] = val * dD[off];
+				break;
+			}
+			case TANH:{
+				T val = dA[off];
+				val = (1. - val * val);
+				dDA[off] = val * dD[off];
+				break;
+			}
+		}
+	}
 }
+
+}
+
 }
 
 //////// end namespace /////////////////
@@ -2863,6 +2907,31 @@ void cuda_hsplit2(const GpuMat& res, std::vector< GpuMat > &list)
 		break;
 	case GPU_FLOAT:
 		internal::hsplit2<float> <<<dimGrid, dimBlock>>>(res, mlist);
+		break;
+	}
+}
+
+/**
+ * @brief cuda_mul2deriv
+ * @param D
+ * @param A
+ * @param func
+ * @param DA
+ */
+extern "C"
+void cuda_mul2deriv(const GpuMat &D, const GpuMat &A, etypefunction func, GpuMat &DA, double param1, double param2, double param3)
+{
+	int x1 = D.cols / BLOCKSIZE + 1;
+	int x2 = D.rows / BLOCKSIZE + 1;
+
+	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+
+	switch (D.type) {
+	case GPU_DOUBLE:
+		internal::mul2deriv<double> <<<dimGrid, dimBlock>>>(D, A, func, DA, param1, param2, param3);
+		break;
+	case GPU_FLOAT:
+		internal::mul2deriv<float> <<<dimGrid, dimBlock>>>(D, A, func, DA, param1, param2, param3);
 		break;
 	}
 }
