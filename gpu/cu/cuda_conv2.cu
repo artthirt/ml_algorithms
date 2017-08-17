@@ -46,10 +46,12 @@ __device__ void _im2cols(const Mtx& X, const ct::Size& szA0, int channels, const
 		T *dXi = &dX[c * szA0area];
 
 		for(int a = 0; a < szW.height; ++a){
-			for(int b = 0; b < szW.width; ++b){
-				int col2 = c * szWarea + (a * szW.width + b);
-				if(y0 + a < szA0.height && x0 + b < szA0.width){
-					dR[row2 * Res.cols + col2] = dXi[(y0 + a) * szA0.width + (x0 + b)];
+			if(y0 + a < szA0.height){
+				for(int b = 0; b < szW.width; ++b){
+					int col2 = c * szWarea + (a * szW.width + b);
+					if(x0 + b < szA0.width){
+						dR[row2 * Res.cols + col2] = dXi[(y0 + a) * szA0.width + (x0 + b)];
+					}
 				}
 			}
 		}
@@ -82,10 +84,12 @@ __device__ void _im2colsT(const Mtx& X, const ct::Size& szA0, int channels, cons
 		T *dXi = (T*)X.data + c;
 
 		for(int a = 0; a < szW.height; ++a){
-			for(int b = 0; b < szW.width; ++b){
-				int col2 = c * szWarea + (a * szW.width + b);
-				if(y0 + a < szA0.height && x0 + b < szA0.width){
-					dR[row2 * Res.cols + col2] = dXi[((y0 + a) * szA0.width + (x0 + b)) * channels];
+			if(y0 + a < szA0.height){
+				for(int b = 0; b < szW.width; ++b){
+					int col2 = c * szWarea + (a * szW.width + b);
+					if(x0 + b < szA0.width){
+						dR[row2 * Res.cols + col2] = dXi[((y0 + a) * szA0.width + (x0 + b)) * channels];
+					}
 				}
 			}
 		}
@@ -156,11 +160,13 @@ __device__ void _im2colsSame(const Mtx& X, const ct::Size& szA0, int channels, c
 
 		for(int _a = 0; _a < szW.height; ++_a){
 			int a = _a - szW.height/2;
-			for(int _b = 0; _b < szW.width; ++_b){
-				int b = _b - szW.width/2;
-				int col2 = c * szWarea + (_a * szW.width + _b);
-				if(y0 + a >= 0 && y0 + a < szA0.height && x0 + b >= 0 && x0 + b < szA0.width){
-					dR[row2 * Res.cols + col2] = dXi[(y0 + a) * szA0.width + (x0 + b)];
+			if(y0 + a >= 0 && y0 + a < szA0.height){
+				for(int _b = 0; _b < szW.width; ++_b){
+					int b = _b - szW.width/2;
+					int col2 = c * szWarea + (_a * szW.width + _b);
+					if(x0 + b >= 0 && x0 + b < szA0.width){
+						dR[row2 * Res.cols + col2] = dXi[(y0 + a) * szA0.width + (x0 + b)];
+					}
 				}
 			}
 		}
@@ -194,11 +200,13 @@ __device__ void _im2colsTSame(const Mtx& X, const ct::Size& szA0, int channels, 
 
 		for(int _a = 0; _a < szW.height; ++_a){
 			int a = _a - szW.height/2;
-			for(int _b = 0; _b < szW.width; ++_b){
-				int b = _b - szW.width/2;
-				int col2 = c * szWarea + (_a * szW.width + _b);
-				if(y0 + a >= 0 && y0 + a < szA0.height && x0 + b >= 0 && x0 + b < szA0.width){
-					dR[row2 * Res.cols + col2] = dXi[((y0 + a) * szA0.width + (x0 + b)) * channels];
+			if(y0 + a >= 0 && y0 + a < szA0.height){
+				for(int _b = 0; _b < szW.width; ++_b){
+					int b = _b - szW.width/2;
+					int col2 = c * szWarea + (_a * szW.width + _b);
+					if(x0 + b >= 0 && x0 + b < szA0.width){
+						dR[row2 * Res.cols + col2] = dXi[((y0 + a) * szA0.width + (x0 + b)) * channels];
+					}
 				}
 			}
 		}
@@ -297,18 +305,19 @@ __device__ void _cols2im(const Mtx& Delta,
 		for(int a = 0; a < szW.height; ++a){
 			if((y - a) % stride == 0){
 				int y0 = (y - a) / stride;
-				for(int b = 0; b < szW.width; ++b){
+				if(y0 >= 0 && y0 < szOut.height){
+					for(int b = 0; b < szW.width; ++b){
 
-					if((x - b) % stride == 0){
+						if((x - b) % stride == 0){
 
-						int x0 = (x - b) / stride;
+							int x0 = (x - b) / stride;
 
-						if(y0 >= 0 && y0 < szOut.height &&
-								x0 >= 0 && x0 < szOut.width){
-							int row2 = y0 * szOut.width + x0;
-							int col2 = c * szWarea + (a * szW.width + b);
-							T val = dR[row2 * Delta.cols + col2];
-							sum += val;
+							if(x0 >= 0 && x0 < szOut.width){
+								int row2 = y0 * szOut.width + x0;
+								int col2 = c * szWarea + (a * szW.width + b);
+								T val = dR[row2 * Delta.cols + col2];
+								sum += val;
+							}
 						}
 					}
 				}
@@ -483,14 +492,16 @@ __device__ void _subsample(const Mtx &X,
 		T resM = 0;
 
 		for(int a = 0; a < stride; ++a){
-			for(int b = 0; b < stride; ++b){
-				if(y0 + a < szA.height && x0 + b < szA.width){
-					T val = dX[((y0 + a) * szA.width + (x0 + b)) * X.cols];
-					if(val > mmax){
-						mmax = val;
-						xm = x0 + b;
-						ym = y0 + a;
-						resM = 1;
+			if(y0 + a < szA.height){
+				for(int b = 0; b < stride; ++b){
+					if(x0 + b < szA.width){
+						T val = dX[((y0 + a) * szA.width + (x0 + b)) * X.cols];
+						if(val > mmax){
+							mmax = val;
+							xm = x0 + b;
+							ym = y0 + a;
+							resM = 1;
+						}
 					}
 				}
 			}
@@ -559,10 +570,12 @@ __device__ void _upsample(const Mtx &Y,
 		T val = dY[(y * szO.width + x) * K];
 
 		for(int a = 0; a < stride; ++a){
-			for(int b = 0; b < stride; ++b){
-				if(y0 + a < szA.height && x0 + b < szA.width){
-					T m = dM[((y0 + a) * szA.width + (x0 + b)) * Mask.cols];
-					dX[((y0 + a) * szA.width + (x0 + b)) * X.cols] = val * m;
+			if(y0 + a < szA.height){
+				for(int b = 0; b < stride; ++b){
+					if(x0 + b < szA.width){
+						T m = dM[((y0 + a) * szA.width + (x0 + b)) * Mask.cols];
+						dX[((y0 + a) * szA.width + (x0 + b)) * X.cols] = val * m;
+					}
 				}
 			}
 		}
