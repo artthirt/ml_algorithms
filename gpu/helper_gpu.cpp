@@ -189,6 +189,7 @@ StohasticGradientOptimizer::StohasticGradientOptimizer(): Optimizer()
 
 bool StohasticGradientOptimizer::init(const std::vector<GpuMat> &gradW, const std::vector<GpuMat> &gradB)
 {
+	gradW, gradB;
 	return true;
 }
 
@@ -203,6 +204,7 @@ bool StohasticGradientOptimizer::pass(const std::vector<GpuMat> &gradW, const st
 		gpumat::sub(W[i], gradW[i], 1., m_alpha);
 		gpumat::sub(b[i], gradB[i], 1., m_alpha);
 	}
+	return true;
 }
 
 ///////////////////////////////
@@ -338,8 +340,8 @@ bool AdamOptimizer::pass(const std::vector<GpuMat> &gradW, const std::vector<Gpu
 	}
 
 	m_iteration++;
-	double sb1 = (1. / (1. - pow(m_betha1, m_iteration)));
-	double sb2 = (1. / (1. - pow(m_betha2, m_iteration)));
+	double sb1 = m_iteration < 1000? (1. / (1. - pow(m_betha1, m_iteration))) : 1;
+	double sb2 = m_iteration < 1000? (1. / (1. - pow(m_betha2, m_iteration))) : 1;
 
 	for(size_t i = 0; i < gradW.size(); ++i){
 
@@ -375,27 +377,27 @@ bool AdamOptimizer::pass(const std::vector<GpuMat> &gradW,
 	}
 
 	m_iteration++;
-	float sb1 = (1. / (1. - pow(m_betha1, m_iteration)));
-	float sb2 = (1. / (1. - pow(m_betha2, m_iteration)));
-	float eps = (float)(10e-8);
+	double sb1 = m_iteration < 1000? (1. / (1. - pow(m_betha1, m_iteration))) : 1.;
+	double sb2 = m_iteration < 1000? (1. / (1. - pow(m_betha2, m_iteration))) : 1.;
+	double eps = (double)(10e-8);
 
 	for(size_t i = 0; i < gradW.size(); ++i){
 
 		gpumat::add(m_mW[i], gradW[i], m_betha1, (1. - m_betha1));
-		m_mb_single[i] = m_betha1 * m_mb_single[i] + (1. - m_betha1) * gradB[i];
+		m_mb_single[i] = (float)(m_betha1 * m_mb_single[i] + (1. - m_betha1) * gradB[i]);
 
 		gpumat::elemwiseSqr(gradW[i], sW[i]);
 		float sB = gradB[i] * gradB[i];
 
 		gpumat::add(m_vW[i], sW[i], m_betha2, (1. - m_betha2));
-		m_vb_single[i] = m_betha2 * m_vb_single[i] + (1 - m_betha2) * sB;
+		m_vb_single[i] = (float)(m_betha2 * m_vb_single[i] + (1 - m_betha2) * sB);
 
 		/// W = -alpha * (sb1 * mW / (sqrt(sb2 * vW) + eps))
 
 		//gpumat::add(W[i], gradW[i], 1., -m_alpha);
 		gpumat::sub_adamGrad(W[i], m_mW[i], m_vW[i], m_alpha, sb1, sb2);
 
-		b[i] -= m_alpha * (sb1 * m_mb_single[i]) / (sqrt(sb2 * m_vb_single[i]) + eps);
+		b[i] -= (float)(m_alpha * (sb1 * m_mb_single[i]) / (sqrt(sb2 * m_vb_single[i]) + eps));
 		//W[i] -= m_alpha * mWs;
 		//b[i] -= m_alpha * mBs;
 	}

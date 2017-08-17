@@ -128,6 +128,7 @@ void mlp_mixed::forward(const Matf *mat, bool save_A0){
 
 	{
 		gpumat::GpuMat g_A0, g_W;
+		gpumat::GpuMat partZ;
 
 		gpumat::convert_to_gpu(*pA0, g_A0);
 		gpumat::convert_to_gpu(W, g_W);
@@ -140,17 +141,26 @@ void mlp_mixed::forward(const Matf *mat, bool save_A0){
 			gpumat::convert_to_gpu(Dropout, g_Dropout);
 
 			gpumat::elemwiseMult(g_A0, g_Dropout, g_XDropout);
-			gpumat::matmul(g_XDropout, g_W, g_Z);
+			if(m_func == SOFTMAX){
+				gpumat::m2mpbaf(g_XDropout, g_W, g_B, gpumat::LINEAR, g_Z, m_params[LEAKYRELU]);
+				gpumat::softmax(g_Z, 1, partZ);
+			}else
+				gpumat::m2mpbaf(g_XDropout, g_W, g_B, (gpumat::etypefunction)m_func, g_Z, m_params[LEAKYRELU]);
 			gpumat::convert_to_mat(g_XDropout, XDropout);
 		}else{
-			gpumat::matmul(g_A0, g_W, g_Z);
+			//gpumat::matmul(g_A0, g_W, g_Z);
+			if(m_func == SOFTMAX){
+				gpumat::m2mpbaf(g_A0, g_W, g_B, gpumat::LINEAR, g_Z, m_params[LEAKYRELU]);
+				gpumat::softmax(g_Z, 1, partZ);
+			}else
+				gpumat::m2mpbaf(g_A0, g_W, g_B, (gpumat::etypefunction)m_func, g_Z, m_params[LEAKYRELU]);
 		}
 	}
 
 	{
-		gpumat::biasPlus(g_Z, g_B);
+//		gpumat::biasPlus(g_Z, g_B);
 
-		apply_func(g_Z, m_func);
+//		apply_func(g_Z, m_func);
 		gpumat::convert_to_mat(g_Z, A1);
 	}
 	//gpumat::convert_to_mat(g_Z, Z);

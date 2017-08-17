@@ -245,26 +245,27 @@ void convnn_gpu::forward(const std::vector<gpumat::GpuMat> *_pX)
 	for(int i = 0; i < (int)Xc.size(); ++i){
 		gpumat::GpuMat& Xi = Xc[i];
 		gpumat::GpuMat& A1i = A1[i];
-		gpumat::matmul(Xi, W[0], A1i);
+		gpumat::m2mpbaf(Xi, W[0], B[0], m_func, A1i, m_params[LEAKYRELU]);
+//		gpumat::matmul(Xi, W[0], A1i);
 
-		gpumat::biasPlus(A1i, B[0]);
+//		gpumat::biasPlus(A1i, B[0]);
 
-		switch (m_func) {
-			case gpumat::RELU:
-				gpumat::reLu(A1i);
-				break;
-			case gpumat::LEAKYRELU:
-				gpumat::leakyReLu(A1i, m_params[LEAKYRELU]);
-				break;
-			case gpumat::SIGMOID:
-				gpumat::sigmoid(A1i);
-				break;
-			case gpumat::TANH:
-				gpumat::tanh(A1i);
-				break;
-			default:
-				break;
-		}
+//		switch (m_func) {
+//			case gpumat::RELU:
+//				gpumat::reLu(A1i);
+//				break;
+//			case gpumat::LEAKYRELU:
+//				gpumat::leakyReLu(A1i, m_params[LEAKYRELU]);
+//				break;
+//			case gpumat::SIGMOID:
+//				gpumat::sigmoid(A1i);
+//				break;
+//			case gpumat::TANH:
+//				gpumat::tanh(A1i);
+//				break;
+//			default:
+//				break;
+//		}
 	}
 
 	if(m_pool_dropout){

@@ -1627,6 +1627,48 @@ __global__ void mul2deriv(Mtx D, Mtx A, gpumat::etypefunction func, Mtx DA, T pa
 	}
 }
 
+template<typename T>
+__global__ void m2mpbaf(Mtx A, Mtx B, Mtx C, etypefunction func, Mtx D, T param1, T param2, T param3)
+{
+	int row = threadIdx.y + blockIdx.y * blockDim.y;
+	int col = threadIdx.x + blockIdx.x * blockDim.x;
+
+	T* DA = (T*)A.data;
+	T* DB = (T*)B.data;
+	T* DC = (T*)C.data;
+	T* DD = (T*)D.data;
+
+	T sC = 0;
+
+	if(row < A.rows && col < B.cols){
+		for(int i = 0; i < B.rows; i++){
+			sC += DA[row * A.cols + i] * DB[i * B.cols + col];
+		}
+		sC += DC[col];
+
+		switch (func) {
+			case RELU:
+				sC = sC > 0? sC : 0;
+				break;
+			case LEAKYRELU:
+				sC = sC > 0? sC : param1 * sC;
+				break;
+			case SIGMOID:
+				sC = exp(-sC);
+				sC = 1. / (1. + sC);
+				break;
+			case TANH:
+				sC = exp(2. * sC);
+				sC = (sC - 1.) / (sC + 1.);
+				break;
+			default:
+				break;
+		}
+
+		DD[row * B.cols + col] = sC;
+	}
+}
+
 }
 
 }
@@ -3136,6 +3178,32 @@ void cuda_mul2deriv(const GpuMat &D, const GpuMat &A, etypefunction func, GpuMat
 		break;
 	case GPU_FLOAT:
 		internal::mul2deriv<float> <<<dimGrid, dimBlock>>>(D, A, func, DA, param1, param2, param3);
+		break;
+	}
+}
+
+/**
+ * @brief m2mpbaf
+ * @param A
+ * @param B
+ * @param C
+ * @param func
+ * @param D
+ */
+extern "C"
+void cuda_m2mpbaf(const GpuMat &A, const GpuMat &B, const GpuMat &C, etypefunction func, GpuMat &D, double param1, double param2, double param3)
+{
+	int x1 = D.cols / BLOCKSIZE + 1;
+	int x2 = D.rows / BLOCKSIZE + 1;
+
+	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+
+	switch (D.type) {
+	case GPU_DOUBLE:
+		internal::m2mpbaf<double> <<<dimGrid, dimBlock>>>(A, B, C, func, D, param1, param2, param3);
+		break;
+	case GPU_FLOAT:
+		internal::m2mpbaf<float> <<<dimGrid, dimBlock>>>(A, B, C, func, D, param1, param2, param3);
 		break;
 	}
 }

@@ -524,8 +524,33 @@ void hconcat2(const std::vector<GpuMat> &list, gpumat::GpuMat& res);
  */
 void hsplit2(const GpuMat& res, std::vector< int > cols, std::vector< GpuMat >& list);
 
+/**
+ * @brief mul2deriv
+ * @param D
+ * @param A
+ * @param func
+ * @param DA
+ * @param param1
+ * @param param2
+ * @param param3
+ */
 void mul2deriv(const GpuMat& D, const gpumat::GpuMat& A, gpumat::etypefunction func, gpumat::GpuMat& DA,
 			   double param1 = 0, double param2 = 0, double param3 = 0);
+
+/**
+ * @brief m2mpbaf
+ * matmul A on B plus bias C and apply function func
+ * @param A
+ * @param B
+ * @param C	- bias
+ * @param func - not SOFTMAX
+ * @param D - result
+ * @param param1 - for LEAKYRELU parameter of multiplication
+ * @param param2 - for future
+ * @param param3 - for future
+ */
+void m2mpbaf(const GpuMat& A, const GpuMat& B, const GpuMat& C, etypefunction func, GpuMat& D,
+			 double param1 = 0, double param2 = 0, double param3 = 0);
 
 }
 

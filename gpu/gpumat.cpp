@@ -513,6 +513,19 @@ void cuda_hsplit2(const GpuMat& res, std::vector< GpuMat > &list);
 extern "C"
 void cuda_mul2deriv(const GpuMat &D, const GpuMat &A, etypefunction func, GpuMat &DA, double param1, double param2, double param3);
 
+/**
+ * @brief m2mpbaf
+ * @param A
+ * @param B
+ * @param C
+ * @param func
+ * @param D
+ * @param1
+ * @param2
+ * @param3
+ */
+extern "C"
+void cuda_m2mpbaf(const GpuMat &A, const GpuMat &B, const GpuMat &C, etypefunction func, GpuMat &D, double param1, double param2, double param3);
 
 /////////////////////////////////////////////////
 
@@ -1531,6 +1544,19 @@ void mul2deriv(const GpuMat &D, const GpuMat &A, etypefunction func, GpuMat &DA,
 		DA.resize(D);
 
 	cuda_mul2deriv(D, A, func, DA, param1, param2, param3);
+}
+
+void m2mpbaf(const GpuMat &A, const GpuMat &B, const GpuMat &C, etypefunction func, GpuMat &D, double param1, double param2, double param3)
+{
+	if(A.empty() || B.empty() || C.empty() || A.cols != B.rows || B.cols != C.cols || C.rows != 1
+			|| A.type != B.type || A.type != C.type)
+		throw new std::invalid_argument("m2mpbaf: wrong parameters");
+
+	if(D.rows != A.rows || D.cols != B.cols || D.type != A.type){
+		D.resize(A.rows, B.cols, A.type);
+	}
+
+	cuda_m2mpbaf(A, B, C, func, D, param1, param2, param3);
 }
 
 

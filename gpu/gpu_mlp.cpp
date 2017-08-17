@@ -158,14 +158,26 @@ void mlp::forward(const GpuMat *mat, bool save_A0)
 
 	if(m_is_dropout && std::abs(m_prob - 1) > 1e-6){
 		apply_dropout(*pA0, m_prob, XDropout, Dropout);
-		matmul(XDropout, W, A1);
+//		matmul(XDropout, W, A1);
+		if(m_func == SOFTMAX){
+			m2mpbaf(XDropout, W, B, LINEAR, A1, m_params[LEAKYRELU]);
+			softmax(A1, 1, PartZ);
+		}else{
+			m2mpbaf(XDropout, W, B, m_func, A1, m_params[LEAKYRELU]);
+		}
 	}else{
-		matmul(*pA0, W, A1);
+//		matmul(*pA0, W, A1);
+		if(m_func == SOFTMAX){
+			m2mpbaf(*pA0, W, B, LINEAR, A1, m_params[LEAKYRELU]);
+			softmax(A1, 1, PartZ);
+		}else{
+			m2mpbaf(*pA0, W, B, m_func, A1, m_params[LEAKYRELU]);
+		}
 	}
 
-	biasPlus(A1, B);
-	if(m_func != LINEAR)
-		apply_func(A1, A1, m_func);
+//	biasPlus(A1, B);
+//	if(m_func != LINEAR)
+//		apply_func(A1, A1, m_func);
 
 	if(!save_A0)
 		pA0 = nullptr;

@@ -155,25 +155,26 @@ void convnn2_mixed::forward(const std::vector<ct::Matf> *_pX)
 		}
 		gpumat::convert_to_mat(g_Xci, Xc[i]);
 
-		gpumat::matmul(g_Xci, g_W, g_A1i);
-		gpumat::biasPlus(g_A1i, g_B);
+		gpumat::m2mpbaf(g_Xci, g_W, g_B, (gpumat::etypefunction)m_func, g_A1i, m_params[ct::LEAKYRELU]);
+//		gpumat::matmul(g_Xci, g_W, g_A1i);
+//		gpumat::biasPlus(g_A1i, g_B);
 
-		switch (m_func) {
-			case ct::RELU:
-				gpumat::reLu(g_A1i);
-				break;
-			case ct::LEAKYRELU:
-				gpumat::leakyReLu(g_A1i, m_params[ct::LEAKYRELU]);
-				break;
-			case ct::SIGMOID:
-				gpumat::sigmoid(g_A1i);
-				break;
-			case ct::TANH:
-				gpumat::tanh(g_A1i);
-				break;
-			default:
-				break;
-		}
+//		switch (m_func) {
+//			case ct::RELU:
+//				gpumat::reLu(g_A1i);
+//				break;
+//			case ct::LEAKYRELU:
+//				gpumat::leakyReLu(g_A1i, m_params[ct::LEAKYRELU]);
+//				break;
+//			case ct::SIGMOID:
+//				gpumat::sigmoid(g_A1i);
+//				break;
+//			case ct::TANH:
+//				gpumat::tanh(g_A1i);
+//				break;
+//			default:
+//				break;
+//		}
 		gpumat::convert_to_mat(g_A1i, A1[i]);
 
 		if(m_use_pool){
