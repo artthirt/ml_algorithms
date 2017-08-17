@@ -40,7 +40,7 @@ void check_deriv(const std::vector< gpumat::GpuMat >& Delta,
 {
 	gpumat::GpuMat Dlt;
 
-	back_derivT(Delta[0], szOut, szA0, channels, szW, stride, Dlt);
+	cols2imT(Delta[0], szOut, szA0, channels, szW, stride, Dlt);
 
 	ct::Matf c1, c2, c3, c4;
 
@@ -51,7 +51,7 @@ void check_deriv(const std::vector< gpumat::GpuMat >& Delta,
 
 	gpumat::convert_to_mat(Delta[0], c4);
 
-	conv2::back_derivT(c4, szOut, szA0, channels, szW, stride, c3);
+	conv2::cols2imT(c4, szOut, szA0, channels, szW, stride, c3);
 
 	check(c3, c1);
 }
@@ -431,7 +431,7 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 			gpumat::matmulT2(dSub2[i], W[0], Dci);
 		}
 
-		back_derivT(Dc, szA1, szA0, channels, szW, stride, Dlt);
+		cols2imT(Dc, szA1, szA0, channels, szW, stride, Dlt);
 #if 0
 		check_deriv(Dc, szA1, szA0, channels, szW, stride, Dlt);
 #endif
@@ -562,7 +562,7 @@ void cuda_im2colsT_vecSame(const std::vector< gpumat::GpuMat > &X,
 /////////////
 
 extern "C"
-void cuda_back_deriv(const gpumat::GpuMat &Delta,
+void cuda_cols2im(const gpumat::GpuMat &Delta,
 				const ct::Size &szOut,
 				const ct::Size &szA0,
 				int channels,
@@ -571,7 +571,7 @@ void cuda_back_deriv(const gpumat::GpuMat &Delta,
 				gpumat::GpuMat &X);
 
 extern "C"
-void cuda_back_deriv_vec(const std::vector< gpumat::GpuMat > &Delta,
+void cuda_cols2im_vec(const std::vector< gpumat::GpuMat > &Delta,
 				const ct::Size &szOut,
 				const ct::Size &szA0,
 				int channels,
@@ -580,7 +580,7 @@ void cuda_back_deriv_vec(const std::vector< gpumat::GpuMat > &Delta,
 				std::vector< gpumat::GpuMat > &X);
 
 extern "C"
-void cuda_back_derivT(const gpumat::GpuMat &Delta,
+void cuda_cols2imT(const gpumat::GpuMat &Delta,
 				const ct::Size &szOut,
 				const ct::Size &szA0,
 				int channels,
@@ -589,7 +589,7 @@ void cuda_back_derivT(const gpumat::GpuMat &Delta,
 				gpumat::GpuMat &X);
 
 extern "C"
-void cuda_back_derivT_vec(const std::vector< gpumat::GpuMat > &Delta,
+void cuda_col2imT_vec(const std::vector< gpumat::GpuMat > &Delta,
 				const ct::Size &szOut,
 				const ct::Size &szA0,
 				int channels,
@@ -715,7 +715,7 @@ void gpumat::im2colsT(const std::vector<gpumat::GpuMat> &X, const ct::Size &szA0
 
 //////////////////////
 
-void gpumat::back_deriv(const gpumat::GpuMat &Delta,
+void gpumat::cols2im(const gpumat::GpuMat &Delta,
 				const ct::Size &szOut,
 				const ct::Size &szA0,
 				int channels,
@@ -729,10 +729,10 @@ void gpumat::back_deriv(const gpumat::GpuMat &Delta,
 	X.resize(channels, szA0.area(), Delta.type);
 	X.zeros();
 
-	cuda_back_deriv(Delta, szOut, szA0, channels, szW, stride, X);
+	cuda_cols2im(Delta, szOut, szA0, channels, szW, stride, X);
 }
 
-void gpumat::back_deriv(const std::vector<gpumat::GpuMat> &Delta,
+void gpumat::cols2im(const std::vector<gpumat::GpuMat> &Delta,
 							   const ct::Size &szOut, const ct::Size &szA0,
 							   int channels, const ct::Size &szW, int stride,
 							   std::vector<gpumat::GpuMat> &X)
@@ -749,11 +749,11 @@ void gpumat::back_deriv(const std::vector<gpumat::GpuMat> &Delta,
 		X[i].zeros();
 	}
 
-	cuda_back_deriv_vec(Delta, szOut, szA0, channels, szW, stride, X);
+	cuda_cols2im_vec(Delta, szOut, szA0, channels, szW, stride, X);
 
 }
 
-void gpumat::back_derivT(const gpumat::GpuMat &Delta,
+void gpumat::cols2imT(const gpumat::GpuMat &Delta,
 				const ct::Size &szOut,
 				const ct::Size &szA0,
 				int channels,
@@ -767,10 +767,10 @@ void gpumat::back_derivT(const gpumat::GpuMat &Delta,
 	X.resize(szA0.area(), channels, Delta.type);
 	X.zeros();
 
-	cuda_back_derivT(Delta, szOut, szA0, channels, szW, stride, X);
+	cuda_cols2imT(Delta, szOut, szA0, channels, szW, stride, X);
 }
 
-void gpumat::back_derivT(const std::vector<gpumat::GpuMat> &Delta,
+void gpumat::cols2imT(const std::vector<gpumat::GpuMat> &Delta,
 								const ct::Size &szOut, const ct::Size &szA0,
 								int channels, const ct::Size &szW, int stride,
 								std::vector<gpumat::GpuMat> &X)
@@ -787,7 +787,7 @@ void gpumat::back_derivT(const std::vector<gpumat::GpuMat> &Delta,
 		X[i].zeros();
 	}
 
-	cuda_back_derivT_vec(Delta, szOut, szA0, channels, szW, stride, X);
+	cuda_col2imT_vec(Delta, szOut, szA0, channels, szW, stride, X);
 
 }
 

@@ -18,58 +18,63 @@ enum TYPE_CONV{
 
 /**
  * @brief im2col
- * @param X -> [channels, szA0.height * szA0.width]
- * @param szA0
- * @param channels
- * @param szW
- * @param stride
+ * @param X -> [channels, szA0.height * szA0.width] input image with size szA0 and channels
+ * @param szA0		- input window of image
+ * @param channels  - channels
+ * @param szW		- applyed window
+ * @param stride	- stride
  * @param Res -> [szOut.width * szOut.height, szW.width * szW.height * channels]
  * @param szOut
  */
-void im2col(const ct::Matf& X, const ct::Size& szA0, int channels, const ct::Size& szW,
+void im2cols(const ct::Matf& X, const ct::Size& szA0, int channels, const ct::Size& szW,
 			int stride, ct::Matf& Res, ct::Size& szOut);
-void im2col(const ct::Matd& X, const ct::Size& szA0, int channels, const ct::Size& szW,
+void im2cols(const ct::Matd& X, const ct::Size& szA0, int channels, const ct::Size& szW,
 			int stride, ct::Matd& Res, ct::Size& szOut);
 
 /**
  * @brief im2col_same
- * @param X
- * @param szA0
- * @param channels
- * @param szW
- * @param stride
- * @param Res
- * @param szOut
+ * @param X			- input image with size szA0 and channels
+ * @param szA0		- input window of image
+ * @param channels	- channels
+ * @param szW		- applyed window
+ * @param stride	- stride
+ * @param Res -> [szOut.width * szOut.height, szW.width * szW.height * channels]
+ * @param szOut		- szOut == szA
  */
-void im2col_same(const ct::Matf& X, const ct::Size& szA0, int channels, const ct::Size& szW,
+void im2cols_same(const ct::Matf& X, const ct::Size& szA0, int channels, const ct::Size& szW,
 			int stride, ct::Matf& Res, ct::Size& szOut);
-void im2col_same(const ct::Matd& X, const ct::Size& szA0, int channels, const ct::Size& szW,
+void im2cols_same(const ct::Matd& X, const ct::Size& szA0, int channels, const ct::Size& szW,
 			int stride, ct::Matd& Res, ct::Size& szOut);
 
 /**
  * @brief im2colT
+ * image to columns
  * @param X -> [szA0.height * szA0.width, channels]
  * @param szA0
- * @param channels
- * @param szW
- * @param stride
+ * @param channels	- channels for image
+ * @param szW		- which the window will be apply for the image
+ * @param stride	- stride
  * @param Res -> [szOut.width * szOut.height, szW.width * szW.height * channels]
  * @param szOut
  */
-void im2colT(const ct::Matf& X, const ct::Size& szA0, int channels, const ct::Size& szW,
+void im2colsT(const ct::Matf& X, const ct::Size& szA0, int channels, const ct::Size& szW,
 			int stride, ct::Matf& Res, ct::Size& szOut);
-void im2colT(const ct::Matd& X, const ct::Size& szA0, int channels, const ct::Size& szW,
+void im2colsT(const ct::Matd& X, const ct::Size& szA0, int channels, const ct::Size& szW,
 			int stride, ct::Matd& Res, ct::Size& szOut);
 
 /**
  * @brief conv2
- * @param A
- * @param szA
- * @param channels
- * @param stride
- * @param B
- * @param szB
- * @param C
+ * convolution for A
+ * @param A			- input matrix with window szA and chanels (channels, szA.area()) for normal and (szA.area(), channels) for trasnspose view
+ * @param szA		- window for A matrix
+ * @param channels	- channels of matrix A
+ * @param stride	- stride
+ * @param B			- applied matrix
+ * @param szB		- window of matrix B
+ * @param C			- output of convolution with window szOut
+ * @param szOut		- window of output matrix
+ * @param type		- may be SAME(szOut = szA) of VALID
+ * @param transpose - select of view matrix A
  */
 void conv2(const ct::Matf& A, const ct::Size &szA, int channels, int stride, const ct::Matf &B,
 		   const ct::Size &szB, ct::Matf &C, ct::Size &szOut, TYPE_CONV type = VALID, bool transpose = false);
@@ -77,7 +82,7 @@ void conv2(const ct::Matd& A, const ct::Size &szA, int channels, int stride, con
 		   const ct::Size &szB, ct::Matd &C, ct::Size &szOut, TYPE_CONV type = VALID, bool transpose = false);
 
 /**
- * @brief back_deriv
+ * @brief cols2im
  * @param Delta -> [szOut.width * szOut.height, szW.width * szW.height * channels]
  * @param szOut
  * @param szA0
@@ -86,25 +91,76 @@ void conv2(const ct::Matd& A, const ct::Size &szA, int channels, int stride, con
  * @param stride
  * @param X -> [channels, szA0.height * szA0.width]
  */
-void back_deriv(const ct::Matf& Delta, const ct::Size& szOut, const ct::Size& szA0,
+void cols2im(const ct::Matf& Delta, const ct::Size& szOut, const ct::Size& szA0,
 				int channels, const ct::Size& szW, int stride, ct::Matf& X);
-void back_deriv(const ct::Matd& Delta, const ct::Size& szOut, const ct::Size& szA0,
+void cols2im(const ct::Matd& Delta, const ct::Size& szA0,
 				int channels, const ct::Size& szW, int stride, ct::Matd& X);
 
 /**
- * @brief back_derivT
- * @param Delta
- * @param szOut
- * @param szA0
- * @param channels
- * @param szW
- * @param stride
- * @param X
+ * @brief cols2im_same
+ * columns to image . size saved
+ * @param Delta		- columns (szA0.area(), szW.area() * channels)
+ * @param szA0		- size of window for input and output
+ * @param channels	- channels of matrix
+ * @param szW		- size of applied window
+ * @param stride	- stride
+ * @param X			- output matrix (channels, szA0.area())
  */
-void back_derivT(const ct::Matf& Delta, const ct::Size& szOut, const ct::Size& szA0,
+void cols2im_same(const ct::Matf& Delta, const ct::Size& szA0,
 				int channels, const ct::Size& szW, int stride, ct::Matf& X);
-void back_derivT(const ct::Matd& Delta, const ct::Size& szOut, const ct::Size& szA0,
+void cols2im_same(const ct::Matd& Delta, const ct::Size& szA0,
 				int channels, const ct::Size& szW, int stride, ct::Matd& X);
+
+/**
+ * @brief cols2imT
+ * columns to image (transpose view). size output szA0
+ * @param Delta		- columns (szA0.area(), szW.area() * channels)
+ * @param szOut		- size of window for Delta
+ * @param szA0		- size of window for output
+ * @param channels	- channels of matrices
+ * @param szW		- size of applied window
+ * @param stride	- stride
+ * @param X			- output matrix (szA0.area(), channels)
+ */
+void cols2imT(const ct::Matf& Delta, const ct::Size& szOut, const ct::Size& szA0,
+				int channels, const ct::Size& szW, int stride, ct::Matf& X);
+void cols2imT(const ct::Matd& Delta, const ct::Size& szOut, const ct::Size& szA0,
+				int channels, const ct::Size& szW, int stride, ct::Matd& X);
+
+/**
+ * @brief cols2imT_same
+ * columns to image (transpose view). size saved
+ * @param Delta		- columns
+ * @param szA0		- size of window for input and output
+ * @param channels	- channels of matrix
+ * @param szW		- size of applied window
+ * @param stride	- stride
+ * @param X			- output matrix (szA0.area(), channels)
+ */
+void cols2imT_same(const ct::Matf& Delta, const ct::Size& szA0,
+				int channels, const ct::Size& szW, int stride, ct::Matf& X);
+void cols2imT_same(const ct::Matd& Delta, const ct::Size& szA0,
+				int channels, const ct::Size& szW, int stride, ct::Matd& X);
+
+/**
+ * @brief conv2_transpose
+ * @param C
+ * @param szA
+ * @param channels
+ * @param stride
+ * @param B
+ * @param szB
+ * @param szOut
+ * @param A
+ * @param type
+ * @param transpose
+ */
+void conv2_transpose(const ct::Matf& C, const ct::Size &szA, int channels, int stride, const ct::Matf &B,
+		   const ct::Size &szB, const ct::Size &szOut, ct::Matf &A, TYPE_CONV type = VALID, bool transpose = false);
+void conv2_transpose(const ct::Matd& C, const ct::Size &szA, int channels, int stride, const ct::Matd &B,
+		   const ct::Size &szB, const ct::Size &szOut, ct::Matd &A, TYPE_CONV type = VALID, bool transpose = false);
+
+
 
 /**
  * @brief subsample
@@ -322,14 +378,14 @@ public:
 				ct::Mat_<T>& Xi = (*pX)[i];
 				ct::Size szOut;
 
-				im2colT(Xi, convnn_abstract<T>::szA0, convnn_abstract<T>::channels, szW, stride, Xc[i], szOut);
+				im2colsT(Xi, convnn_abstract<T>::szA0, convnn_abstract<T>::channels, szW, stride, Xc[i], szOut);
 			}
 		}else{
 			for(int i = 0; i < (int)Xc.size(); ++i){
 				ct::Mat_<T>& Xi = (*pX)[i];
 				ct::Size szOut;
 
-				im2col(Xi, convnn_abstract<T>::szA0, convnn_abstract<T>::channels, szW, stride, Xc[i], szOut);
+				im2cols(Xi, convnn_abstract<T>::szA0, convnn_abstract<T>::channels, szW, stride, Xc[i], szOut);
 			}
 		}
 
@@ -475,7 +531,7 @@ public:
 			Dc.resize(D.size());
 			for(int i = 0; i < (int)D.size(); ++i){
 				ct::matmulT2(dSub[i], W[0], Dc[i]);
-				back_derivT(Dc[i], convnn_abstract<T>::szA1, convnn_abstract<T>::szA0, convnn_abstract<T>::channels, szW, stride, Dlt[i]);
+				cols2imT(Dc[i], convnn_abstract<T>::szA1, convnn_abstract<T>::szA0, convnn_abstract<T>::channels, szW, stride, Dlt[i]);
 				//ct::Size sz = (*pX)[i].size();
 				//Dlt[i].set_dims(sz);
 			}

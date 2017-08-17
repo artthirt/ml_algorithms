@@ -243,7 +243,7 @@ __global__ void im2colsT_vecSame(SmallMtxArray X, ct::Size szA0, int channels, c
 //////// end same ////////
 
 template< typename T >
-__device__ void _back_deriv(const Mtx& Delta,
+__device__ void _cols2im(const Mtx& Delta,
 				 const ct::Size& szOut,
 				 const ct::Size& szA0,
 				 int channels,
@@ -322,7 +322,7 @@ __device__ void _back_deriv(const Mtx& Delta,
 //////
 
 template< typename T >
-__device__ void _back_derivT(const Mtx& Delta,
+__device__ void _cols2imT(const Mtx& Delta,
 				 const ct::Size& szOut,
 				 const ct::Size& szA0,
 				 int channels,
@@ -389,7 +389,7 @@ __device__ void _back_derivT(const Mtx& Delta,
 /////
 
 template< typename T >
-__global__ void back_deriv(Mtx Delta,
+__global__ void cols2im(Mtx Delta,
 						   ct::Size szOut,
 						   ct::Size szA0,
 						   int channels,
@@ -397,11 +397,11 @@ __global__ void back_deriv(Mtx Delta,
 						   int stride,
 						   Mtx X)
 {
-	_back_deriv<T>(Delta, szOut, szA0, channels, szW, stride, X);
+	_cols2im<T>(Delta, szOut, szA0, channels, szW, stride, X);
 }
 
 template< typename T >
-__global__ void back_deriv_vec(SmallMtxArray Delta,
+__global__ void cols2im_vec(SmallMtxArray Delta,
 						   ct::Size szOut,
 						   ct::Size szA0,
 						   int channels,
@@ -412,14 +412,14 @@ __global__ void back_deriv_vec(SmallMtxArray Delta,
 	int row = threadIdx.y + blockDim.y * blockIdx.y;
 
 	if(row < X.count){
-		_back_deriv<T>(Delta.mtx[row], szOut, szA0, channels, szW, stride, X.mtx[row]);
+		_cols2im<T>(Delta.mtx[row], szOut, szA0, channels, szW, stride, X.mtx[row]);
 	}
 }
 
 ////////
 
 template< typename T >
-__global__ void back_derivT(Mtx Delta,
+__global__ void cols2imT(Mtx Delta,
 						   ct::Size szOut,
 						   ct::Size szA0,
 						   int channels,
@@ -427,11 +427,11 @@ __global__ void back_derivT(Mtx Delta,
 						   int stride,
 						   Mtx X)
 {
-	_back_derivT<T>(Delta, szOut, szA0, channels, szW, stride, X);
+	_cols2imT<T>(Delta, szOut, szA0, channels, szW, stride, X);
 }
 
 template< typename T >
-__global__ void back_derivT_vec(SmallMtxArray Delta,
+__global__ void cols2imT_vec(SmallMtxArray Delta,
 						   ct::Size szOut,
 						   ct::Size szA0,
 						   int channels,
@@ -442,7 +442,7 @@ __global__ void back_derivT_vec(SmallMtxArray Delta,
 	int row = threadIdx.y + blockDim.y * blockIdx.y;
 
 	if(row < X.count){
-		_back_derivT<T>(Delta.mtx[row], szOut, szA0, channels, szW, stride, X.mtx[row]);
+		_cols2imT<T>(Delta.mtx[row], szOut, szA0, channels, szW, stride, X.mtx[row]);
 	}
 }
 
@@ -859,7 +859,7 @@ void cuda_im2colsT_vecSame(const std::vector< gpumat::GpuMat > &X,
 ////////// end same
 
 extern "C"
-void cuda_back_deriv(const gpumat::GpuMat &Delta,
+void cuda_cols2im(const gpumat::GpuMat &Delta,
 				const ct::Size &szOut,
 				const ct::Size &szA0,
 				int channels,
@@ -874,16 +874,16 @@ void cuda_back_deriv(const gpumat::GpuMat &Delta,
 
 	switch (X.type) {
 		case GPU_DOUBLE:
-			internal::back_deriv<double> <<<dimGrid, dimBlock>>>(Delta, szOut, szA0, channels, szW, stride, X);
+			internal::cols2im<double> <<<dimGrid, dimBlock>>>(Delta, szOut, szA0, channels, szW, stride, X);
 			break;
 		case GPU_FLOAT:
-			internal::back_deriv<float> <<<dimGrid, dimBlock>>>(Delta, szOut, szA0, channels, szW, stride, X);
+			internal::cols2im<float> <<<dimGrid, dimBlock>>>(Delta, szOut, szA0, channels, szW, stride, X);
 			break;
 	}
 }
 
 extern "C"
-void cuda_back_deriv_vec(const std::vector< gpumat::GpuMat > &Delta,
+void cuda_cols2im_vec(const std::vector< gpumat::GpuMat > &Delta,
 				const ct::Size &szOut,
 				const ct::Size &szA0,
 				int channels,
@@ -898,10 +898,10 @@ void cuda_back_deriv_vec(const std::vector< gpumat::GpuMat > &Delta,
 
 	switch (Delta[0].type) {
 		case GPU_DOUBLE:
-			internal::back_deriv_vec<double> <<<dimGrid, dimBlock>>>(Delta, szOut, szA0, channels, szW, stride, X);
+			internal::cols2im_vec<double> <<<dimGrid, dimBlock>>>(Delta, szOut, szA0, channels, szW, stride, X);
 			break;
 		case GPU_FLOAT:
-			internal::back_deriv_vec<float> <<<dimGrid, dimBlock>>>(Delta, szOut, szA0, channels, szW, stride, X);
+			internal::cols2im_vec<float> <<<dimGrid, dimBlock>>>(Delta, szOut, szA0, channels, szW, stride, X);
 			break;
 	}
 }
@@ -909,7 +909,7 @@ void cuda_back_deriv_vec(const std::vector< gpumat::GpuMat > &Delta,
 //////////////////
 
 extern "C"
-void cuda_back_derivT(const gpumat::GpuMat &Delta,
+void cuda_cols2imT(const gpumat::GpuMat &Delta,
 				const ct::Size &szOut,
 				const ct::Size &szA0,
 				int channels,
@@ -924,16 +924,16 @@ void cuda_back_derivT(const gpumat::GpuMat &Delta,
 
 	switch (X.type) {
 		case GPU_DOUBLE:
-			internal::back_derivT<double> <<<dimGrid, dimBlock>>>(Delta, szOut, szA0, channels, szW, stride, X);
+			internal::cols2imT<double> <<<dimGrid, dimBlock>>>(Delta, szOut, szA0, channels, szW, stride, X);
 			break;
 		case GPU_FLOAT:
-			internal::back_derivT<float> <<<dimGrid, dimBlock>>>(Delta, szOut, szA0, channels, szW, stride, X);
+			internal::cols2imT<float> <<<dimGrid, dimBlock>>>(Delta, szOut, szA0, channels, szW, stride, X);
 			break;
 	}
 }
 
 extern "C"
-void cuda_back_derivT_vec(const std::vector< gpumat::GpuMat > &Delta,
+void cuda_col2imT_vec(const std::vector< gpumat::GpuMat > &Delta,
 				const ct::Size &szOut,
 				const ct::Size &szA0,
 				int channels,
@@ -948,10 +948,10 @@ void cuda_back_derivT_vec(const std::vector< gpumat::GpuMat > &Delta,
 
 	switch (Delta[0].type) {
 		case GPU_DOUBLE:
-			internal::back_derivT_vec<double> <<<dimGrid, dimBlock>>>(Delta, szOut, szA0, channels, szW, stride, X);
+			internal::cols2imT_vec<double> <<<dimGrid, dimBlock>>>(Delta, szOut, szA0, channels, szW, stride, X);
 			break;
 		case GPU_FLOAT:
-			internal::back_derivT_vec<float> <<<dimGrid, dimBlock>>>(Delta, szOut, szA0, channels, szW, stride, X);
+			internal::cols2imT_vec<float> <<<dimGrid, dimBlock>>>(Delta, szOut, szA0, channels, szW, stride, X);
 			break;
 	}
 }
