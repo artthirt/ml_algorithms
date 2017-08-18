@@ -12,7 +12,7 @@ mlp_mixed::mlp_mixed(){
 	m_prob = (float)0.95;
 	pA0 = nullptr;
 	m_lambda = 0;
-	m_params[LEAKYRELU] = 0.1;
+	m_params[LEAKYRELU] = 0.01;
 }
 
 Matf &mlp_mixed::Y(){
