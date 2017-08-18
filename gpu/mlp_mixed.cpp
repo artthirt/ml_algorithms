@@ -192,13 +192,13 @@ void mlp_mixed::backward(const Matf &Delta, bool last_layer){
 			if(m_is_dropout && std::abs(m_prob - 1) > 1e-6){
 				gpumat::GpuMat g_XDropout;
 				gpumat::convert_to_gpu(XDropout, g_XDropout);
-				gpumat::matmulT1(g_XDropout, g_DA1, g_gW);
+				gpumat::matmulT1(g_XDropout, g_DA1, g_gW, 1. / m);
 			}else{
 				gpumat::GpuMat g_A0;
 				gpumat::convert_to_gpu(*pA0, g_A0);
-				gpumat::matmulT1(g_A0, g_DA1, g_gW);
+				gpumat::matmulT1(g_A0, g_DA1, g_gW, 1. / m);
 			}
-			mulval(g_gW, 1. / m);
+			//mulval(g_gW, 1. / m);
 
 			if(m_lambda > 0){
 				gpumat::add(g_gW, g_W, 1, m_lambda / m);

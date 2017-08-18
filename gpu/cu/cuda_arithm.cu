@@ -150,7 +150,7 @@ __global__ void subWithColumn(Mtx A, Mtx B, Mtx mul, T valA, T valB)
  * @param C - out C = A * B
  */
 template< class T >
-__global__ void matmul(Mtx A, Mtx B, Mtx C)
+__global__ void matmul(Mtx A, Mtx B, Mtx C, T alpha)
 {
 	int row = threadIdx.y + blockIdx.y * blockDim.y;
 	int col = threadIdx.x + blockIdx.x * blockDim.x;
@@ -165,7 +165,7 @@ __global__ void matmul(Mtx A, Mtx B, Mtx C)
 		for(int i = 0; i < B.rows; i++){
 			sC += DA[row * A.cols + i] * DB[i * B.cols + col];
 		}
-		DC[row * B.cols + col] = sC;
+		DC[row * B.cols + col] = alpha * sC;
 	}
 }
 
@@ -203,7 +203,7 @@ __global__ void add2matmul(Mtx A, Mtx B, Mtx C)
  * @param C - out C = A' * B
  */
 template< class T >
-__global__ void matmulT1(Mtx At, Mtx B, Mtx C)
+__global__ void matmulT1(Mtx At, Mtx B, Mtx C, T alpha)
 {
 	int row = threadIdx.y + blockIdx.y * blockDim.y;
 	int col = threadIdx.x + blockIdx.x * blockDim.x;
@@ -219,7 +219,7 @@ __global__ void matmulT1(Mtx At, Mtx B, Mtx C)
 		for(int i = 0; i < B.rows; i++){
 			sC += DA[i * At.cols + row] * DB[i * B.cols + col];
 		}
-		DC[row * C.cols + col] = sC;
+		DC[row * C.cols + col] = alpha * sC;
 	}
 
 }
@@ -259,7 +259,7 @@ __global__ void add2matmulT1(Mtx At, Mtx B, Mtx C)
  * @param C - out C = A * B'
  */
 template< class T >
-__global__ void matmulT2(Mtx A, Mtx Bt, Mtx C)
+__global__ void matmulT2(Mtx A, Mtx Bt, Mtx C, T alpha)
 {
 	int row = threadIdx.y + blockIdx.y * blockDim.y;
 	int col = threadIdx.x + blockIdx.x * blockDim.x;
@@ -276,7 +276,7 @@ __global__ void matmulT2(Mtx A, Mtx Bt, Mtx C)
 //			sC += DA[row * B.rows + i] * DB[i * B.cols + col];
 			sC += DA[row * A.cols + i] * DB[col * Bt.cols + i];
 		}
-		DC[row * C.cols + col] = sC;
+		DC[row * C.cols + col] = alpha * sC;
 	}
 }
 
@@ -1857,7 +1857,7 @@ void cuda_subWithColumn(GpuMat& A, const GpuMat& B, const GpuMat& mulColumn, dou
  * @param C - out C = A * B
  */
 extern "C"
-void cuda_matmul(const GpuMat& A, const GpuMat& B, GpuMat& C)
+void cuda_matmul(const GpuMat& A, const GpuMat& B, GpuMat& C, double alpha)
 {
 	int x1 = C.cols / BLOCKSIZE + 1;
 	int x2 = C.rows / BLOCKSIZE + 1;
@@ -1866,10 +1866,10 @@ void cuda_matmul(const GpuMat& A, const GpuMat& B, GpuMat& C)
 
 	switch (A.type) {
 	case GPU_DOUBLE:
-		internal::matmul<double> <<<dimGrid, dimBlock>>>(A, B, C);
+		internal::matmul<double> <<<dimGrid, dimBlock>>>(A, B, C, alpha);
 		break;
 	case GPU_FLOAT:
-		internal::matmul<float> <<<dimGrid, dimBlock>>>(A, B, C);
+		internal::matmul<float> <<<dimGrid, dimBlock>>>(A, B, C, alpha);
 		break;
 	}
 }
@@ -1929,7 +1929,7 @@ void cuda_matmul_shared(const GpuMat& A, const GpuMat& B, GpuMat& C)
  * @param C - out C = A' * B
  */
 extern "C"
-void cuda_matmulT1(const GpuMat& At, const GpuMat& B, GpuMat& C)
+void cuda_matmulT1(const GpuMat& At, const GpuMat& B, GpuMat& C, double alpha)
 {
 	//	int r = At.cols;
 	//	int c = B.cols;
@@ -1941,10 +1941,10 @@ void cuda_matmulT1(const GpuMat& At, const GpuMat& B, GpuMat& C)
 
 	switch (At.type) {
 	case GPU_DOUBLE:
-		internal::matmulT1<double> <<<dimGrid, dimBlock>>>(At, B, C);
+		internal::matmulT1<double> <<<dimGrid, dimBlock>>>(At, B, C, alpha);
 		break;
 	case GPU_FLOAT:
-		internal::matmulT1<float> <<<dimGrid, dimBlock>>>(At, B, C);
+		internal::matmulT1<float> <<<dimGrid, dimBlock>>>(At, B, C, alpha);
 		break;
 	}
 }
@@ -2010,7 +2010,7 @@ void cuda_matmulT1_shared(const GpuMat& At, const GpuMat& B, GpuMat& C)
  * @param C - out C = A * B'
  */
 extern "C"
-void cuda_matmulT2(const GpuMat& A, const GpuMat& Bt, GpuMat& C)
+void cuda_matmulT2(const GpuMat& A, const GpuMat& Bt, GpuMat& C, double alpha)
 {
 	int x1 = C.cols / BLOCKSIZE + 1;
 	int x2 = C.rows / BLOCKSIZE + 1;
@@ -2019,10 +2019,10 @@ void cuda_matmulT2(const GpuMat& A, const GpuMat& Bt, GpuMat& C)
 
 	switch (A.type) {
 	case GPU_DOUBLE:
-		internal::matmulT2<double> <<<dimGrid, dimBlock>>>(A, Bt, C);
+		internal::matmulT2<double> <<<dimGrid, dimBlock>>>(A, Bt, C, alpha);
 		break;
 	case GPU_FLOAT:
-		internal::matmulT2<float> <<<dimGrid, dimBlock>>>(A, Bt, C);
+		internal::matmulT2<float> <<<dimGrid, dimBlock>>>(A, Bt, C, alpha);
 		break;
 	}
 }

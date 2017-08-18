@@ -145,7 +145,7 @@ void subWithColumn(GpuMat& A, const GpuMat& B, const GpuMat& mulColumn, double v
  * @param B
  * @param C - out C = A * B
  */
-void matmul(const GpuMat& A, const GpuMat& B, GpuMat& C);
+void matmul(const GpuMat& A, const GpuMat& B, GpuMat& C, double alpha = 1.);
 
 /**
  * @brief add2matmul
@@ -169,7 +169,7 @@ void matmul_shared(const GpuMat& A, const GpuMat& B, GpuMat& C);
  * @param B
  * @param C - out C = A' * B
  */
-void matmulT1(const GpuMat& At, const GpuMat& B, GpuMat& C);
+void matmulT1(const GpuMat& At, const GpuMat& B, GpuMat& C, double alpha = 1.);
 
 /**
  * @brief add2matmulT1
@@ -193,7 +193,7 @@ void matmulT1_shared(const GpuMat& At, const GpuMat& B, GpuMat& C);
  * @param Bt - used as transposed matrix
  * @param C - out C = A * B'
  */
-void matmulT2(const GpuMat& A, const GpuMat& Bt, GpuMat& C);
+void matmulT2(const GpuMat& A, const GpuMat& Bt, GpuMat& C, double alpha = 1.);
 
 /**
  * @brief add2matmulT2
