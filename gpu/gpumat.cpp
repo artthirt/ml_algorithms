@@ -527,6 +527,17 @@ void cuda_mul2deriv(const GpuMat &D, const GpuMat &A, etypefunction func, GpuMat
 extern "C"
 void cuda_m2mpbaf(const GpuMat &A, const GpuMat &B, const GpuMat &C, etypefunction func, GpuMat &D, double param1, double param2, double param3);
 
+/**
+ * @brief cuda_momentum_optimizer
+ * @param W
+ * @param M
+ * @param G
+ * @param alpha
+ * @param betha
+ */
+extern "C"
+void cuda_momentum_optimizer(GpuMat &W, GpuMat &M, const GpuMat &G, double alpha, double betha);
+
 /////////////////////////////////////////////////
 
 ///////////////////////////////////
@@ -1557,6 +1568,15 @@ void m2mpbaf(const GpuMat &A, const GpuMat &B, const GpuMat &C, etypefunction fu
 	}
 
 	cuda_m2mpbaf(A, B, C, func, D, param1, param2, param3);
+}
+
+void momentum_optimizer(GpuMat &W, GpuMat &M, const GpuMat &G, double alpha, double betha)
+{
+	if(W.empty() || M.empty() || G.empty() || W.sz() != M.sz() || G.sz() != W.sz() ||
+			W.type != M.type || W.type != G.type)
+		throw new std::invalid_argument("momentum_optimizer: wrong parameters");
+
+	cuda_momentum_optimizer(W, M, G, alpha, betha);
 }
 
 

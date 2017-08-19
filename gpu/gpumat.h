@@ -552,6 +552,16 @@ void mul2deriv(const GpuMat& D, const gpumat::GpuMat& A, gpumat::etypefunction f
 void m2mpbaf(const GpuMat& A, const GpuMat& B, const GpuMat& C, etypefunction func, GpuMat& D,
 			 double param1 = 0, double param2 = 0, double param3 = 0);
 
+/**
+ * @brief momentum_optimizer
+ * @param W
+ * @param M
+ * @param G
+ * @param alpha
+ * @param betha
+ */
+void momentum_optimizer(GpuMat& W, GpuMat& M, const GpuMat& G, double alpha, double betha);
+
 }
 
 #endif // GPU_H

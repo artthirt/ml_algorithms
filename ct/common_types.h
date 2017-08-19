@@ -35,6 +35,17 @@ struct Size{
 	int height;
 };
 
+inline bool operator== (const Size &sz1, const Size& sz2)
+{
+	return sz1.width == sz2.width && sz1.height == sz2.height;
+}
+
+inline bool operator!= (const Size &sz1, const Size& sz2)
+{
+	return sz1.width != sz2.width || sz1.height != sz2.height;
+}
+
+
 struct ParamsCommon{
 	double prob;
 	double lambda_l2;

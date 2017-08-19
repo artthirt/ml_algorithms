@@ -1669,6 +1669,25 @@ __global__ void m2mpbaf(Mtx A, Mtx B, Mtx C, etypefunction func, Mtx D, T param1
 	}
 }
 
+template<typename T>
+__global__ void momentum_optimizer(Mtx W, Mtx M, Mtx G, T alpha, T betha)
+{
+	int row = threadIdx.y + blockIdx.y * blockDim.y;
+	int col = threadIdx.x + blockIdx.x * blockDim.x;
+
+	T* dW = (T*)W.data;
+	T* dM = (T*)M.data;
+	T* dG = (T*)G.data;
+
+	if(row < W.rows && col < W.cols){
+		T g = dG[row * G.cols + col];
+		T m = dM[row * M.cols + col];
+		m = betha * m + (1 - betha) * g;
+		dM[row * M.cols + col] = m;
+		dW[row * W.cols + col] -= alpha * m;
+	}
+}
+
 }
 
 }
@@ -3206,4 +3225,31 @@ void cuda_m2mpbaf(const GpuMat &A, const GpuMat &B, const GpuMat &C, etypefuncti
 		internal::m2mpbaf<float> <<<dimGrid, dimBlock>>>(A, B, C, func, D, param1, param2, param3);
 		break;
 	}
+}
+
+/**
+ * @brief cuda_momentum_optimizer
+ * @param W
+ * @param M
+ * @param G
+ * @param alpha
+ * @param betha
+ */
+extern "C"
+void cuda_momentum_optimizer(GpuMat &W, GpuMat &M, const GpuMat &G, double alpha, double betha)
+{
+	int x1 = W.cols / BLOCKSIZE + 1;
+	int x2 = W.rows / BLOCKSIZE + 1;
+
+	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+
+	switch (W.type) {
+	case GPU_DOUBLE:
+		internal::momentum_optimizer<double> <<<dimGrid, dimBlock>>>(W, M, G, alpha, betha);
+		break;
+	case GPU_FLOAT:
+		internal::momentum_optimizer<float> <<<dimGrid, dimBlock>>>(W, M, G, alpha, betha);
+		break;
+	}
+
 }

@@ -249,11 +249,13 @@ bool MomentumOptimizer::pass(const std::vector<GpuMat> &gradW, const std::vector
 
 	for(size_t i = 0; i < gradW.size(); ++i){
 
-		gpumat::add(m_mW[i], gradW[i], m_betha, (1. - m_betha));
-		gpumat::add(m_mb[i], gradB[i], m_betha, (1. - m_betha));
+		gpumat::momentum_optimizer(W[i], m_mW[i], gradW[i], m_alpha, m_betha);
+		gpumat::momentum_optimizer(b[i], m_mb[i], gradB[i], m_alpha, m_betha);
+//		gpumat::add(m_mW[i], gradW[i], m_betha, (1. - m_betha));
+//		gpumat::add(m_mb[i], gradB[i], m_betha, (1. - m_betha));
 
-		gpumat::sub(W[i], m_mW[i], 1., m_alpha);
-		gpumat::sub(b[i], m_mb[i], 1., m_alpha);
+//		gpumat::sub(W[i], m_mW[i], 1., m_alpha);
+//		gpumat::sub(b[i], m_mb[i], 1., m_alpha);
 	}
 	return true;
 
