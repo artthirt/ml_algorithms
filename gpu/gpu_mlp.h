@@ -179,6 +179,7 @@ private:
 
 class MlpOptimMoment: public MomentumOptimizer{
 public:
+	MlpOptimMoment();
 	bool init(const std::vector< gpumat::mlp >& _mlp);
 	bool pass(std::vector<mlp> &_mlp);
 private:

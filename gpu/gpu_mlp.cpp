@@ -507,6 +507,11 @@ bool MlpOptimSG::pass(std::vector<mlp> &_mlp)
 
 //////////////////////////////////////////////////
 
+MlpOptimMoment::MlpOptimMoment()
+{
+	m_betha = 0.9;
+}
+
 bool MlpOptimMoment::init(const std::vector<mlp> &_mlp)
 {
 	if(_mlp.empty())
