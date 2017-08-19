@@ -161,7 +161,7 @@ void add2matmul(const GpuMat &A, const GpuMat &B, GpuMat &C);
  * @param B
  * @param C - out C = A * B
  */
-void matmul_shared(const GpuMat& A, const GpuMat& B, GpuMat& C);
+void matmul_shared(const GpuMat& A, const GpuMat& B, GpuMat& C, double alpha = 1.);
 
 /**
  * @brief matmulT1
@@ -185,7 +185,7 @@ void add2matmulT1(const GpuMat &At, const GpuMat &B, GpuMat &C);
  * @param B
  * @param C - out C = A' * B
  */
-void matmulT1_shared(const GpuMat& At, const GpuMat& B, GpuMat& C);
+void matmulT1_shared(const GpuMat& At, const GpuMat& B, GpuMat& C, double alpha = 1.);
 
 /**
  * @brief matmulT2
@@ -209,7 +209,7 @@ void add2matmulT2(const GpuMat &A, const GpuMat &Bt, GpuMat &C);
  * @param Bt - used as transposed matrix
  * @param C - out C = A * B'
  */
-void matmulT2_shared(const GpuMat& A, const GpuMat& Bt, GpuMat& C);
+void matmulT2_shared(const GpuMat& A, const GpuMat& Bt, GpuMat& C, double alpha = 1.);
 
 /**
  * @brief mulval

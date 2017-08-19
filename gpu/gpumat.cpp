@@ -106,7 +106,7 @@ void cuda_add2matmul(const GpuMat& A, const GpuMat& B, GpuMat& C);
  * @param C - out C = A * B
  */
 extern "C"
-void cuda_matmul_shared(const GpuMat& A, const GpuMat& B, GpuMat& C);
+void cuda_matmul_shared(const GpuMat& A, const GpuMat& B, GpuMat& C, double alpha);
 
 /**
  * @brief matmulT1
@@ -134,7 +134,7 @@ void cuda_add2matmulT1(const GpuMat& At, const GpuMat& B, GpuMat& C);
  * @param C - out C = A' * B
  */
 extern "C"
-void cuda_matmulT1_shared(const GpuMat& At, const GpuMat& B, GpuMat& C);
+void cuda_matmulT1_shared(const GpuMat& At, const GpuMat& B, GpuMat& C, double alpha);
 
 
 /**
@@ -162,7 +162,7 @@ void cuda_add2matmulT2(const GpuMat& A, const GpuMat& Bt, GpuMat& C);
  * @param C - out C = A * B'
  */
 extern "C"
-void cuda_matmulT2_shared(const GpuMat& A, const GpuMat& Bt, GpuMat& C);
+void cuda_matmulT2_shared(const GpuMat& A, const GpuMat& Bt, GpuMat& C, double alpha);
 
 /**
  * @brief mulval
@@ -956,7 +956,7 @@ void add2matmul(const GpuMat &A, const GpuMat &B, GpuMat &C)
 	cuda_add2matmul(A, B, C);
 }
 
-void matmul_shared(const GpuMat &A, const GpuMat &B, GpuMat &C)
+void matmul_shared(const GpuMat &A, const GpuMat &B, GpuMat &C, double alpha)
 {
 	if(A.cols != B.rows || A.type != B.type){
 		throw new std::invalid_argument("matmul_shared");
@@ -965,7 +965,7 @@ void matmul_shared(const GpuMat &A, const GpuMat &B, GpuMat &C)
 	if(C.rows != A.rows || C.cols != B.cols || C.type != A.type)
 		C.resize(A.rows, B.cols, A.type);
 
-	cuda_matmul_shared(A, B, C);
+	cuda_matmul_shared(A, B, C, alpha);
 }
 
 void matmulT1(const GpuMat &At, const GpuMat &B, GpuMat &C, double alpha)
@@ -994,7 +994,7 @@ void add2matmulT1(const GpuMat &At, const GpuMat &B, GpuMat &C)
 	cuda_add2matmulT1(At, B, C);
 }
 
-void matmulT1_shared(const GpuMat &At, const GpuMat &B, GpuMat &C)
+void matmulT1_shared(const GpuMat &At, const GpuMat &B, GpuMat &C, double alpha)
 {
 	if(At.rows != B.rows || At.type != B.type){
 		throw new std::invalid_argument("matmulT1_shared");
@@ -1003,7 +1003,7 @@ void matmulT1_shared(const GpuMat &At, const GpuMat &B, GpuMat &C)
 	if(C.rows != At.cols || C.cols != B.cols || C.type != At.type)
 		C.resize(At.cols, B.cols, At.type);
 
-	cuda_matmulT1_shared(At, B, C);
+	cuda_matmulT1_shared(At, B, C, alpha);
 }
 
 
@@ -1033,7 +1033,7 @@ void add2matmulT2(const GpuMat &A, const GpuMat &Bt, GpuMat &C)
 	cuda_add2matmulT2(A, Bt, C);
 }
 
-void matmulT2_shared(const GpuMat &A, const GpuMat &Bt, GpuMat &C)
+void matmulT2_shared(const GpuMat &A, const GpuMat &Bt, GpuMat &C, double alpha)
 {
 	if(A.cols != Bt.cols || A.type != Bt.type){
 		throw new std::invalid_argument("matmulT2_shared");
@@ -1042,7 +1042,7 @@ void matmulT2_shared(const GpuMat &A, const GpuMat &Bt, GpuMat &C)
 	if(C.rows != A.rows || C.cols != Bt.rows || C.type != A.type)
 		C.resize(A.rows, Bt.rows, A.type);
 
-	cuda_matmulT2_shared(A, Bt, C);
+	cuda_matmulT2_shared(A, Bt, C, alpha);
 }
 
 

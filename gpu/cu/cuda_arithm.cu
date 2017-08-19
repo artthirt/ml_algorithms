@@ -1275,7 +1275,7 @@ __global__ void adamgrad(Mtx A, const Mtx mA, const Mtx vA, T alpha, T sb1, T sb
  * @param C - out C = A * B
  */
 template< class T >
-__global__ void matmul_shared(Mtx A, Mtx B, Mtx C)
+__global__ void matmul_shared(Mtx A, Mtx B, Mtx C, T alpha)
 {
 	int row = threadIdx.y + blockIdx.y * blockDim.y;
 	int col = threadIdx.x + blockIdx.x * blockDim.x;
@@ -1316,7 +1316,7 @@ __global__ void matmul_shared(Mtx A, Mtx B, Mtx C)
 	}
 
 	if(row < C.rows && col < C.cols){
-		setEl<T>(CSub, _row, _col, sC);
+		setEl<T>(CSub, _row, _col, alpha * sC);
 	}
 }
 
@@ -1327,7 +1327,7 @@ __global__ void matmul_shared(Mtx A, Mtx B, Mtx C)
  * @param C - out C = A * B
  */
 template< class T >
-__global__ void matmulT1_shared(Mtx At, Mtx B, Mtx C)
+__global__ void matmulT1_shared(Mtx At, Mtx B, Mtx C, T alpha)
 {
 	int row = threadIdx.y + blockIdx.y * blockDim.y;
 	int col = threadIdx.x + blockIdx.x * blockDim.x;
@@ -1368,7 +1368,7 @@ __global__ void matmulT1_shared(Mtx At, Mtx B, Mtx C)
 	}
 
 	if(row < C.rows && col < C.cols){
-		setEl<T>(CSub, _row, _col, sC);
+		setEl<T>(CSub, _row, _col, alpha * sC);
 	}
 }
 
@@ -1379,7 +1379,7 @@ __global__ void matmulT1_shared(Mtx At, Mtx B, Mtx C)
  * @param C - out C = A * B
  */
 template< class T >
-__global__ void matmulT2_shared(Mtx A, Mtx Bt, Mtx C)
+__global__ void matmulT2_shared(Mtx A, Mtx Bt, Mtx C, T alpha)
 {
 	int row = threadIdx.y + blockIdx.y * blockDim.y;
 	int col = threadIdx.x + blockIdx.x * blockDim.x;
@@ -1420,7 +1420,7 @@ __global__ void matmulT2_shared(Mtx A, Mtx Bt, Mtx C)
 	}
 
 	if(row < C.rows && col < C.cols){
-		setEl<T>(CSub, _row, _col, sC);
+		setEl<T>(CSub, _row, _col, alpha * sC);
 	}
 }
 
@@ -1924,7 +1924,7 @@ void cuda_add2matmul(const GpuMat& A, const GpuMat& B, GpuMat& C)
  * @param C - out C = A * B
  */
 extern "C"
-void cuda_matmul_shared(const GpuMat& A, const GpuMat& B, GpuMat& C)
+void cuda_matmul_shared(const GpuMat& A, const GpuMat& B, GpuMat& C, double alpha)
 {
 	int x1 = C.cols / BLOCKSIZE + 1;
 	int x2 = C.rows / BLOCKSIZE + 1;
@@ -1933,10 +1933,10 @@ void cuda_matmul_shared(const GpuMat& A, const GpuMat& B, GpuMat& C)
 
 	switch (A.type) {
 	case GPU_DOUBLE:
-		internal::matmul_shared<double> <<<dimGrid, dimBlock>>>(A, B, C);
+		internal::matmul_shared<double> <<<dimGrid, dimBlock>>>(A, B, C, alpha);
 		break;
 	case GPU_FLOAT:
-		internal::matmul_shared<float> <<<dimGrid, dimBlock>>>(A, B, C);
+		internal::matmul_shared<float> <<<dimGrid, dimBlock>>>(A, B, C, alpha);
 		break;
 	}
 }
@@ -2002,7 +2002,7 @@ void cuda_add2matmulT1(const GpuMat& At, const GpuMat& B, GpuMat& C)
  * @param C - out C = A' * B
  */
 extern "C"
-void cuda_matmulT1_shared(const GpuMat& At, const GpuMat& B, GpuMat& C)
+void cuda_matmulT1_shared(const GpuMat& At, const GpuMat& B, GpuMat& C, double alpha)
 {
 	//	int r = At.cols;
 	//	int c = B.cols;
@@ -2014,10 +2014,10 @@ void cuda_matmulT1_shared(const GpuMat& At, const GpuMat& B, GpuMat& C)
 
 	switch (At.type) {
 	case GPU_DOUBLE:
-		internal::matmulT1_shared<double> <<<dimGrid, dimBlock>>>(At, B, C);
+		internal::matmulT1_shared<double> <<<dimGrid, dimBlock>>>(At, B, C, alpha);
 		break;
 	case GPU_FLOAT:
-		internal::matmulT1_shared<float> <<<dimGrid, dimBlock>>>(At, B, C);
+		internal::matmulT1_shared<float> <<<dimGrid, dimBlock>>>(At, B, C, alpha);
 		break;
 	}
 }
@@ -2077,7 +2077,7 @@ void cuda_add2matmulT2(const GpuMat& A, const GpuMat& Bt, GpuMat& C)
  * @param C - out C = A * B'
  */
 extern "C"
-void cuda_matmulT2_shared(const GpuMat& A, const GpuMat& Bt, GpuMat& C)
+void cuda_matmulT2_shared(const GpuMat& A, const GpuMat& Bt, GpuMat& C, double alpha)
 {
 	int x1 = C.cols / BLOCKSIZE + 1;
 	int x2 = C.rows / BLOCKSIZE + 1;
@@ -2086,10 +2086,10 @@ void cuda_matmulT2_shared(const GpuMat& A, const GpuMat& Bt, GpuMat& C)
 
 	switch (A.type) {
 	case GPU_DOUBLE:
-		internal::matmulT2_shared<double> <<<dimGrid, dimBlock>>>(A, Bt, C);
+		internal::matmulT2_shared<double> <<<dimGrid, dimBlock>>>(A, Bt, C, alpha);
 		break;
 	case GPU_FLOAT:
-		internal::matmulT2_shared<float> <<<dimGrid, dimBlock>>>(A, Bt, C);
+		internal::matmulT2_shared<float> <<<dimGrid, dimBlock>>>(A, Bt, C, alpha);
 		break;
 	}
 }
