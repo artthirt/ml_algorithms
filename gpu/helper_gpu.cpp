@@ -346,22 +346,12 @@ bool AdamOptimizer::pass(const std::vector<GpuMat> &gradW, const std::vector<Gpu
 	double sb2 = m_iteration < 1000? (1. / (1. - pow(m_betha2, m_iteration))) : 1;
 
 	for(size_t i = 0; i < gradW.size(); ++i){
-
-		gpumat::add(m_mW[i], gradW[i], m_betha1, (1. - m_betha1));
-		gpumat::add(m_mb[i], gradB[i], m_betha1, (1. - m_betha1));
-
-		gpumat::elemwiseSqr(gradW[i], sW[i]);
-		gpumat::elemwiseSqr(gradB[i], sB[i]);
-
-		gpumat::add(m_vW[i], sW[i], m_betha2, (1. - m_betha2));
-		gpumat::add(m_vb[i], sB[i], m_betha2, (1. - m_betha2));
-
 		/// W = -alpha * (sb1 * mW / (sqrt(sb2 * vW) + eps))
 
 //		gpumat::add(W[i], m_mW[i], 1, -m_alpha);
 //		gpumat::add(b[i], m_mb[i], 1, -m_alpha);
-		gpumat::sub_adamGrad(W[i], m_mW[i], m_vW[i], m_alpha, sb1, sb2);
-		gpumat::sub_adamGrad(b[i], m_mb[i], m_vb[i], m_alpha, sb1, sb2);
+		gpumat::sub_adamGrad(W[i], gradW[i], m_mW[i], m_vW[i], m_alpha, sb1, sb2, m_betha1, m_betha2);
+		gpumat::sub_adamGrad(b[i], gradB[i], m_mb[i], m_vb[i], m_alpha, sb1, sb2, m_betha1, m_betha2);
 	}
 	return true;
 }
@@ -385,19 +375,16 @@ bool AdamOptimizer::pass(const std::vector<GpuMat> &gradW,
 
 	for(size_t i = 0; i < gradW.size(); ++i){
 
-		gpumat::add(m_mW[i], gradW[i], m_betha1, (1. - m_betha1));
 		m_mb_single[i] = (float)(m_betha1 * m_mb_single[i] + (1. - m_betha1) * gradB[i]);
 
-		gpumat::elemwiseSqr(gradW[i], sW[i]);
 		float sB = gradB[i] * gradB[i];
 
-		gpumat::add(m_vW[i], sW[i], m_betha2, (1. - m_betha2));
 		m_vb_single[i] = (float)(m_betha2 * m_vb_single[i] + (1 - m_betha2) * sB);
 
 		/// W = -alpha * (sb1 * mW / (sqrt(sb2 * vW) + eps))
 
 		//gpumat::add(W[i], gradW[i], 1., -m_alpha);
-		gpumat::sub_adamGrad(W[i], m_mW[i], m_vW[i], m_alpha, sb1, sb2);
+		gpumat::sub_adamGrad(W[i], gradW[i], m_mW[i], m_vW[i], m_alpha, sb1, sb2, m_betha1, m_betha2);
 
 		b[i] -= (float)(m_alpha * (sb1 * m_mb_single[i]) / (sqrt(sb2 * m_vb_single[i]) + eps));
 		//W[i] -= m_alpha * mWs;

@@ -466,8 +466,8 @@ void cuda_softmax2(GpuMat& A, int axis, GpuMat& partZ);
  * @param sb2
  */
 extern "C"
-void cuda_adamgrad(GpuMat& A, const GpuMat& mA, const GpuMat& vA,
-				   double alpha, double sb1, double sb2);
+void cuda_adamgrad(GpuMat& A, const GpuMat& gA, GpuMat& mA, GpuMat& vA,
+				   double alpha, double sb1, double sb2, double betha1, double betha2);
 
 /**
  * @brief cuda_subIndOne
@@ -1460,7 +1460,8 @@ void sumRows_shared(const GpuMat &A, GpuMat &C, double val)
 	cuda_sumrows_shared(A, C, val);
 }
 
-void sub_adamGrad(GpuMat &A, const GpuMat &mA, const GpuMat &vA, double alpha, double sb1, double sb2)
+void sub_adamGrad(GpuMat& A, const GpuMat& gA, GpuMat& mA, GpuMat& vA,
+				  double alpha, double sb1, double sb2, double betha1, double betha2)
 {
 	if(A.empty() || mA.empty() || vA.empty() ||
 			A.type != mA.type || A.type != vA.type ||
@@ -1469,7 +1470,7 @@ void sub_adamGrad(GpuMat &A, const GpuMat &mA, const GpuMat &vA, double alpha, d
 		throw new std::invalid_argument("sub_adamGrad");
 	}
 
-	cuda_adamgrad(A, mA, vA, alpha, sb1, sb2);
+	cuda_adamgrad(A, gA, mA, vA, alpha, sb1, sb2, betha1, betha2);
 }
 
 void subIndOne(const GpuMat &A, const GpuMat &Ind, GpuMat &B)

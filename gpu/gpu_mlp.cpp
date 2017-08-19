@@ -411,24 +411,24 @@ bool MlpOptim::pass(std::vector<mlp> &_mlp)
 	for(size_t i = 0; i < _mlp.size(); ++i){
 		mlp& mlpi = _mlp[i];
 
-		gpumat::add(m_mW[i], mlpi.gW, m_betha1, (1. - m_betha1));
-		gpumat::add(m_mb[i], mlpi.gB, m_betha1, (1. - m_betha1));
+//		gpumat::add(m_mW[i], mlpi.gW, m_betha1, (1. - m_betha1));
+//		gpumat::add(m_mb[i], mlpi.gB, m_betha1, (1. - m_betha1));
 
-		gpumat::elemwiseSqr(mlpi.gW, sW[i]);
-		gpumat::elemwiseSqr(mlpi.gB, sB[i]);
+//		gpumat::elemwiseSqr(mlpi.gW, sW[i]);
+//		gpumat::elemwiseSqr(mlpi.gB, sB[i]);
 
-//		mlpi.gW.release();
-//		mlpi.gB.release();
+////		mlpi.gW.release();
+////		mlpi.gB.release();
 
-		gpumat::add(m_vW[i], sW[i], m_betha2, (1. - m_betha2));
-		gpumat::add(m_vb[i], sB[i], m_betha2, (1. - m_betha2));
+//		gpumat::add(m_vW[i], sW[i], m_betha2, (1. - m_betha2));
+//		gpumat::add(m_vb[i], sB[i], m_betha2, (1. - m_betha2));
 
 		/// W = -alpha * (sb1 * mW / (sqrt(sb2 * vW) + eps))
 
 //		gpumat::add(W[i], m_mW[i], 1, -m_alpha);
 //		gpumat::add(b[i], m_mb[i], 1, -m_alpha);
-		gpumat::sub_adamGrad(mlpi.W, m_mW[i], m_vW[i], m_alpha, sb1, sb2);
-		gpumat::sub_adamGrad(mlpi.B, m_mb[i], m_vb[i], m_alpha, sb1, sb2);
+		gpumat::sub_adamGrad(mlpi.W, mlpi.gW, m_mW[i], m_vW[i], m_alpha, sb1, sb2, m_betha1, m_betha2);
+		gpumat::sub_adamGrad(mlpi.B, mlpi.gW, m_mb[i], m_vb[i], m_alpha, sb1, sb2, m_betha1, m_betha2);
 
 	}
 	return true;

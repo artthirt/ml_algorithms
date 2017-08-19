@@ -1248,7 +1248,7 @@ __global__ void div_row(Mtx C, Mtx rows)
  * @param sb2
  */
 template< class T >
-__global__ void adamgrad(Mtx A, const Mtx mA, const Mtx vA, T alpha, T sb1, T sb2)
+__global__ void adamgrad(Mtx A, Mtx gA, const Mtx mA, const Mtx vA, T alpha, T sb1, T sb2, T betha1, T betha2)
 {
 	int row = threadIdx.y + blockIdx.y * blockDim.y;
 	int col = threadIdx.x + blockIdx.x * blockDim.x;
@@ -1256,11 +1256,23 @@ __global__ void adamgrad(Mtx A, const Mtx mA, const Mtx vA, T alpha, T sb1, T sb
 	const T eps = 10e-8;
 
 	T* dA = (T*)A.data;
+	T* dgA = (T*)gA.data;
 	T* dmA = (T*)mA.data;
 	T* dvA = (T*)vA.data;
 	if(row < A.rows && col < A.cols){
-		T m = sb1 * dmA[row * A.cols + col];
-		T v = sb2 * dvA[row * A.cols + col];
+		T g = dgA[row * A.cols + col];
+		T g2 = g * g;
+		T m0 = dmA[row * A.cols + col];
+		T v0 = dvA[row * A.cols + col];
+
+		m0 = betha1 * m0 + (1 - betha1) * g;
+		v0 = betha2 * v0 + (1 - betha2) * g2;
+
+		dmA[row * A.cols + col] = m0;
+		dvA[row * A.cols + col] = v0;
+
+		T m = sb1 * m0;
+		T v = sb2 * v0;
 		T val = alpha * m / (::sqrt(v) + eps);
 		dA[row * A.cols + col] -= val;
 	}
@@ -3060,7 +3072,8 @@ void cuda_softmax2(GpuMat& A, int axis, GpuMat& partZ)
  * @param sb2
  */
 extern "C"
-void cuda_adamgrad(GpuMat& A, const GpuMat& mA, const GpuMat& vA, double alpha, double sb1, double sb2)
+void cuda_adamgrad(GpuMat& A, const GpuMat &gA, GpuMat& mA, GpuMat& vA,
+				   double alpha, double sb1, double sb2, double betha1, double betha2)
 {
 	int x1 = A.cols / BLOCKSIZE + 1;
 	int x2 = A.rows / BLOCKSIZE + 1;
@@ -3069,10 +3082,10 @@ void cuda_adamgrad(GpuMat& A, const GpuMat& mA, const GpuMat& vA, double alpha, 
 
 	switch (A.type) {
 	case GPU_DOUBLE:
-		internal::adamgrad<double> <<<dimGrid, dimBlock>>>(A, mA, vA, (double)alpha, (double)sb1, (double)sb2);
+		internal::adamgrad<double> <<<dimGrid, dimBlock>>>(A, gA, mA, vA, (double)alpha, (double)sb1, (double)sb2, betha1, betha2);
 		break;
 	case GPU_FLOAT:
-		internal::adamgrad<float> <<<dimGrid, dimBlock>>>(A, mA, vA, (float)alpha, (float)sb1, (float)sb2);
+		internal::adamgrad<float> <<<dimGrid, dimBlock>>>(A, gA, mA, vA, (float)alpha, (float)sb1, (float)sb2, betha1, betha2);
 		break;
 	}
 }

@@ -491,7 +491,8 @@ void softmax(GpuMat& A, int axis, GpuMat& partZ);
  * @param B
  * @param C - out C = A .- B
  */
-void sub_adamGrad(GpuMat& A, const GpuMat& mA, const GpuMat& vA, double alpha, double sb1, double sb2);
+void sub_adamGrad(GpuMat& A, const GpuMat& gA, GpuMat &mA, GpuMat &vA,
+				  double alpha, double sb1, double sb2, double betha1, double betha2);
 
 /**
  * @brief subIndOne

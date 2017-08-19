@@ -295,25 +295,17 @@ bool MlpOptimMixed::pass(std::vector<ct::mlp_mixed > &Mlp){
 		gpumat::GpuMat g_m_mW, g_m_vW, g_m_mb, g_m_vb;
 
 		{
-			gpumat::GpuMat g_gW;
+			gpumat::GpuMat g_gW, g_W;
 			gpumat::convert_to_gpu(m_mW[i], g_m_mW);
 			gpumat::convert_to_gpu(m_vW[i], g_m_vW);
 			gpumat::convert_to_gpu(_mlp.gW, g_gW);
+			gpumat::convert_to_gpu(_mlp.W, g_W);
 
-			gpumat::add(g_m_mW, g_gW, m_betha1, (1. - m_betha1));
-			gpumat::elemwiseSqr(g_gW, g_gW);
-			gpumat::add(g_m_vW, g_gW, m_betha2, (1. - m_betha2));
-		}
+			gpumat::sub_adamGrad(g_W, g_gW, g_m_mW, g_m_vW, m_alpha, sb1, sb2, m_betha1, m_betha2);
 
-		{
-			gpumat::GpuMat g_gB;
-			gpumat::convert_to_gpu(_mlp.gB, g_gB);
-			gpumat::convert_to_gpu(m_mb[i], g_m_mb);
-			gpumat::convert_to_gpu(m_vb[i], g_m_vb);
-
-			gpumat::add(g_m_mb, g_gB, m_betha1, (1. - m_betha1));
-			gpumat::elemwiseSqr(g_gB, g_gB);
-			gpumat::add(g_m_vb, g_gB, m_betha2, (1. - m_betha2));
+			gpumat::convert_to_mat(g_W, _mlp.W);
+			gpumat::convert_to_mat(g_m_mW, m_mW[i]);
+			gpumat::convert_to_mat(g_m_vW, m_vW[i]);
 		}
 
 		/// W = -alpha * (sb1 * mW / (sqrt(sb2 * vW) + eps))
@@ -321,15 +313,17 @@ bool MlpOptimMixed::pass(std::vector<ct::mlp_mixed > &Mlp){
 //		gpumat::add(W[i], m_mW[i], 1, -m_alpha);
 //		gpumat::add(b[i], m_mb[i], 1, -m_alpha);
 		{
-			gpumat::GpuMat g_W, g_B;
-			gpumat::convert_to_gpu(_mlp.W, g_W);
+			gpumat::GpuMat g_gB, g_B;
+			gpumat::convert_to_gpu(_mlp.gB, g_gB);
+			gpumat::convert_to_gpu(m_mb[i], g_m_mb);
+			gpumat::convert_to_gpu(m_vb[i], g_m_vb);
 			gpumat::convert_to_gpu(_mlp.B, g_B);
 
-			gpumat::sub_adamGrad(g_W, g_m_mW, g_m_vW, m_alpha, sb1, sb2);
-			gpumat::sub_adamGrad(g_B, g_m_mb, g_m_vb, m_alpha, sb1, sb2);
+			gpumat::sub_adamGrad(g_B, g_gB, g_m_mb, g_m_vb, m_alpha, sb1, sb2, m_betha1, m_betha2);
 
-			gpumat::convert_to_mat(g_W, _mlp.W);
 			gpumat::convert_to_mat(g_B, _mlp.B);
+			gpumat::convert_to_mat(g_m_mb, m_mb[i]);
+			gpumat::convert_to_mat(g_m_vb, m_vb[i]);
 		}
 
 //		AO m_mW[i] = AO m_betha1 * AO m_mW[i] + (float)(1. - AO m_betha1) * _mlp.gW;
