@@ -405,8 +405,8 @@ bool MlpOptim::pass(std::vector<mlp> &_mlp)
 	}
 
 	m_iteration++;
-	double sb1 = (1. / (1. - pow(m_betha1, m_iteration)));
-	double sb2 = (1. / (1. - pow(m_betha2, m_iteration)));
+	double sb1 = m_iteration < 1000? (1. / (1. - pow(m_betha1, m_iteration))) : 1.;
+	double sb2 = m_iteration < 1000? (1. / (1. - pow(m_betha2, m_iteration))) : 1;
 
 	for(size_t i = 0; i < _mlp.size(); ++i){
 		mlp& mlpi = _mlp[i];
