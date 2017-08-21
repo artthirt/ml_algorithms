@@ -168,7 +168,7 @@ void convnn_gpu::init(const ct::Size &_szA0, int _channels, int stride, int _K,
 	gW.resize(1);
 	gB.resize(1);
 
-	float n = (float)0.1;
+	float n = (float)0.05;
 
 	for(size_t i = 0; i < W.size(); ++i){
 		ct::Matf Wi(rows, cols), Bi(1, kernels);
@@ -388,14 +388,14 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 		gpumat::add2matmulT1(Xci, dSubi, gW[0]);
 
 //		vgB.swap_dims();
-		add2sumRows(dSubi, gB[0], 1./dSubi.rows /*, (double)1. / (Xci.total())*/);
+		add2sumRows(dSubi, gB[0], 1/dSubi.rows /*, (double)1. / (Xci.total())*/);
 //		vgB.swap_dims();
 
 		//gpumat::add(gW[0], vgW);
 		//gpumat::add(gB[0], vgB);
 	}
-	gpumat::mulval(gW[0], (double)1./(D.size() * channels));
-	gpumat::mulval(gB[0], (double)1./(D.size() * channels));
+	gpumat::mulval(gW[0], (double)1./(D.size()));
+	gpumat::mulval(gB[0], (double)1./(D.size()));
 
 #if 0
 #if 0
