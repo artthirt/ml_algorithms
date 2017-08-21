@@ -104,7 +104,7 @@ void convnn2_mixed::init(const ct::Size &_szA0, int _channels, int stride,
 	ct::get_cnv_sizes(convnn_abstract<float>::szA0, szW, stride,
 					  convnn_abstract<float>::szA1, convnn_abstract<float>::szA2);
 
-	float n = 0.1;//(float)1./sqrt(kernels);
+	float n = 0.05;//(float)1./sqrt(kernels);
 
 	W.resize(1);
 	B.resize(1);
@@ -288,8 +288,8 @@ void convnn2_mixed::backward(const std::vector<ct::Matf> &D, bool last_level){
 	}
 	//printf("3\n");
 
-	gpumat::mulval(g_gW0, (float)1./(D.size() * channels));
-	gpumat::mulval(g_gB0, (float)1./(D.size() * channels));
+	gpumat::mulval(g_gW0, (float)1./(D.size()));
+	gpumat::mulval(g_gB0, (float)1./(D.size()));
 
 	//printf("4\n");
 	if(m_Lambda > 0){
