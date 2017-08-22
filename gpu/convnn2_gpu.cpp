@@ -70,7 +70,7 @@ convnn_gpu::convnn_gpu()
 	m_lambda = 0;
 	m_optim = &m_inner_optim;
 
-	m_params[LEAKYRELU] = 0.1;
+	m_params[LEAKYRELU] = 0.01;
 }
 
 void convnn_gpu::setOptimizer(gpumat::Optimizer *optim)
@@ -394,8 +394,8 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 		//gpumat::add(gW[0], vgW);
 		//gpumat::add(gB[0], vgB);
 	}
-	gpumat::mulval(gW[0], (double)1./(D.size()));
-	gpumat::mulval(gB[0], (double)1./(D.size()));
+	gpumat::mulval(gW[0], (double)1./(D.size() * channels));
+	gpumat::mulval(gB[0], (double)1./(D.size() * channels));
 
 #if 0
 #if 0
