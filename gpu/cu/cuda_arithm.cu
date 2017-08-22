@@ -600,8 +600,10 @@ __global__ void reLu(Mtx A, Mtx C)
 	T* dA = (T*)A.data;
 	T* dC = (T*)C.data;
 
-	if(row < A.rows && col < A.cols)
-		dC[row * C.cols + col] = max(dA[row * A.cols + col], 0.);
+	if(row < A.rows && col < A.cols){
+		T val = dA[row * A.cols + col];
+		dC[row * C.cols + col] = val * (val > 0);
+	}
 }
 
 /**
@@ -616,8 +618,10 @@ __global__ void reLu(Mtx A)
 
 	T* dA = (T*)A.data;
 
-	if(row < A.rows && col < A.cols)
-		dA[row * A.cols + col] = max(dA[row * A.cols + col], 0.);
+	if(row < A.rows && col < A.cols){
+		T val = dA[row * A.cols + col];
+		dA[row * A.cols + col] = val * (val > 0);
+	}
 }
 
 /**
@@ -635,7 +639,7 @@ __global__ void deriv_reLu(Mtx A, Mtx C)
 	T* dC = (T*)C.data;
 
 	if(row < A.rows && col < A.cols)
-		dC[row * C.cols + col] = (dA[row * A.cols + col] > 0)? 1 : 0;
+		dC[row * C.cols + col] = dA[row * A.cols + col] > 0;
 }
 
 template< class T >
@@ -647,7 +651,7 @@ __global__ void deriv_reLu(Mtx A)
 	T* dA = (T*)A.data;
 
 	if(row < A.rows && col < A.cols)
-		dA[row * A.cols + col] = (dA[row * A.cols + col] > 0)? 1 : 0;
+		dA[row * A.cols + col] = dA[row * A.cols + col] > 0;
 }
 
 //////////leakyRelu
@@ -669,7 +673,7 @@ __global__ void leakyReLu(Mtx A, T x, Mtx C)
 
 	if(row < A.rows && col < A.cols){
 		T val = dA[row * A.cols + col];
-		dC[row * C.cols + col] =  val >= 0 ? val : val * x;
+		dC[row * C.cols + col] =  val > 0 ? val : val * x;
 	}
 }
 
@@ -688,7 +692,7 @@ __global__ void leakyReLu(Mtx A, T x)
 
 	if(row < A.rows && col < A.cols){
 		T val = dA[row * A.cols + col];
-		dA[row * A.cols + col] = val >= 0 ? val : val * x;
+		dA[row * A.cols + col] = val > 0 ? val : val * x;
 	}
 }
 
@@ -708,7 +712,7 @@ __global__ void deriv_leakyReLu(Mtx A, T x, Mtx C)
 
 	if(row < A.rows && col < A.cols){
 		T val = dA[row * A.cols + col];
-		dC[row * C.cols + col] = (val >= 0)? 1 : x;
+		dC[row * C.cols + col] = (val > 0)? 1 : x;
 	}
 }
 
@@ -722,7 +726,7 @@ __global__ void deriv_leakyReLu(Mtx A, T x)
 
 	if(row < A.rows && col < A.cols){
 		T val = dA[row * A.cols + col];
-		dA[row * A.cols + col] = (val >= 0)? 1 : x;
+		dA[row * A.cols + col] = (val > 0)? 1 : x;
 	}
 }
 
@@ -1614,8 +1618,8 @@ __global__ void mul2deriv(Mtx D, Mtx A, gpumat::etypefunction func, Mtx DA, T pa
 				dDA[off] = dD[off];
 				break;
 			case RELU:{
-				T val = dA[off] > 0.? 1. : 0.;
-				dDA[off] = val * dD[off];
+				T val = dA[off];
+				dDA[off] = (T)(val > 0);
 				break;
 			}
 			case LEAKYRELU:{
@@ -1660,7 +1664,7 @@ __global__ void m2mpbaf(Mtx A, Mtx B, Mtx C, etypefunction func, Mtx D, T param1
 
 		switch (func) {
 			case RELU:
-				sC = sC > 0? sC : 0;
+				sC = sC * (sC > 0);
 				break;
 			case LEAKYRELU:
 				sC = sC > 0? sC : param1 * sC;

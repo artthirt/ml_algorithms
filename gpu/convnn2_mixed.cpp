@@ -13,7 +13,7 @@ convnn2_mixed::convnn2_mixed()
 	m_use_transpose = true;
 	m_Lambda = 0;
 	m_optim = &m_adam;
-	m_params[ct::LEAKYRELU] = 0.01;
+	m_params[ct::LEAKYRELU] = 0.1;
 }
 
 void convnn2_mixed::setOptimizer(ct::Optimizer<float> *optim)

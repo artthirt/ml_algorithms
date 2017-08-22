@@ -23,7 +23,7 @@ mlp::mlp(){
 	pVecA0 = nullptr;
 	m_lambda = 0.;
 
-	m_params[LEAKYRELU] = 0.01;
+	m_params[LEAKYRELU] = 0.1;
 }
 
 void mlp::setParams(etypefunction type, double param)

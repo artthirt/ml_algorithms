@@ -70,7 +70,7 @@ convnn_gpu::convnn_gpu()
 	m_lambda = 0;
 	m_optim = &m_inner_optim;
 
-	m_params[LEAKYRELU] = 0.01;
+	m_params[LEAKYRELU] = 0.1;
 }
 
 void convnn_gpu::setOptimizer(gpumat::Optimizer *optim)
