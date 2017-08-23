@@ -928,7 +928,7 @@ public:
 		return res;
 	}
 
-	Mat_<T> col(int index){
+	Mat_<T> col(int index) const{
 		Mat_<T> res;
 		if(empty() || index < 0 || index >= cols)
 			return res;
