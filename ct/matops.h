@@ -1859,6 +1859,119 @@ void back_delta_sigmoid(ct::Mat_<T>& t, const ct::Mat_<T>& y, const ct::Mat_<T> 
 }
 
 template< typename T >
+inline void m2mpaf(const Mat_<T>& m1, const Mat_<T>& m2, const Mat_<T>& b, etypefunction func, Mat_<T>& res, T param)
+{
+	if(m1.cols != m2.rows || b.cols != m2.cols || b.rows != 1)
+		return;
+
+	int r = m1.rows;
+	int c = m2.cols;
+//	Mat_<T> res(r, c);
+	res.setSize(r, c);
+
+	T* valr = res.ptr();
+	T* val1 = m1.ptr();
+	T* val2 = m2.ptr();
+	T *valb = b.ptr();
+
+#pragma omp parallel for
+	for(int i = 0; i < m1.rows; i++){
+
+//#pragma omp parallel for
+		for(int k = 0; k < m2.cols; k++){
+			T s = 0;
+			for(int j = 0; j < m1.cols; j++){
+				s += val1[i * m1.cols + j]/*at(i, j)*/ * val2[j * m2.cols + k]/*at(j, k)*/;
+			}
+
+			s += valb[k];
+			int off = i * res.cols + k;
+
+			switch (func) {
+				default:
+				case LINEAR:{
+					valr[off] = s;
+					break;
+				}
+				case RELU:{
+					valr[off] = s * (s > 0);
+					break;
+				}
+				case LEAKYRELU:{
+					valr[off] = s > 0 ? s : param * s;
+					break;
+				}
+				case SIGMOID:{
+					valr[off] = (T)(1 / (1 + ::exp(-s)));
+					break;
+				}
+				case TANH:{
+					s = (T)::exp(2 * s);
+					s = (s - 1) / (s + 1);
+					valr[off] = s;
+					break;
+				}
+			}
+			//valr[i * res.cols + k] = s;
+//			res.at(i, k) = s;
+		}
+	}
+}
+
+/**
+ * @brief mul2deriv
+ * @param D
+ * @param A
+ * @param func
+ * @param DA
+ * @param param1
+ * @param param2
+ * @param param3
+ */
+template< typename T >
+void mul2deriv(const Mat_<T> &D, const Mat_<T> &A, etypefunction func, Mat_<T> &DA, T param1 = 0, T param2 = 0, T param3 = 0)
+{
+	if(D.empty() || A.empty() || D.cols != A.cols || D.rows != A.rows)
+		throw new std::invalid_argument("mul2deriv: wrong parameters");
+
+	DA.setSize(D.size());
+
+#pragma omp parallel for
+	for(int i = 0; i < D.rows; ++i){
+		T* dD = D.ptr(i);
+		T* dA = A.ptr(i);
+		T *dDA = DA.ptr(i);
+		for(int j = 0; j < D.cols; ++j){
+			T d = dD[j];
+			T a = dA[j];
+			switch (func) {
+				default:
+				case LINEAR:{
+					dDA[j] = d;
+					break;
+				}
+				case RELU:{
+					dDA[j] = d * (a > 0);
+					break;
+				}
+				case LEAKYRELU:{
+					dDA[j] = (a > 0)? d : d * param1;
+					break;
+				}
+				case SIGMOID:{
+					dDA[j] = d * a * (1 - a);
+					break;
+				}
+				case TANH:{
+					dDA[j] = d * (1 - a * a);
+					break;
+				}
+			}
+		}
+	}
+}
+
+template< typename T >
 void get_mean(const ct::Mat_<T>& X, ct::Mat_<T>& Y, int axis = 0)
 {
 	if(X.empty())

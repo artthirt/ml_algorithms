@@ -223,54 +223,6 @@ public:
 		m_init = true;
 	}
 
-	inline void apply_func(const ct::Mat_<T>& Z, ct::Mat_<T>& A, etypefunction func){
-		switch (func) {
-			default:
-			case LINEAR:
-				A = Z;
-				return;
-			case RELU:
-				v_relu(Z, A);
-				break;
-			case SOFTMAX:
-				v_softmax(Z, A, 1);
-				break;
-			case SIGMOID:
-				v_sigmoid(Z, A);
-				break;
-			case TANH:
-				v_tanh(Z, A);
-				break;
-			case LEAKYRELU:
-				v_leakyRelu(Z, m_params[LEAKYRELU], A);
-				break;
-		}
-	}
-	inline void apply_back_func(const ct::Mat_<T>& D1, ct::Mat_<T>& D2, etypefunction func){
-		switch (func) {
-			default:
-			case LINEAR:
-				D2 = D1;
-				return;
-			case RELU:
-				v_derivRelu(A1, DA1);
-				break;
-			case SOFTMAX:
-//				A = softmax(A, 1);
-				D1.copyTo(D2);
-				return;
-			case SIGMOID:
-				v_derivSigmoid(A1, DA1);
-				break;
-			case TANH:
-				v_derivTanh(A1, DA1);
-				break;
-			case LEAKYRELU:
-				v_derivLeakyRelu(A1, m_params[LEAKYRELU], DA1);
-		}
-		elemwiseMult(D1, DA1, D2);
-	}
-
 	etypefunction funcType() const{
 		return m_func;
 	}
@@ -283,13 +235,24 @@ public:
 		if(m_is_dropout && std::abs(m_prob - 1) > 1e-6){
 			ct::dropout(pA0->rows, pA0->cols, m_prob, Dropout);
 			elemwiseMult(*pA0, Dropout, XDropout);
-			ct::matmul(XDropout, W, Z);
+			if(m_func == SOFTMAX){
+				ct::m2mpaf(XDropout, W, B, LINEAR, A1, 0.f);
+				ct::v_softmax(A1, A1, 1);
+			}else{
+				ct::m2mpaf(XDropout, W, B, m_func, A1, m_params[LEAKYRELU]);
+			}
 		}else{
-			ct::matmul(*pA0, W, Z);
+			if(m_func == SOFTMAX){
+				ct::m2mpaf(*pA0, W, B, LINEAR, A1, 0.f);
+				ct::v_softmax(A1, A1, 1);
+			}else{
+				ct::m2mpaf(*pA0, W, B, m_func, A1, m_params[LEAKYRELU]);
+			}
+//			ct::matmul(*pA0, W, Z);
 		}
 
-		Z.biasPlus(B);
-		apply_func(Z, A1, m_func);
+//		Z.biasPlus(B);
+//		apply_func(Z, A1, m_func);
 
 		if(!save_A0)
 			pA0 = nullptr;
@@ -298,7 +261,12 @@ public:
 		if(!pA0 || !m_init)
 			throw new std::invalid_argument("mlp::backward: not initialized. wrong parameters");
 
-		apply_back_func(Delta, DA1, m_func);
+		if(m_func != SOFTMAX){
+			mul2deriv(Delta, A1, m_func, DA1, m_params[LEAKYRELU]);
+		}else{
+			Delta.copyTo(DA1);
+		}
+//		apply_back_func(Delta, DA1, m_func);
 
 		T m = Delta.rows;
 
