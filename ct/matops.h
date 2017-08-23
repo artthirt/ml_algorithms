@@ -425,6 +425,34 @@ inline Mat_<T> sumRows(const Mat_<T > &m, T alpha = 1.)
 	return res;
 }
 
+template< typename T >
+void add2sumRows(const Mat_<T > &m, Mat_<T > &res, T alpha = 1.)
+{
+	if(m.rows == 0 || m.cols == 0)
+		return;
+	if(res.empty()){
+		res.setSize(m.size());
+		res.fill(0);
+	}
+
+	T* res_val	= res.ptr();
+	T* m_val	= m.ptr();
+
+#pragma omp parallel for
+	for(int j = 0; j < m.cols; j++){
+#ifdef __GNUC__
+#pragma omp simd
+#else
+//#pragma omp parallel for
+#endif
+		T val = 0;
+		for(int i = 0; i < m.rows; i++){
+			val += m_val[i * m.cols + j];
+		}
+		res_val[j] = val * alpha;
+	}
+}
+
 /**
  * @brief v_sumRows
  * @param m
@@ -1718,6 +1746,49 @@ void matmulT2(const Mat_<T>& A, const Mat_<T>& Bt, Mat_<T>& C)
 	}
 
 }
+
+///////////
+
+/**
+ * @brief add2matmulT1
+ * @param At
+ * @param B
+ * @param C = A' * B
+ */
+template< typename T >
+void add2matmulT1(const Mat_<T>& At, const Mat_<T>& B, Mat_<T>& C)
+{
+	if(At.rows != B.rows)
+		return;
+	int r = At.cols;
+	int c = B.cols;
+	if(C.rows != r || C.cols != c)
+		C.setSize(r, c);
+
+	T* valr = C.ptr();
+	T* val1 = At.ptr();
+	T* val2 = B.ptr();
+
+#pragma omp parallel for
+	for(int i = 0; i < At.cols; i++){
+
+//#pragma omp parallel for
+		for(int k = 0; k < B.cols; k++){
+			T s = 0;
+#ifdef __GNUC__
+#pragma omp simd
+#endif
+			for(int j = 0; j < At.rows; j++){
+				s += val1[j * At.cols + i]/*at(i, j)*/ * val2[j * B.cols + k]/*at(j, k)*/;
+			}
+			valr[i * C.cols + k] += s;
+//			res.at(i, k) = s;
+		}
+	}
+
+}
+
+///////////
 
 template< typename T >
 void dropout(Mat_<T>& mat, T p, Mat_<T>& D, Mat_<T>& Dt, int seed = 0)

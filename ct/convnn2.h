@@ -348,7 +348,7 @@ public:
 
 		ct::get_cnv_sizes(convnn_abstract<T>::szA0, szW, stride, convnn_abstract<T>::szA1, convnn_abstract<T>::szA2);
 
-		T n = (T)10.1;
+		T n = (T)1/sqrt(szW.area() * channels);
 
 		W.resize(1);
 		B.resize(1);
@@ -357,7 +357,7 @@ public:
 
 		W[0].setSize(rows, cols);
 		W[0].randn(0, n);
-		B[0].setSize(convnn_abstract<T>::kernels, 1);
+		B[0].setSize(1, convnn_abstract<T>::kernels);
 		B[0].randn(0, n);
 
 		m_optim->init(W, B);
@@ -389,29 +389,9 @@ public:
 			}
 		}
 
-
 		for(int i = 0; i < (int)Xc.size(); ++i){
 			ct::Mat_<T>& Xi = Xc[i];
-			ct::Mat_<T>& A1i = A1[i];
-			ct::matmul(Xi, W[0], A1i);
-			A1i.biasPlus(B[0]);
-
-			switch (m_func) {
-				case ct::RELU:
-					ct::v_relu(A1i);
-					break;
-				case ct::LEAKYRELU:
-					ct::v_leakyRelu(A1i, m_params[ct::LEAKYRELU]);
-					break;
-				case ct::SIGMOID:
-					ct::v_sigmoid(A1i);
-					break;
-				case ct::TANH:
-					ct::v_tanh(A1i);
-					break;
-				default:
-					break;
-			}
+			ct::m2mpaf(Xi, W[0], B[0], m_func, A1[i], m_params[ct::LEAKYRELU]);
 		}
 		if(m_use_pool){
 			Mask.resize(Xc.size());
@@ -433,44 +413,8 @@ public:
 	}
 
 	inline void backcnv(const std::vector< ct::Mat_<T> >& D, std::vector< ct::Mat_<T> >& DS){
-		if(D.data() != DS.data()){
-			for(int i = 0; i < (int)D.size(); ++i){
-				switch (m_func) {
-					case ct::RELU:
-						ct::elemwiseMult(D[i], ct::derivRelu(A1[i]), DS[i]);
-						break;
-					case ct::LEAKYRELU:
-						ct::elemwiseMult(D[i], ct::derivLeakyRelu(A1[i], m_params[ct::LEAKYRELU]), DS[i]);
-						break;
-					case ct::SIGMOID:
-						ct::elemwiseMult(D[i], ct::derivSigmoid(A1[i]), DS[i]);
-						break;
-					case ct::TANH:
-						ct::elemwiseMult(D[i], ct::derivTanh(A1[i]), DS[i]);
-						break;
-					default:
-						break;
-				}
-			}
-		}else{
-			for(int i = 0; i < (int)D.size(); ++i){
-				switch (m_func) {
-					case ct::RELU:
-						ct::elemwiseMult(DS[i], ct::derivRelu(A1[i]));
-						break;
-					case ct::LEAKYRELU:
-						ct::elemwiseMult(DS[i], ct::derivLeakyRelu(A1[i], m_params[ct::LEAKYRELU]));
-						break;
-					case ct::SIGMOID:
-						ct::elemwiseMult(DS[i], ct::derivSigmoid(A1[i]));
-						break;
-					case ct::TANH:
-						ct::elemwiseMult(DS[i], ct::derivTanh(A1[i]));
-						break;
-					default:
-						break;
-				}
-			}
+		for(int i = 0; i < D.size(); ++i){
+			ct::mul2deriv(D[i], A1[i], m_func, DS[i], m_params[ct::LEAKYRELU]);
 		}
 	}
 
@@ -504,17 +448,17 @@ public:
 			ct::Mat_<T>& dSubi = dSub[i];
 			//ct::Mat_<T>& Wi = vgW;
 			//ct::Mat_<T>& vgBi = vgB;
-			matmulT1(Xci, dSubi, vgW);
-			vgB = ct::sumRows(dSubi, 1.f/dSubi.rows);
+			ct::add2matmulT1(Xci, dSubi, gW[0]);
+			ct::add2sumRows(dSubi, gB[0], 1.f/dSubi.rows);
 
-			ct::add(gW[0], vgW);
-			ct::add(gB[0], vgB);
+//			ct::add(gW[0], vgW);
+//			ct::add(gB[0], vgB);
 			//Wi *= (1.f/dSubi.total());
 			//vgBi.swap_dims();
 		}
 		//printf("3\n");
-		gW[0] *= (T)1./(D.size());
-		gB[0] *= (T)1./(D.size());
+		gW[0] *= (T)1./(D.size() * channels);
+		gB[0] *= (T)1./(D.size() * channels);
 
 		//printf("4\n");
 		if(m_Lambda > 0){
