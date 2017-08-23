@@ -507,9 +507,8 @@ bool MlpOptimSG::pass(std::vector<mlp> &_mlp)
 
 //////////////////////////////////////////////////
 
-MlpOptimMoment::MlpOptimMoment()
+MlpOptimMoment::MlpOptimMoment() : MomentumOptimizer()
 {
-	m_betha = 0.9;
 }
 
 bool MlpOptimMoment::init(const std::vector<mlp> &_mlp)
@@ -524,11 +523,8 @@ bool MlpOptimMoment::init(const std::vector<mlp> &_mlp)
 
 	for(size_t i = 0; i < _mlp.size(); i++){
 		const gpumat::mlp& _mlpi = _mlp[i];
-		m_mW[i].resize(_mlpi.W);
-		m_mW[i].zeros();
 
-		m_mb[i].resize(_mlpi.B);
-		m_mb[i].zeros();
+		initI(_mlpi.W, _mlpi.B, i);
 	}
 
 	return true;
@@ -544,11 +540,7 @@ bool MlpOptimMoment::pass(std::vector<mlp> &_mlp)
 	for(size_t i = 0; i < _mlp.size(); ++i){
 		mlp& mlpi = _mlp[i];
 
-		gpumat::add(m_mW[i], mlpi.gW, m_betha, (1. - m_betha));
-		gpumat::add(m_mb[i], mlpi.gB, m_betha, (1. - m_betha));
-
-		gpumat::sub(mlpi.W, m_mW[i], 1., m_alpha);
-		gpumat::sub(mlpi.B, m_mb[i], 1., m_alpha);
+		passI(mlpi.gW, mlpi.gB, mlpi.W, mlpi.B, i);
 	}
 	return true;
 

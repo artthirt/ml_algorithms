@@ -122,7 +122,10 @@ public:
 
 	virtual bool init(const std::vector<GpuMat> &gradW, const std::vector<GpuMat> &gradB);
 	virtual bool pass(const std::vector< gpumat::GpuMat >& gradW, const std::vector< gpumat::GpuMat >& gradB,
-			  std::vector< gpumat::GpuMat >& W, std::vector< gpumat::GpuMat >& b);
+			  std::vector< gpumat::GpuMat >& W, std::vector< gpumat::GpuMat >& B);
+
+	void initI(const GpuMat &W, const GpuMat &B, int index);
+	void passI(const GpuMat &gW, const GpuMat &gB, gpumat::GpuMat& W, gpumat::GpuMat& B, int index);
 
 protected:
 	double m_betha;

@@ -233,24 +233,20 @@ bool MomentumOptimizer::init(const std::vector<GpuMat> &gradW, const std::vector
 	m_mb.resize(gradW.size());
 
 	for(size_t i = 0; i < gradW.size(); i++){
-		m_mW[i].resize(gradW[i]);
-		m_mb[i].resize(gradB[i]);
-
-		m_mW[i].zeros();
-		m_mb[i].zeros();
+		initI(gradW[i], gradB[i], i);
 	}
 	return true;
 }
 
-bool MomentumOptimizer::pass(const std::vector<GpuMat> &gradW, const std::vector<GpuMat> &gradB, std::vector<GpuMat> &W, std::vector<GpuMat> &b)
+bool MomentumOptimizer::pass(const std::vector<GpuMat> &gradW, const std::vector<GpuMat> &gradB,
+							 std::vector<GpuMat> &W, std::vector<GpuMat> &B)
 {
-	if(gradW.empty() || gradB.empty() || W.empty() || b.empty())
+	if(gradW.empty() || gradB.empty() || W.empty() || B.empty())
 		return false;
 
 	for(size_t i = 0; i < gradW.size(); ++i){
 
-		gpumat::momentum_optimizer(W[i], m_mW[i], gradW[i], m_alpha, m_betha);
-		gpumat::momentum_optimizer(b[i], m_mb[i], gradB[i], m_alpha, m_betha);
+		passI(gradW[i], gradB[i], W[i], B[i], i);
 //		gpumat::add(m_mW[i], gradW[i], m_betha, (1. - m_betha));
 //		gpumat::add(m_mb[i], gradB[i], m_betha, (1. - m_betha));
 
@@ -259,6 +255,28 @@ bool MomentumOptimizer::pass(const std::vector<GpuMat> &gradW, const std::vector
 	}
 	return true;
 
+}
+
+void MomentumOptimizer::initI(const GpuMat &W, const GpuMat &B, int index)
+{
+//	m_mW[index].resize(W);
+//	m_mb[index].resize(B);
+
+//	m_mW[index].zeros();
+//	m_mb[index].zeros();
+}
+
+void MomentumOptimizer::passI(const GpuMat &gW, const GpuMat &gB, GpuMat &W, GpuMat &B, int index)
+{
+	if(m_mW[index].empty() || m_mb[index].empty()){
+		gW.copyTo(m_mW[index]);
+		gB.copyTo(m_mb[index]);
+	}
+
+//	gpumat::sub(W, gW, 1, m_alpha);
+//	gpumat::sub(B, gB, 1, m_alpha);
+	gpumat::momentum_optimizer(W, m_mW[index], gW, m_alpha, m_betha);
+	gpumat::momentum_optimizer(B, m_mb[index], gB, m_alpha, m_betha);
 }
 
 ///////////////////////////////

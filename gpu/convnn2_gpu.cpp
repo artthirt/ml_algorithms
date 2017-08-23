@@ -75,8 +75,10 @@ convnn_gpu::convnn_gpu()
 
 void convnn_gpu::setOptimizer(gpumat::Optimizer *optim)
 {
-	if(optim)
+	if(optim){
 		m_optim = optim;
+		m_optim->init(W, B);
+	}
 }
 
 void convnn_gpu::setAlpha(double val)
