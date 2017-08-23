@@ -942,6 +942,38 @@ public:
 		return res;
 	}
 
+	void push_back(const ct::Mat_<T>& mat){
+		if(mat.empty())
+			return;
+		if(empty()){
+			mat.copyTo(*this);
+			return;
+		}
+		if(mat.cols != cols)
+			return;
+		int end = rows;
+		ct::Mat_<T> tmp;
+		copyTo(tmp);
+		setSize(rows + mat.rows, cols);
+
+#pragma omp parallel for
+		for(int i = 0; i < end; ++i){
+			T *dR = ptr(i);
+			T *dT = tmp.ptr(i);
+			for(int j = 0; j < cols; ++j){
+				dR[j] = dT[j];
+			}
+		}
+#pragma omp parallel for
+		for(int i = 0; i < mat.rows; ++i){
+			T *dR = ptr(end + i);
+			T *dT = mat.ptr(i);
+			for(int j = 0; j < cols; ++j){
+				dR[j] = dT[j];
+			}
+		}
+	}
+
 	T sum() const{
 		T res(0);
 		T* val = &(*this->val)[0];
