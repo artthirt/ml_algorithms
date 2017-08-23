@@ -348,7 +348,7 @@ public:
 
 		ct::get_cnv_sizes(convnn_abstract<T>::szA0, szW, stride, convnn_abstract<T>::szA1, convnn_abstract<T>::szA2);
 
-		T n = (T)1/sqrt(szW.area() * channels);
+		T n = (T)1/sqrt(szW.area() * convnn_abstract<T>::channels);
 
 		W.resize(1);
 		B.resize(1);
@@ -457,8 +457,8 @@ public:
 			//vgBi.swap_dims();
 		}
 		//printf("3\n");
-		gW[0] *= (T)1./(D.size() * channels);
-		gB[0] *= (T)1./(D.size() * channels);
+		gW[0] *= (T)1./(D.size() * convnn_abstract<T>::channels);
+		gB[0] *= (T)1./(D.size() * convnn_abstract<T>::channels);
 
 		//printf("4\n");
 		if(m_Lambda > 0){

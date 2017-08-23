@@ -440,12 +440,10 @@ void add2sumRows(const Mat_<T > &m, Mat_<T > &res, T alpha = 1.)
 
 #pragma omp parallel for
 	for(int j = 0; j < m.cols; j++){
+		T val = 0;
 #ifdef __GNUC__
 #pragma omp simd
-#else
-//#pragma omp parallel for
 #endif
-		T val = 0;
 		for(int i = 0; i < m.rows; i++){
 			val += m_val[i * m.cols + j];
 		}
