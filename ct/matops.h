@@ -795,7 +795,8 @@ inline Mat_<T> relu(const Mat_<T>& m)
 #endif
 		for(int j = 0; j < m.cols; j++){
 			int offset = i * m.cols + j;
-			res_val[offset] = std::max(T(0), m_val[offset]);
+			T val = m_val[offset];
+			res_val[offset] = val * (val > 0);
 		}
 	}
 	return res;
@@ -817,7 +818,8 @@ inline void v_relu(Mat_<T>& m)
 #endif
 		for(int j = 0; j < m.cols; j++){
 			int offset = i * m.cols + j;
-			m_val[offset] = std::max(T(0), m_val[offset]);
+			T val = m_val[offset];
+			m_val[offset] = val * (val > 0);
 		}
 	}
 }
@@ -840,7 +842,8 @@ inline void v_relu(const Mat_<T>& m, Mat_<T>& r)
 #endif
 		for(int j = 0; j < m.cols; j++){
 			int offset = i * m.cols + j;
-			r_val[offset] = std::max(T(0), m_val[offset]);
+			T val = m_val[offset];
+			r_val[offset] = val * (val > 0);
 		}
 	}
 }
@@ -890,7 +893,7 @@ inline void v_derivRelu(Mat_<T>& m)
 #endif
 		for(int j = 0; j < m.cols; j++){
 			int offset = i * m.cols + j;
-			m_val[offset] = m_val[offset] > T(0) ? T(1) : T(0);
+			m_val[offset] = m_val[offset] > T(0);
 		}
 	}
 }
@@ -915,7 +918,7 @@ inline void v_derivRelu(const Mat_<T>& m, Mat_<T>& C)
 #endif
 		for(int j = 0; j < m.cols; j++){
 			int offset = i * m.cols + j;
-			res_val[offset] = m_val[offset] > T(0) ? T(1) : T(0);
+			res_val[offset] = m_val[offset] > T(0);
 		}
 	}
 }

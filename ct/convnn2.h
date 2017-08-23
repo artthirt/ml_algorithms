@@ -428,8 +428,8 @@ public:
 		}
 	}
 
-	void forward(const convnn<T> & conv, ct::etypefunction func){
-		forward(&conv.XOut(), func);
+	void forward(const convnn<T> & conv){
+		forward(&conv.XOut());
 	}
 
 	inline void backcnv(const std::vector< ct::Mat_<T> >& D, std::vector< ct::Mat_<T> >& DS){
@@ -437,16 +437,16 @@ public:
 			for(int i = 0; i < (int)D.size(); ++i){
 				switch (m_func) {
 					case ct::RELU:
-						ct::elemwiseMult(D[i], derivRelu(A1[i]), DS[i]);
+						ct::elemwiseMult(D[i], ct::derivRelu(A1[i]), DS[i]);
 						break;
 					case ct::LEAKYRELU:
 						ct::elemwiseMult(D[i], ct::derivLeakyRelu(A1[i], m_params[ct::LEAKYRELU]), DS[i]);
 						break;
 					case ct::SIGMOID:
-						ct::elemwiseMult(D[i], derivSigmoid(A1[i]), DS[i]);
+						ct::elemwiseMult(D[i], ct::derivSigmoid(A1[i]), DS[i]);
 						break;
 					case ct::TANH:
-						ct::elemwiseMult(D[i], derivTanh(A1[i]), DS[i]);
+						ct::elemwiseMult(D[i], ct::derivTanh(A1[i]), DS[i]);
 						break;
 					default:
 						break;

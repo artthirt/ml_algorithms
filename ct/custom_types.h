@@ -914,7 +914,7 @@ public:
 		return res;
 	}
 
-	Mat_<T> row(int index){
+	Mat_<T> row(int index) const{
 		Mat_<T> res;
 		if(empty() || index < 0 || index >= rows)
 			return res;
