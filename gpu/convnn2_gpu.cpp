@@ -70,7 +70,7 @@ convnn_gpu::convnn_gpu()
 	m_lambda = 0;
 	m_optim = &m_inner_optim;
 
-	m_params[LEAKYRELU] = 0.01;
+	m_params[LEAKYRELU] = 0.1;
 }
 
 void convnn_gpu::setOptimizer(gpumat::Optimizer *optim)
@@ -168,7 +168,7 @@ void convnn_gpu::init(const ct::Size &_szA0, int _channels, int stride, int _K,
 	gW.resize(1);
 	gB.resize(1);
 
-	float n = (float)0.05;
+	float n = (float)1/(sqrt(szW.area() * channels));
 
 	for(size_t i = 0; i < W.size(); ++i){
 		ct::Matf Wi(rows, cols), Bi(1, kernels);
