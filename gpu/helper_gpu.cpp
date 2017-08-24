@@ -259,11 +259,11 @@ bool MomentumOptimizer::pass(const std::vector<GpuMat> &gradW, const std::vector
 
 void MomentumOptimizer::initI(const GpuMat &W, const GpuMat &B, int index)
 {
-//	m_mW[index].resize(W);
-//	m_mb[index].resize(B);
+	m_mW[index].resize(W);
+	m_mb[index].resize(B);
 
-//	m_mW[index].zeros();
-//	m_mb[index].zeros();
+	m_mW[index].zeros();
+	m_mb[index].zeros();
 }
 
 void MomentumOptimizer::passI(const GpuMat &gW, const GpuMat &gB, GpuMat &W, GpuMat &B, int index)
