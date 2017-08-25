@@ -5,6 +5,8 @@
 #include "gpumat.h"
 #include <map>
 
+#include "optim_mixed.h"
+
 namespace ct{
 
 class mlp_mixed
@@ -64,17 +66,24 @@ private:
 
 ////////////////////////
 
-class MlpOptimMixed: public AdamOptimizer<float>{
+class MlpAdamOptimizerMixed: public ct::AdamOptimizerMixed
+{
 public:
-	MlpOptimMixed();
+	MlpAdamOptimizerMixed();
 
-#define AO this->
-
-	bool init(std::vector<mlp_mixed> &Mlp);
-
-	bool pass(std::vector<mlp_mixed> &Mlp);
+	bool init(const std::vector<mlp_mixed> &mlp);
+	bool pass(std::vector<mlp_mixed>& mlp);
 };
 
-}
+class MlpMomentumOptimizerMixed: public ct::MomentumOptimizerMixed
+{
+public:
+	MlpMomentumOptimizerMixed();
+
+	bool init(const std::vector<mlp_mixed> &mlp);
+	bool pass(std::vector<mlp_mixed>& mlp);
+};
+
+};
 
 #endif // MLP_MIXED_H

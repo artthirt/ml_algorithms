@@ -77,9 +77,9 @@ public:
 };
 
 template< typename T >
-class MlpOptimMoment: public MomentOptimizer<T>{
+class MlpOptimMoment: public MomentumOptimizer<T>{
 public:
-	MlpOptimMoment(): MomentOptimizer<T>(){
+	MlpOptimMoment(): MomentumOptimizer<T>(){
 
 	}
 	bool init(std::vector< ct::mlp<T> >& Mlp){
@@ -88,8 +88,8 @@ public:
 
 		Optimizer<T>::m_iteration = 0;
 
-		MomentOptimizer<T>::m_mW.resize(Mlp.size());
-		MomentOptimizer<T>::m_mb.resize(Mlp.size());
+		MomentumOptimizer<T>::m_mW.resize(Mlp.size());
+		MomentumOptimizer<T>::m_mb.resize(Mlp.size());
 
 		int index = 0;
 		for(const ct::mlp<T>& item: Mlp){

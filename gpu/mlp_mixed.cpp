@@ -247,103 +247,79 @@ void mlp_mixed::read2(std::fstream &fs)
 		B.swap_dims();
 }
 
-//////////////////////////////////////
+///////////////////////////////////
+///////////////////////////////////
 
-MlpOptimMixed::MlpOptimMixed(): AdamOptimizer<float>(){
-
+MlpAdamOptimizerMixed::MlpAdamOptimizerMixed() : AdamOptimizerMixed()
+{
+	init_iteration();
 }
 
-bool MlpOptimMixed::init(std::vector<ct::mlp_mixed > &Mlp){
-	if(Mlp.empty())
+bool MlpAdamOptimizerMixed::init(const std::vector<mlp_mixed> &mlp)
+{
+	if(mlp.empty())
 		return false;
 
-	AO m_iteration = 0;
+	m_mW.resize(mlp.size());
+	m_mb.resize(mlp.size());
 
-	AO m_mW.resize(Mlp.size());
-	AO m_mb.resize(Mlp.size());
+	m_vW.resize(mlp.size());
+	m_vb.resize(mlp.size());
 
-	AO m_vW.resize(Mlp.size());
-	AO m_vb.resize(Mlp.size());
-
-	for(size_t i = 0; i < Mlp.size(); i++){
-		ct::mlp_mixed& _mlp = Mlp[i];
-		AO m_mW[i].setSize(_mlp.W.size());
-		AO m_vW[i].setSize(_mlp.W.size());
-		AO m_mW[i].fill(0);
-		AO m_vW[i].fill(0);
-
-		AO m_mb[i].setSize(_mlp.B.size());
-		AO m_vb[i].setSize(_mlp.B.size());
-		AO m_mb[i].fill(0);
-		AO m_vb[i].fill(0);
+	int index = 0;
+	for(const mlp_mixed &item: mlp){
+		initI(item.W, item.B, index++);
 	}
-	AO m_init = true;
+	init_iteration();
 	return true;
 }
 
-bool MlpOptimMixed::pass(std::vector<ct::mlp_mixed > &Mlp){
+bool MlpAdamOptimizerMixed::pass(std::vector<mlp_mixed> &mlp)
+{
+	if(mlp.empty())
+		return false;
 
-	using namespace ct;
+	pass_iteration();
 
-	AO m_iteration++;
-	float sb1 = (float)(1. / (1. - pow(AO m_betha1, AO m_iteration)));
-	float sb2 = (float)(1. / (1. - pow(AO m_betha2, AO m_iteration)));
+	int index = 0;
+	for(mlp_mixed &item: mlp){
+		passI(item.gW, item.gB, item.W, item.B, index++);
+	}
+	return true;
+}
 
-	for(size_t i = 0; i < Mlp.size(); ++i){
-		ct::mlp_mixed& _mlp = Mlp[i];
+//////////////////////////////////
 
-		gpumat::GpuMat g_m_mW, g_m_vW, g_m_mb, g_m_vb;
+MlpMomentumOptimizerMixed::MlpMomentumOptimizerMixed(): MomentumOptimizerMixed()
+{
+	m_iteration = 0;
+}
 
-		{
-			gpumat::GpuMat g_gW, g_W;
-			gpumat::convert_to_gpu(m_mW[i], g_m_mW);
-			gpumat::convert_to_gpu(m_vW[i], g_m_vW);
-			gpumat::convert_to_gpu(_mlp.gW, g_gW);
-			gpumat::convert_to_gpu(_mlp.W, g_W);
+bool MlpMomentumOptimizerMixed::init(const std::vector<mlp_mixed> &mlp)
+{
+	if(mlp.empty())
+		return false;
 
-			gpumat::sub_adamGrad(g_W, g_gW, g_m_mW, g_m_vW, m_alpha, sb1, sb2, m_betha1, m_betha2);
+	m_mW.resize(mlp.size());
+	m_mb.resize(mlp.size());
 
-			gpumat::convert_to_mat(g_W, _mlp.W);
-			gpumat::convert_to_mat(g_m_mW, m_mW[i]);
-			gpumat::convert_to_mat(g_m_vW, m_vW[i]);
-		}
+	int index = 0;
+	for(const mlp_mixed &item: mlp){
+		initI(item.W, item.B, index++);
+	}
+	return true;
+}
 
-		/// W = -alpha * (sb1 * mW / (sqrt(sb2 * vW) + eps))
+bool MlpMomentumOptimizerMixed::pass(std::vector<mlp_mixed> &mlp)
+{
+	if(mlp.empty())
+		return false;
 
-//		gpumat::add(W[i], m_mW[i], 1, -m_alpha);
-//		gpumat::add(b[i], m_mb[i], 1, -m_alpha);
-		{
-			gpumat::GpuMat g_gB, g_B;
-			gpumat::convert_to_gpu(_mlp.gB, g_gB);
-			gpumat::convert_to_gpu(m_mb[i], g_m_mb);
-			gpumat::convert_to_gpu(m_vb[i], g_m_vb);
-			gpumat::convert_to_gpu(_mlp.B, g_B);
+	m_iteration++;
 
-			gpumat::sub_adamGrad(g_B, g_gB, g_m_mb, g_m_vb, m_alpha, sb1, sb2, m_betha1, m_betha2);
-
-			gpumat::convert_to_mat(g_B, _mlp.B);
-			gpumat::convert_to_mat(g_m_mb, m_mb[i]);
-			gpumat::convert_to_mat(g_m_vb, m_vb[i]);
-		}
-
-//		AO m_mW[i] = AO m_betha1 * AO m_mW[i] + (float)(1. - AO m_betha1) * _mlp.gW;
-//		AO m_mb[i] = AO m_betha1 * AO m_mb[i] + (float)(1. - AO m_betha1) * _mlp.gB;
-
-//		AO m_vW[i] = AO m_betha2 * AO m_vW[i] + (float)(1. - AO m_betha2) * elemwiseSqr(_mlp.gW);
-//		AO m_vb[i] = AO m_betha2 * AO m_vb[i] + (float)(1. - AO m_betha2) * elemwiseSqr(_mlp.gB);
-
-//		Matf mWs = AO m_mW[i] * sb1;
-//		Matf mBs = AO m_mb[i] * sb1;
-//		Matf vWs = AO m_vW[i] * sb2;
-//		Matf vBs = AO m_vb[i] * sb2;
-
-//		vWs.sqrt(); vBs.sqrt();
-//		vWs += eps; vBs += eps;
-//		mWs = elemwiseDiv(mWs, vWs);
-//		mBs = elemwiseDiv(mBs, vBs);
-
-//		_mlp.W -= AO m_alpha * mWs;
-//		_mlp.B -= AO m_alpha * mBs;
+	int index = 0;
+	for(mlp_mixed &item: mlp){
+		passI(item.gW, item.gB, item.W, item.B, index++);
 	}
 	return true;
 }

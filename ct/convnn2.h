@@ -461,13 +461,13 @@ public:
 	}
 
 	void write(std::fstream& fs){
-		if(!W.size() || !B.size())
+		if(W.empty() || B.empty())
 			return;
 		ct::write_fs(fs, W);
 		ct::write_fs(fs, B);
 	}
 	void read(std::fstream& fs){
-		if(!W.size() || !B.size())
+		if(W.empty() || B.empty())
 			return;
 		ct::read_fs(fs, W);
 		ct::read_fs(fs, B);
@@ -682,9 +682,9 @@ public:
 };
 
 template< typename T >
-class CnvMomentumOptimizer: public ct::MomentOptimizer<T>{
+class CnvMomentumOptimizer: public ct::MomentumOptimizer<T>{
 public:
-	CnvMomentumOptimizer() : ct::MomentOptimizer<T>(){
+	CnvMomentumOptimizer() : ct::MomentumOptimizer<T>(){
 
 	}
 

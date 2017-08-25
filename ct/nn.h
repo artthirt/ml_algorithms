@@ -100,7 +100,7 @@ public:
 		m_vb[index].fill(0);
 	}
 
-	void passI(const ct::Mat_<T>& gW, const ct::Mat_<T>& gB, ct::Mat_<T>& W, ct::Mat_<T>& B, int index){
+	virtual void passI(const ct::Mat_<T>& gW, const ct::Mat_<T>& gB, ct::Mat_<T>& W, ct::Mat_<T>& B, int index){
 		ct::adamGrad(gW, m_mW[index], m_vW[index], W, m_sb1, m_sb2, ct::Optimizer<T>::m_alpha, m_betha1, m_betha2);
 		ct::adamGrad(gB, m_mb[index], m_vb[index], B, m_sb1, m_sb2, ct::Optimizer<T>::m_alpha, m_betha1, m_betha2);
 	}
@@ -163,9 +163,9 @@ protected:
  * @brief The MomentOptimizer class
  */
 template< typename T >
-class MomentOptimizer: public Optimizer<T>{
+class MomentumOptimizer: public Optimizer<T>{
 public:
-	MomentOptimizer(): Optimizer<T>(){
+	MomentumOptimizer(): Optimizer<T>(){
 		Optimizer<T>::m_alpha = T(0.01);
 		m_betha = T(0.9);
 	}
@@ -190,7 +190,7 @@ public:
 		return true;
 	}
 
-	void passI(const ct::Mat_<T>& gW, const ct::Mat_<T>& gB, ct::Mat_<T>& W, ct::Mat_<T>& B, int index){
+	virtual void passI(const ct::Mat_<T>& gW, const ct::Mat_<T>& gB, ct::Mat_<T>& W, ct::Mat_<T>& B, int index){
 		ct::momentumGrad(gW, m_mW[index], W, Optimizer<T>::m_alpha, m_betha);
 		ct::momentumGrad(gB, m_mb[index], B, Optimizer<T>::m_alpha, m_betha);
 	}

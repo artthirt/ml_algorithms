@@ -13,7 +13,8 @@ HEADERS += \
     $$PWD/convnn2_gpu.h \
     $$PWD/qt_work_mat.h \
     $$PWD/convnn2_mixed.h \
-    $$PWD/mlp_mixed.h
+    $$PWD/mlp_mixed.h \
+    $$PWD/optim_mixed.h
 
 SOURCES += \
     $$PWD/gpumat.cpp \
@@ -25,7 +26,8 @@ SOURCES += \
     $$PWD/convnn2_gpu.cpp \
     $$PWD/qt_work_mat.cpp \
     $$PWD/convnn2_mixed.cpp \
-    $$PWD/mlp_mixed.cpp
+    $$PWD/mlp_mixed.cpp \
+    $$PWD/optim_mixed.cpp
 
 CUDA_SOURCES += $$PWD/cu/cuda_arithm.cu \
                 $$PWD/cu/cuda_conv.cu \

@@ -6,64 +6,19 @@
 
 #include "gpumat.h"
 
+#include <vector>
+#include "optim_mixed.h"
+
 namespace conv2{
 
-class AdamOptimizerMixed: public ct::Optimizer<float>{
-public:
-	AdamOptimizerMixed();
-
-	float betha1() const;
-
-	void setBetha1(float v);
-
-	float betha2() const;
-
-	void setBetha2(float v);
-
-	bool init(const std::vector< ct::Matf >& W, const std::vector< ct::Matf >& B);
-
-	bool pass(const std::vector< ct::Matf >& gradW, const std::vector< ct::Matf >& gradB,
-			  std::vector< ct::Matf >& W, std::vector< ct::Matf >& b);
-
-	bool empty() const;
-
-
-protected:
-	float m_betha1;
-	float m_betha2;
-	bool m_init;
-
-	std::vector< ct::Matf > m_mW;
-	std::vector< ct::Matf > m_mb;
-	std::vector< ct::Matf > m_vW;
-	std::vector< ct::Matf > m_vb;
-};
-
 /////////////////////////////
-
-class MomentOptimizerMixed: public ct::Optimizer<float>{
-public:
-	MomentOptimizerMixed();
-
-	void setBetha(float val);
-
-	bool pass(const std::vector< ct::Matf > &gradW, const std::vector< ct::Matf > &gradB,
-			  std::vector< ct::Matf > &W, std::vector< ct::Matf > &B);
-
-protected:
-	std::vector< ct::Matf > m_mW;
-	std::vector< ct::Matf > m_mb;
-
-	float m_betha;
-};
-
-/////////////////////////////
-
+/// \brief The convnn2_mixed class
+///
 class convnn2_mixed: public convnn_abstract<float>
 {
 public:
-	std::vector< ct::Matf> W;			/// weights
-	std::vector< ct::Matf> B;			/// biases
+	ct::Matf W;			/// weights
+	ct::Matf B;			/// biases
 	int stride;
 	ct::Size szW;							/// size of weights
 	std::vector< ct::Matf>* pX;			/// input data
@@ -71,21 +26,15 @@ public:
 	std::vector< ct::Matf> A1;			/// out after appl nonlinear function
 	std::vector< ct::Matf> A2;			/// out after pooling
 	std::vector< ct::Matf> Dlt;			/// delta after backward pass
-	ct::Matf vgW;			/// for delta weights
-	ct::Matf vgB;			/// for delta bias
 	std::vector< ct::Matf> Mask;		/// masks for bakward pass (created in forward pass)
-	ct::Optimizer< float > *m_optim;
-	AdamOptimizerMixed m_adam;
 
-	std::vector< ct::Matf> gW;			/// gradient for weights
-	std::vector< ct::Matf> gB;			/// gradient for biases
+	ct::Matf gW;			/// gradient for weights
+	ct::Matf gB;			/// gradient for biases
 
 	std::vector< ct::Matf> dSub;
 	std::vector< ct::Matf> Dc;
 
 	convnn2_mixed();
-
-	void setOptimizer(ct::Optimizer<float>* optim);
 
 	void setParams(ct::etypefunction type, float param);
 
@@ -110,8 +59,6 @@ public:
 	int outputFeatures() const;
 
 	ct::Size szOut() const;
-
-	void setAlpha(float alpha);
 
 	void setLambda(float val);
 
@@ -139,6 +86,30 @@ private:
 	bool m_use_transpose;
 	float m_Lambda;
 	std::map< ct::etypefunction, float > m_params;
+};
+
+/////////////////////
+/// \brief The CnvAdamOptimizerMixed class
+///
+class CnvAdamOptimizerMixed: public ct::AdamOptimizerMixed
+{
+public:
+	CnvAdamOptimizerMixed();
+
+	bool init(const std::vector<convnn2_mixed>& cnv);
+	bool pass(std::vector<convnn2_mixed>& cnv);
+};
+
+/////////////////////
+/// \brief The CnvMomentumOptimizerMixed class
+///
+class CnvMomentumOptimizerMixed: public ct::MomentumOptimizerMixed
+{
+public:
+	CnvMomentumOptimizerMixed();
+
+	bool init(const std::vector<convnn2_mixed>& cnv);
+	bool pass(std::vector<convnn2_mixed>& cnv);
 };
 
 }
