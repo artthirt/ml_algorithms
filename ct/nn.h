@@ -223,7 +223,7 @@ public:
 	StohasticGradientOptimizer(): Optimizer<T>(){
 
 	}
-	bool init(const std::vector<ct::Mat_<ct::T> > &W, const std::vector<ct::Mat_<ct::T> > &B)
+	bool init(const std::vector<ct::Mat_<T> > &W, const std::vector<ct::Mat_<T> > &B)
 	{
 		Optimizer<T>::m_iteration = 0;
 	}

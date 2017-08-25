@@ -663,17 +663,17 @@ public:
 
 	void init(const std::vector< convnn<T> >& cnv){
 		int index = 0;
-		init_iteration();
-		m_mW.resize(cnv.size());
-		m_mb.resize(cnv.size());
-		m_vW.resize(cnv.size());
-		m_vb.resize(cnv.size());
+		ct::AdamOptimizer<T>::init_iteration();
+		ct::AdamOptimizer<T>::m_mW.resize(cnv.size());
+		ct::AdamOptimizer<T>::m_mb.resize(cnv.size());
+		ct::AdamOptimizer<T>::m_vW.resize(cnv.size());
+		ct::AdamOptimizer<T>::m_vb.resize(cnv.size());
 		for(const convnn<T>& item: cnv){
 			initI(item.W, item.B, index++);
 		}
 	}
 	void pass(std::vector< convnn<T> >& cnv){
-		pass_iteration();
+		ct::AdamOptimizer<T>::pass_iteration();
 		int index = 0;
 		for(convnn<T>& item: cnv){
 			passI(item.gW, item.gB, item.W, item.B, index++);
@@ -690,8 +690,8 @@ public:
 
 	void init(const std::vector< convnn<T> >& cnv){
 		int index = 0;
-		m_mW.resize(cnv.size());
-		m_mb.resize(cnv.size());
+		ct::AdamOptimizer<T>::m_mW.resize(cnv.size());
+		ct::AdamOptimizer<T>::m_mb.resize(cnv.size());
 		for(const convnn<T>& item: cnv){
 			initI(item.W, item.B, index++);
 		}

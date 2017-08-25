@@ -36,7 +36,7 @@ public:
 		for(const ct::mlp<T>& item: Mlp){
 			initI(item.W, item.B, index++);
 		}
-		init_iteration();
+		ct::AdamOptimizer<T>::init_iteration();
 		AO m_init = true;
 		return true;
 	}
@@ -45,7 +45,7 @@ public:
 
 		using namespace ct;
 
-		pass_iteration();
+		ct::AdamOptimizer<T>::pass_iteration();
 		int index = 0;
 		for(ct::mlp<T>& item: Mlp){
 			passI(item.gW, item.gB, item.W, item.B, index++);
