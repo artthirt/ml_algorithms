@@ -362,7 +362,7 @@ void mlp::read2(std::fstream &fs)
 
 ///**************************
 
-bool MlpOptim::init(const std::vector<mlp> &_mlp)
+bool MlpOptimAdam::init(const std::vector<mlp> &_mlp)
 {
 	if(_mlp.empty())
 		return false;
@@ -375,27 +375,17 @@ bool MlpOptim::init(const std::vector<mlp> &_mlp)
 	m_vW.resize(_mlp.size());
 	m_vb.resize(_mlp.size());
 
-	sW.resize(_mlp.size());
-	sB.resize(_mlp.size());
-
-	for(size_t i = 0; i < _mlp.size(); i++){
-		const gpumat::mlp& _mlpi = _mlp[i];
-		m_mW[i].resize(_mlpi.W);
-		m_vW[i].resize(_mlpi.W);
-		m_mW[i].zeros();
-		m_vW[i].zeros();
-
-		m_mb[i].resize(_mlpi.B);
-		m_vb[i].resize(_mlpi.B);
-		m_mb[i].zeros();
-		m_vb[i].zeros();
+	int index = 0;
+	for(const mlp& item: _mlp){
+		initI(item.W, item.B, index++);
 	}
+
 	m_init_matB = true;
 
 	return true;
 }
 
-bool MlpOptim::pass(std::vector<mlp> &_mlp)
+bool MlpOptimAdam::pass(std::vector<mlp> &_mlp)
 {
 	if(_mlp.empty())
 		return false;

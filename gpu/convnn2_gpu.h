@@ -11,8 +11,8 @@ namespace gpumat{
 class convnn_gpu
 {
 public:
-	std::vector< gpumat::GpuMat > W;		/// weights
-	std::vector< gpumat::GpuMat > B;		/// biases
+	gpumat::GpuMat W;		/// weights
+	gpumat::GpuMat B;		/// biases
 	int kernels;									/// kernels
 	int channels;							/// input channels
 	int stride;
@@ -26,22 +26,15 @@ public:
 	std::vector< gpumat::GpuMat > A1;		/// out after appl nonlinear function
 	std::vector< gpumat::GpuMat > A2;		/// out after pooling
 	std::vector< gpumat::GpuMat > Dlt;		/// delta after backward pass
-	gpumat::GpuMat vgW;						/// for delta weights
-	gpumat::GpuMat vgB;						/// for delta bias
 	std::vector< gpumat::GpuMat > Mask;		/// masks for bakward pass (created in forward pass)
-	gpumat::Optimizer *m_optim;
-
-	std::vector< gpumat::GpuMat > gW;		/// gradient for weights
-	std::vector< gpumat::GpuMat > gB;		/// gradient for biases
+	gpumat::GpuMat gW;		/// gradient for weights
+	gpumat::GpuMat gB;		/// gradient for biases
 
 	bool m_pool_dropout;
 	double m_prob_dropout;
 
 	convnn_gpu();
 
-	void setOptimizer(Optimizer* optim);
-
-	void setAlpha(double val);
 	void setLambda(double val);
 
 	void setDropout(bool val);
@@ -90,13 +83,33 @@ private:
 	double m_lambda;
 	std::map< etypefunction, double > m_params;
 
-	gpumat::AdamOptimizer m_inner_optim;
-
 	std::vector< gpumat::GpuMat > dSub2;
 	std::vector< gpumat::GpuMat > Dc;		///
 //	std::vector< gpumat::GpuMat > DA1;		///
 	bool m_use_transpose;
 };
+
+//////////////////////
+
+class CnvAdamOptimizer: public AdamOptimizer
+{
+public:
+	CnvAdamOptimizer();
+
+	bool init(std::vector<convnn_gpu> &cnv);
+	bool pass(std::vector<convnn_gpu> &cnv);
+};
+
+class CnvMomentumOptimizer: public MomentumOptimizer
+{
+public:
+	CnvMomentumOptimizer();
+
+	bool init(std::vector<convnn_gpu> &cnv);
+	bool pass(std::vector<convnn_gpu> &cnv);
+};
+
+//////////////////////
 
 /**
  * @brief im2cols

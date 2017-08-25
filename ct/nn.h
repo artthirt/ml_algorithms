@@ -77,13 +77,39 @@ public:
 		m_betha2 = v;
 	}
 
+	void init_iteration(){
+		Optimizer<T>::m_iteration = 0;
+		m_sb1 = 1;
+		m_sb2 = 1;
+	}
+	void pass_iteration(){
+		Optimizer<T>::m_iteration++;
+		m_sb1 = (T)(1. / (1. - pow(m_betha1, Optimizer<T>::m_iteration)));
+		m_sb2 = (T)(1. / (1. - pow(m_betha2, Optimizer<T>::m_iteration)));
+	}
+
+	void initI(const ct::Mat_<T>& W, const ct::Mat_<T>& B, int index){
+		m_mW[index].setSize(W.size());
+		m_vW[index].setSize(W.size());
+		m_mb[index].setSize(B.size());
+		m_vb[index].setSize(B.size());
+
+		m_mW[index].fill(0);
+		m_vW[index].fill(0);
+		m_mb[index].fill(0);
+		m_vb[index].fill(0);
+	}
+
+	void passI(const ct::Mat_<T>& gW, const ct::Mat_<T>& gB, ct::Mat_<T>& W, ct::Mat_<T>& B, int index){
+		ct::adamGrad(gW, m_mW[index], m_vW[index], W, m_sb1, m_sb2, ct::Optimizer<T>::m_alpha, m_betha1, m_betha2);
+		ct::adamGrad(gB, m_mb[index], m_vb[index], B, m_sb1, m_sb2, ct::Optimizer<T>::m_alpha, m_betha1, m_betha2);
+	}
+
 	bool init(const std::vector< ct::Mat_<T> >& W, const std::vector< ct::Mat_<T> >& B){
 		if(W.empty() || B.empty())
 			return false;
 
 		using namespace ct;
-
-		Optimizer<T>::m_iteration = 0;
 
 		m_mW.resize(W.size());
 		m_mb.resize(W.size());
@@ -92,93 +118,29 @@ public:
 		m_vb.resize(W.size());
 
 		for(size_t i = 0; i < W.size(); i++){
-
-			m_mW[i].setSize(W[i].size());
-			m_vW[i].setSize(W[i].size());
-			m_mW[i].fill(0);
-			m_vW[i].fill(0);
-
-			m_mb[i].setSize(B[i].size());
-			m_vb[i].setSize(B[i].size());
-			m_mb[i].fill(0);
-			m_vb[i].fill(0);
+			initI(W[i], B[i], i);
 		}
+		init_iteration();
+
 		m_init = true;
 		return true;
 	}
 
 	bool pass(const std::vector< ct::Mat_< T > >& gradW, const std::vector< ct::Mat_< T > >& gradB,
-			  std::vector< ct::Mat_<T> >& W, std::vector< ct::Mat_<T> >& b){
+			  std::vector< ct::Mat_<T> >& W, std::vector< ct::Mat_<T> >& B){
 		if(!gradW.size() || gradW.size() != gradB.size() || gradW.size() != W.size())
 			return false;
 
 		using namespace ct;
 
-		Optimizer<T>::m_iteration++;
-		T sb1 = (T)(1. / (1. - pow(m_betha1, Optimizer<T>::m_iteration)));
-		T sb2 = (T)(1. / (1. - pow(m_betha2, Optimizer<T>::m_iteration)));
-		T eps = (T)(10e-8);
+		pass_iteration();
 
 		for(size_t i = 0; i < gradW.size(); ++i){
-			m_mW[i] = m_betha1 * m_mW[i] + (T)(1. - m_betha1) * gradW[i];
-			m_mb[i] = m_betha1 * m_mb[i] + (T)(1. - m_betha1) * gradB[i];
-
-			m_vW[i] = m_betha2 * m_vW[i] + (T)(1. - m_betha2) * elemwiseSqr(gradW[i]);
-			m_vb[i] = m_betha2 * m_vb[i] + (T)(1. - m_betha2) * elemwiseSqr(gradB[i]);
-
-			Mat_<T> mWs = m_mW[i] * sb1;
-			Mat_<T> mBs = m_mb[i] * sb1;
-			Mat_<T> vWs = m_vW[i] * sb2;
-			Mat_<T> vBs = m_vb[i] * sb2;
-
-			vWs.sqrt(); vBs.sqrt();
-			vWs += eps; vBs += eps;
-			mWs = elemwiseDiv(mWs, vWs);
-			mBs = elemwiseDiv(mBs, vBs);
-
-			W[i] -= Optimizer<T>::m_alpha * mWs;
-			b[i] -= Optimizer<T>::m_alpha * mBs;
+			passI(gradW[i], gradB[i], W[i], B[i], i);
 		}
 		return true;
 	}
-	bool pass(const std::vector< ct::Mat_< T > >& gradW, const std::vector< T >& gradB,
-			  std::vector< ct::Mat_<T> >& W, std::vector< T >& b){
-		if(!gradW.size() || gradW.size() != gradB.size() || gradW.size() != W.size())
-			return false;
 
-		if(!m_init){
-			init_simple(gradW.size(), gradW[0].size());
-		}
-
-		using namespace ct;
-
-		Optimizer<T>::m_iteration++;
-		T sb1 = (T)(1. / (1. - pow(m_betha1, Optimizer<T>::m_iteration)));
-		T sb2 = (T)(1. / (1. - pow(m_betha2, Optimizer<T>::m_iteration)));
-		T eps = (T)(10e-8);
-
-		for(size_t i = 0; i < gradW.size(); ++i){
-			m_mW[i] = m_betha1 * m_mW[i] + (T)(1. - m_betha1) * gradW[i];
-			m_mbn[i] = m_betha1 * m_mbn[i] + (T)(1. - m_betha1) * gradB[i];
-
-			m_vW[i] = m_betha2 * m_vW[i] + (T)(1. - m_betha2) * elemwiseSqr(gradW[i]);
-			m_vbn[i] = m_betha2 * m_vbn[i] + (T)(1. - m_betha2) * sqr(gradB[i]);
-
-			Mat_<T> mWs = m_mW[i] * sb1;
-			T mBs = m_mbn[i] * sb1;
-			Mat_<T> vWs = m_vW[i] * sb2;
-			T vBs = m_vbn[i] * sb2;
-
-			vWs.sqrt(); vBs = std::sqrt(vBs);
-			vWs += eps; vBs += eps;
-			mWs = elemwiseDiv(mWs, vWs);
-			mBs /= vBs;
-
-			W[i] -= Optimizer<T>::m_alpha * mWs;
-			b[i] -= Optimizer<T>::m_alpha * mBs;
-		}
-		return true;
-	}
 	bool empty() const{
 		return m_mW.empty() || m_mb.empty() || m_vW.empty() || m_vb.empty();
 	}
@@ -187,30 +149,14 @@ public:
 protected:
 	T m_betha1;
 	T m_betha2;
+	T m_sb1;
+	T m_sb2;
 	bool m_init;
 
 	std::vector< ct::Mat_<T> > m_mW;
 	std::vector< ct::Mat_<T> > m_mb;
 	std::vector< ct::Mat_<T> > m_vW;
 	std::vector< ct::Mat_<T> > m_vb;
-	std::vector< T > m_mbn;
-	std::vector< T > m_vbn;
-
-	void init_simple(size_t len, const ct::Size& sz){
-		m_mW.resize(len);
-		m_vW.resize(len);
-		m_mbn.resize(len);
-		m_vbn.resize(len);
-		for(size_t i = 0; i < len; ++i){
-			m_mW[i].setSize(sz.height, sz.width);
-			m_mW[i].fill(0);
-			m_vW[i].setSize(sz.height, sz.width);
-			m_vW[i].fill(0);
-			m_mbn[i] = 0;
-			m_vbn[i] = 0;
-		}
-		m_init = true;
-	}
 };
 
 /**
@@ -228,31 +174,36 @@ public:
 		m_betha = val;
 	}
 
+	void initI(const ct::Mat_<T>& W, const ct::Mat_<T>& B, int index){
+		m_mW[index].setSize(W.size());
+		m_mb[index].setSize(B.size());
+
+		m_mW[index].fill(0);
+		m_mb[index].fill(0);
+	}
+
+	bool init(const std::vector<ct::Mat_<T> > &W, const std::vector<ct::Mat_<T> > &B){
+		Optimizer<T>::m_iteration = 0;
+		for(int i = 0; i < W.size(); ++i){
+			initI(W[i], B[i], i);
+		}
+		return true;
+	}
+
+	void passI(const ct::Mat_<T>& gW, const ct::Mat_<T>& gB, ct::Mat_<T>& W, ct::Mat_<T>& B, int index){
+		ct::momentumGrad(gW, m_mW[index], W, Optimizer<T>::m_alpha, m_betha);
+		ct::momentumGrad(gB, m_mb[index], B, Optimizer<T>::m_alpha, m_betha);
+	}
+
 	void pass(const std::vector< ct::Mat_<T> > &gradW, const std::vector< T > &gradB,
 			  std::vector< ct::Mat_<T> > &W, std::vector< T > &B)
 	{
 		if(W.empty() || gradW.size() != W.size() || gradB.empty() || gradB.size() != gradW.size())
 			throw new std::invalid_argument("MomentOptimizer: wrong parameters");
-		if(m_mW.empty()){
-			m_mW.resize(W.size());
-			m_mb.resize(W.size());
-			for(int i = 0; i < m_mW.size(); ++i){
-				m_mW[i] = ct::Mat_<T>::zeros(W[i].rows, W[i].cols);
-				m_mb[i] = 0;
-			}
-		}
 
-		for(int i = 0; i < m_mW.size(); ++i){
-			ct::Mat_<T> tmp = m_mW[i];
-			tmp *= m_betha;
-			tmp += (1.f - m_betha) * gradW[i];
-			m_mW[i] = tmp;
-
-			m_mb[i] = m_betha * m_mb[i] + (1.f - m_betha) * gradB[i];
-		}
-		for(int i = 0; i < m_mW.size(); ++i){
-			W[i] += ((-Optimizer<T>::m_alpha) * m_mW[i]);
-			B[i] += ((-Optimizer<T>::m_alpha) * m_mb[i]);
+		Optimizer<T>::m_iteration++;
+		for(int i = 0; i < W.size(); ++i){
+			passI(gradW[i], gradB[i], W[i], B[i], i);
 		}
 	}
 
@@ -272,11 +223,17 @@ public:
 	StohasticGradientOptimizer(): Optimizer<T>(){
 
 	}
+	bool init(const std::vector<ct::Mat_<ct::T> > &W, const std::vector<ct::Mat_<ct::T> > &B)
+	{
+		Optimizer<T>::m_iteration = 0;
+	}
 	bool pass(const std::vector<ct::Mat_<T> > &gradW, const std::vector<ct::Mat_<T> > &gradB,
 			  std::vector<ct::Mat_<T> > &W, std::vector<ct::Mat_<T> > &b)
 	{
 		if(W.empty() || gradW.size() != W.size() || gradB.empty() || gradB.size() != gradW.size())
 			throw new std::invalid_argument("StohasticGradientOptimizer: wrong parameters");
+
+		Optimizer<T>::m_iteration++;
 		for(size_t i = 0; i < W.size(); ++i){
 			W[i] -= Optimizer<T>::m_alpha * gradW[i];
 			b[i] -= Optimizer<T>::m_alpha * gradB[i];

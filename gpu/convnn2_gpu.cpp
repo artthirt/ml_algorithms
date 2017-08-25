@@ -68,22 +68,8 @@ convnn_gpu::convnn_gpu()
 	m_pool_dropout = false;
 	m_prob_dropout = 0.9;
 	m_lambda = 0;
-	m_optim = &m_inner_optim;
 
 	m_params[LEAKYRELU] = 0.1;
-}
-
-void convnn_gpu::setOptimizer(gpumat::Optimizer *optim)
-{
-	if(optim){
-		m_optim = optim;
-		m_optim->init(W, B);
-	}
-}
-
-void convnn_gpu::setAlpha(double val)
-{
-	m_optim->setAlpha(val);
 }
 
 void convnn_gpu::setLambda(double val)
@@ -164,28 +150,20 @@ void convnn_gpu::init(const ct::Size &_szA0, int _channels, int stride, int _K,
 
 	ct::get_cnv_sizes(szA0, szW, stride, szA1, szA2);
 
-	W.resize(1);
-	B.resize(1);
-
-	gW.resize(1);
-	gB.resize(1);
-
 	float n = (float)1/(sqrt(szW.area() * channels));
 
-	for(size_t i = 0; i < W.size(); ++i){
+	{
 		ct::Matf Wi(rows, cols), Bi(1, kernels);
 		Wi.randn(0, n);
-		gpumat::convert_to_gpu(Wi, W[i]);
+		gpumat::convert_to_gpu(Wi, W);
 		Bi.randn(0, n);
-		gpumat::convert_to_gpu(Bi, B[i]);
+		gpumat::convert_to_gpu(Bi, B);
 	}
 
-	gW[0].resize(W[0]);
-	gB[0].resize(B[0]);
+	gW.resize(W);
+	gB.resize(B);
 
 	printf("Out=[%dx%dx%d]\n", szOut().width, szOut().height, kernels);
-
-	m_optim->init(W, B);
 }
 
 template< typename T >
@@ -247,27 +225,7 @@ void convnn_gpu::forward(const std::vector<gpumat::GpuMat> *_pX)
 	for(int i = 0; i < (int)Xc.size(); ++i){
 		gpumat::GpuMat& Xi = Xc[i];
 		gpumat::GpuMat& A1i = A1[i];
-		gpumat::m2mpbaf(Xi, W[0], B[0], m_func, A1i, m_params[LEAKYRELU]);
-//		gpumat::matmul(Xi, W[0], A1i);
-
-//		gpumat::biasPlus(A1i, B[0]);
-
-//		switch (m_func) {
-//			case gpumat::RELU:
-//				gpumat::reLu(A1i);
-//				break;
-//			case gpumat::LEAKYRELU:
-//				gpumat::leakyReLu(A1i, m_params[LEAKYRELU]);
-//				break;
-//			case gpumat::SIGMOID:
-//				gpumat::sigmoid(A1i);
-//				break;
-//			case gpumat::TANH:
-//				gpumat::tanh(A1i);
-//				break;
-//			default:
-//				break;
-//		}
+		gpumat::m2mpbaf(Xi, W, B, m_func, A1i, m_params[LEAKYRELU]);
 	}
 
 	if(m_pool_dropout){
@@ -318,39 +276,6 @@ void convnn_gpu::backcnv(const std::vector<gpumat::GpuMat> &D, std::vector<gpuma
 	/// A1 -> DA1
 	for(int i = 0; i < (int)D.size(); ++i){
 		gpumat::mul2deriv(D[i], A1[i], m_func, DS[i], m_params[gpumat::LEAKYRELU]);
-//		switch (m_func) {
-//			case ct::LINEAR:
-//				D[i].copyTo(DS[i]);
-//				break;
-//			case ct::RELU:
-//				gpumat::deriv_reLu(A1[i]/*, DA1[i]*/);
-//				break;
-//			case ct::LEAKYRELU:
-//				gpumat::deriv_leakyReLu(A1[i], m_params[LEAKYRELU]/*, DA1[i]*/);
-//				break;
-//			case ct::SIGMOID:
-//				gpumat::deriv_sigmoid(A1[i]/*, DA1[i]*/);
-//				break;
-//			case ct::TANH:
-//				gpumat::deriv_tanh(A1[i]/*, DA1[i]*/);
-//				break;
-//			default:
-//				break;
-//		}
-//	}
-
-//	if(m_func == gpumat::LINEAR)
-//		return;
-
-//	/// D * DA1
-//	if(D.data() != DS.data()){
-//		for(int i = 0; i < (int)D.size(); ++i){
-//			gpumat::elemwiseMult(D[i], A1[i], DS[i]);
-//		}
-//	}else{
-//		for(int i = 0; i < (int)D.size(); ++i){
-//			gpumat::elemwiseMult(DS[i], A1[i]);
-//		}
 	}
 }
 
@@ -382,22 +307,22 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 	}
 #endif
 
-	gW[0].zeros();
-	gB[0].zeros();
+	gW.zeros();
+	gB.zeros();
 	for(int i = 0; i < (int)D.size(); ++i){
 		gpumat::GpuMat& Xci		= Xc[i];
 		gpumat::GpuMat& dSubi	= dSub2[i];
-		gpumat::add2matmulT1(Xci, dSubi, gW[0]);
+		gpumat::add2matmulT1(Xci, dSubi, gW);
 
 //		vgB.swap_dims();
-		add2sumRows(dSubi, gB[0], 1/dSubi.rows /*, (double)1. / (Xci.total())*/);
+		add2sumRows(dSubi, gB, 1/dSubi.rows /*, (double)1. / (Xci.total())*/);
 //		vgB.swap_dims();
 
 		//gpumat::add(gW[0], vgW);
 		//gpumat::add(gB[0], vgB);
 	}
-	gpumat::mulval(gW[0], (double)1./(D.size() * channels));
-	gpumat::mulval(gB[0], (double)1./(D.size() * channels));
+	gpumat::mulval(gW, (double)1./(D.size() * channels));
+	gpumat::mulval(gB, (double)1./(D.size() * channels));
 
 #if 0
 #if 0
@@ -416,7 +341,7 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 #endif
 
 	if(m_lambda > 0){
-		gpumat::add(gW[0], W[0], 1, (double)m_lambda / kernels);
+		gpumat::add(gW, W, 1, (double)m_lambda / kernels);
 	}
 
 #if 0
@@ -431,7 +356,7 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 		Dc.resize(D.size());
 		for(int i = 0; i < (int)D.size(); ++i){
 			gpumat::GpuMat& Dci = Dc[i];
-			gpumat::matmulT2(dSub2[i], W[0], Dci);
+			gpumat::matmulT2(dSub2[i], W, Dci);
 		}
 
 		cols2imT(Dc, szA1, szA0, channels, szW, stride, Dlt);
@@ -440,20 +365,18 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 #endif
 
 	}
-
-	m_optim->pass(gW, gB, W, B);
 }
 
 void convnn_gpu::write(std::fstream &fs)
 {
-	gpumat::write_fs(fs, W[0]);
-	gpumat::write_fs(fs, B[0]);
+	gpumat::write_fs(fs, W);
+	gpumat::write_fs(fs, B);
 }
 
 void convnn_gpu::read(std::fstream &fs)
 {
-	gpumat::read_fs(fs, W[0]);
-	gpumat::read_fs(fs, B[0]);
+	gpumat::read_fs(fs, W);
+	gpumat::read_fs(fs, B);
 }
 
 void convnn_gpu::write2(std::fstream &fs)
@@ -466,8 +389,8 @@ void convnn_gpu::write2(std::fstream &fs)
 	fs.write((char*)&channels, sizeof(channels));
 	fs.write((char*)&kernels, sizeof(kernels));
 
-	gpumat::write_fs2(fs, W[0]);
-	gpumat::write_fs2(fs, B[0]);
+	gpumat::write_fs2(fs, W);
+	gpumat::write_fs2(fs, B);
 }
 
 void convnn_gpu::read2(std::fstream &fs)
@@ -477,12 +400,82 @@ void convnn_gpu::read2(std::fstream &fs)
 	fs.read((char*)&channels, sizeof(channels));
 	fs.read((char*)&kernels, sizeof(kernels));
 
-	gpumat::read_fs2(fs, W[0]);
-	gpumat::read_fs2(fs, B[0]);
+	gpumat::read_fs2(fs, W);
+	gpumat::read_fs2(fs, B);
 
-	if(B[0].rows != 1)
-		B[0].swap_dims();
+	if(B.rows != 1)
+		B.swap_dims();
 }
+
+///////////////////////////////
+///////////////////////////////
+
+CnvAdamOptimizer::CnvAdamOptimizer() : AdamOptimizer()
+{
+
+}
+
+bool CnvAdamOptimizer::init(std::vector<convnn_gpu> &cnv)
+{
+	int index = 0;
+	m_mW.resize(cnv.size());
+	m_mb.resize(cnv.size());
+	m_vW.resize(cnv.size());
+	m_vb.resize(cnv.size());
+	for(convnn_gpu& item: cnv){
+		initI(item.W, item.B, index++);
+	}
+	init_iteration();
+	return true;
+}
+
+bool CnvAdamOptimizer::pass(std::vector<convnn_gpu> &cnv)
+{
+	if(cnv.empty() || cnv.back().gW.empty() || cnv.back().gB.empty())
+		return false;
+	int index = 0;
+	next_iteration();
+	for(convnn_gpu& item: cnv){
+		passI(item.gW, item.gB, item.W, item.B, index++);
+	}
+	return true;
+}
+
+///////////////////////////////
+
+
+CnvMomentumOptimizer::CnvMomentumOptimizer() : MomentumOptimizer()
+{
+
+}
+
+bool CnvMomentumOptimizer::init(std::vector<convnn_gpu> &cnv)
+{
+	if(cnv.empty())
+		return false;
+	int index = 0;
+	m_mW.resize(cnv.size());
+	m_mb.resize(cnv.size());
+	for(convnn_gpu& item: cnv){
+		initI(item.W, item.B, index++);
+	}
+	m_iteration = 0;
+	return true;
+}
+
+bool CnvMomentumOptimizer::pass(std::vector<convnn_gpu> &cnv)
+{
+	if(cnv.empty() || cnv.back().gW.empty() || cnv.back().gB.empty())
+		return false;
+
+	m_iteration++;
+	int index = 0;
+	for(convnn_gpu& item: cnv){
+		passI(item.gW, item.gB, item.W, item.B, index++);
+	}
+	return true;
+}
+
 
 ///////////////////////////////
 ///////////////////////////////

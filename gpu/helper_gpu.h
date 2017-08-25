@@ -89,6 +89,8 @@ public:
 	virtual bool init(const std::vector<GpuMat> &gradW, const std::vector<GpuMat> &gradB) = 0;
 	virtual bool pass(const std::vector< gpumat::GpuMat >& gradW, const std::vector< gpumat::GpuMat >& gradB,
 			  std::vector< gpumat::GpuMat >& W, std::vector< gpumat::GpuMat >& b) = 0;
+	virtual void initI(const GpuMat &W, const GpuMat &B, int index) = 0;
+	virtual void passI(const GpuMat &gW, const GpuMat &gB, gpumat::GpuMat& W, gpumat::GpuMat& B, int index) = 0;
 
 protected:
 	uint32_t m_iteration;
@@ -106,6 +108,8 @@ public:
 	virtual bool init(const std::vector<GpuMat> &gradW, const std::vector<GpuMat> &gradB);
 	virtual bool pass(const std::vector< gpumat::GpuMat >& gradW, const std::vector< gpumat::GpuMat >& gradB,
 			  std::vector< gpumat::GpuMat >& W, std::vector< gpumat::GpuMat >& b);
+	void initI(const GpuMat &W, const GpuMat &B, int index);
+	void passI(const GpuMat &gW, const GpuMat &gB, gpumat::GpuMat& W, gpumat::GpuMat& B, int index);
 
 private:
 
@@ -152,28 +156,26 @@ public:
 	bool empty() const;
 
 	virtual bool init(const std::vector<GpuMat> &gradW, const std::vector<GpuMat> &gradB);
-	void init_single(const std::vector<GpuMat> &gradW);
-
 	virtual bool pass(const std::vector< gpumat::GpuMat >& gradW, const std::vector< gpumat::GpuMat >& gradB,
 			  std::vector< gpumat::GpuMat >& W, std::vector< gpumat::GpuMat >& b);
-	bool pass(const std::vector< gpumat::GpuMat >& gradW, const std::vector< float >& gradB,
-			  std::vector< gpumat::GpuMat >& W, std::vector< float >& b);
+
+	void initI(const GpuMat &W, const GpuMat &B, int index);
+	void passI(const GpuMat &gW, const GpuMat &gB, gpumat::GpuMat& W, gpumat::GpuMat& B, int index);
 
 protected:
 	double m_betha1;
 	double m_betha2;
 	bool m_init_matB;
-	bool m_init_singleB;
-
-	std::vector< gpumat::GpuMat > sB, sW;
+	double m_sb1;
+	double m_sb2;
 
 	std::vector< gpumat::GpuMat > m_mW;
 	std::vector< gpumat::GpuMat > m_mb;
 	std::vector< gpumat::GpuMat > m_vW;
 	std::vector< gpumat::GpuMat > m_vb;
 
-	std::vector< float > m_mb_single;
-	std::vector< float > m_vb_single;
+	void next_iteration();
+	void init_iteration();
 };
 
 class SimpleAutoencoder

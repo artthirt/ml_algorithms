@@ -163,7 +163,7 @@ private:
 	etypefunction m_func;
 };
 
-class MlpOptim: public AdamOptimizer{
+class MlpOptimAdam: public AdamOptimizer{
 public:
 	bool init(const std::vector< gpumat::mlp >& _mlp);
 	bool pass(std::vector<mlp> &_mlp);

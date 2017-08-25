@@ -12,15 +12,15 @@ template< typename T >
 class mlp;
 
 template< typename T >
-class MlpOptim: public AdamOptimizer<T>{
+class MlpOptimAdam: public AdamOptimizer<T>{
 public:
-	MlpOptim(): AdamOptimizer<T>(){
+	MlpOptimAdam(): AdamOptimizer<T>(){
 
 	}
 
 #define AO this->
 
-	bool init(std::vector< ct::mlp<T> >& Mlp){
+	bool init(const std::vector< ct::mlp<T> >& Mlp){
 		if(Mlp.empty())
 			return false;
 
@@ -32,18 +32,11 @@ public:
 		AO m_vW.resize(Mlp.size());
 		AO m_vb.resize(Mlp.size());
 
-		for(size_t i = 0; i < Mlp.size(); i++){
-			ct::mlp<T>& _mlp = Mlp[i];
-			AO m_mW[i].setSize(_mlp.W.size());
-			AO m_vW[i].setSize(_mlp.W.size());
-			AO m_mW[i].fill(0);
-			AO m_vW[i].fill(0);
-
-			AO m_mb[i].setSize(_mlp.B.size());
-			AO m_vb[i].setSize(_mlp.B.size());
-			AO m_mb[i].fill(0);
-			AO m_vb[i].fill(0);
+		int index = 0;
+		for(const ct::mlp<T>& item: Mlp){
+			initI(item.W, item.B, index++);
 		}
+		init_iteration();
 		AO m_init = true;
 		return true;
 	}
@@ -52,32 +45,12 @@ public:
 
 		using namespace ct;
 
-		AO m_iteration++;
-		T sb1 = (T)(1. / (1. - pow(AO m_betha1, AO m_iteration)));
-		T sb2 = (T)(1. / (1. - pow(AO m_betha2, AO m_iteration)));
-		T eps = (T)(10e-8);
-
-		for(size_t i = 0; i < Mlp.size(); ++i){
-			ct::mlp<T>& _mlp = Mlp[i];
-			AO m_mW[i] = AO m_betha1 * AO m_mW[i] + (T)(1. - AO m_betha1) * _mlp.gW;
-			AO m_mb[i] = AO m_betha1 * AO m_mb[i] + (T)(1. - AO m_betha1) * _mlp.gB;
-
-			AO m_vW[i] = AO m_betha2 * AO m_vW[i] + (T)(1. - AO m_betha2) * elemwiseSqr(_mlp.gW);
-			AO m_vb[i] = AO m_betha2 * AO m_vb[i] + (T)(1. - AO m_betha2) * elemwiseSqr(_mlp.gB);
-
-			Mat_<T> mWs = AO m_mW[i] * sb1;
-			Mat_<T> mBs = AO m_mb[i] * sb1;
-			Mat_<T> vWs = AO m_vW[i] * sb2;
-			Mat_<T> vBs = AO m_vb[i] * sb2;
-
-			vWs.sqrt(); vBs.sqrt();
-			vWs += eps; vBs += eps;
-			mWs = elemwiseDiv(mWs, vWs);
-			mBs = elemwiseDiv(mBs, vBs);
-
-			_mlp.W -= AO m_alpha * mWs;
-			_mlp.B -= AO m_alpha * mBs;
+		pass_iteration();
+		int index = 0;
+		for(ct::mlp<T>& item: Mlp){
+			passI(item.gW, item.gB, item.W, item.B, index++);
 		}
+
 		return true;
 	}
 };
@@ -118,13 +91,9 @@ public:
 		MomentOptimizer<T>::m_mW.resize(Mlp.size());
 		MomentOptimizer<T>::m_mb.resize(Mlp.size());
 
-		for(size_t i = 0; i < Mlp.size(); i++){
-			ct::mlp<T>& _mlp = Mlp[i];
-			MomentOptimizer<T>::m_mW[i].setSize(_mlp.W.size());
-			MomentOptimizer<T>::m_mW[i].fill(0);
-
-			MomentOptimizer<T>::m_mb[i].setSize(_mlp.B.size());
-			MomentOptimizer<T>::m_mb[i].fill(0);
+		int index = 0;
+		for(const ct::mlp<T>& item: Mlp){
+			initI(item.W, item.B, index++);
 		}
 		return true;
 	}
@@ -133,29 +102,11 @@ public:
 		if(Mlp.empty())
 			return false;
 
-		for(int i = 0; i <MomentOptimizer<T>:: m_mW.size(); ++i){
-			ct::mlp<T>& _mlp = Mlp[i];
-
-			ct::Mat_<T> tmp = MomentOptimizer<T>::m_mW[i];
-			tmp *= MomentOptimizer<T>::m_betha;
-			tmp += (1.f - MomentOptimizer<T>::m_betha) * _mlp.gW;
-			MomentOptimizer<T>::m_mW[i] = tmp;
-
-			MomentOptimizer<T>::m_mb[i] = MomentOptimizer<T>::m_betha * MomentOptimizer<T>::m_mb[i] + (1.f - MomentOptimizer<T>::m_betha) * _mlp.gB;
+		Optimizer<T>::m_iteration++;
+		int index = 0;
+		for(ct::mlp<T>& item: Mlp){
+			passI(item.gW, item.gB, item.W, item.B, index++);
 		}
-		for(int i = 0; i < MomentOptimizer<T>::m_mW.size(); ++i){
-			ct::mlp<T>& _mlp = Mlp[i];
-
-			_mlp.W += ((-Optimizer<T>::m_alpha) * MomentOptimizer<T>::m_mW[i]);
-			_mlp.B += ((-Optimizer<T>::m_alpha) * MomentOptimizer<T>::m_mb[i]);
-		}
-
-//		for(size_t i = 0; i < Mlp.size(); ++i){
-//			ct::mlp<T>& _mlp = Mlp[i];
-
-//			_mlp.W -= Optimizer<T>::m_alpha * _mlp.gW;
-//			_mlp.B -= Optimizer<T>::m_alpha * _mlp.gB;
-//		}
 
 		return true;
 	}

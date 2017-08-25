@@ -234,8 +234,8 @@ public:
 template< typename T >
 class convnn: public convnn_abstract<T>{
 public:
-	std::vector< ct::Mat_<T> > W;			/// weights
-	std::vector< ct::Mat_<T> > B;			/// biases
+	ct::Mat_<T> W;							/// weights
+	ct::Mat_<T> B;							/// biases
 	int stride;
 	ct::Size szW;							/// size of weights
 	std::vector< ct::Mat_<T> >* pX;			/// input data
@@ -243,14 +243,10 @@ public:
 	std::vector< ct::Mat_<T> > A1;			/// out after appl nonlinear function
 	std::vector< ct::Mat_<T> > A2;			/// out after pooling
 	std::vector< ct::Mat_<T> > Dlt;			/// delta after backward pass
-	ct::Mat_<T> vgW;						/// for delta weights
-	ct::Mat_<T> vgB;						/// for delta bias
 	std::vector< ct::Mat_<T> > Mask;		/// masks for bakward pass (created in forward pass)
-	ct::Optimizer< T > *m_optim;
-	ct::AdamOptimizer<T> m_adam;
 
-	std::vector< ct::Mat_<T> > gW;			/// gradient for weights
-	std::vector< ct::Mat_<T> > gB;			/// gradient for biases
+	ct::Mat_<T> gW;							/// gradient for weights
+	ct::Mat_<T> gB;							/// gradient for biases
 
 	std::vector< ct::Mat_<T> > dSub;
 	std::vector< ct::Mat_<T> > Dc;
@@ -261,14 +257,7 @@ public:
 		stride = 1;
 		m_use_transpose = true;
 		m_Lambda = 0;
-		m_optim = &m_adam;
 		m_params[ct::LEAKYRELU] = 0.1;
-	}
-
-	void setOptimizer(ct::Optimizer<T>* optim){
-		if(!optim)
-			return;
-		m_optim = optim;
 	}
 
 	void setParams(ct::etypefunction type, T param){
@@ -324,10 +313,6 @@ public:
 			return convnn_abstract<T>::szA1;
 	}
 
-	void setAlpha(T alpha){
-		m_optim->setAlpha(alpha);
-	}
-
 	void setLambda(T val){
 		m_Lambda = val;
 	}
@@ -350,17 +335,10 @@ public:
 
 		T n = (T)1/sqrt(szW.area() * convnn_abstract<T>::channels);
 
-		W.resize(1);
-		B.resize(1);
-		gW.resize(1);
-		gB.resize(1);
-
-		W[0].setSize(rows, cols);
-		W[0].randn(0, n);
-		B[0].setSize(1, convnn_abstract<T>::kernels);
-		B[0].randn(0, n);
-
-		m_optim->init(W, B);
+		W.setSize(rows, cols);
+		W.randn(0, n);
+		B.setSize(1, convnn_abstract<T>::kernels);
+		B.randn(0, n);
 
 		printf("Out=[%dx%dx%d]\n", szOut().width, szOut().height, convnn_abstract<T>::kernels);
 	}
@@ -391,7 +369,7 @@ public:
 
 		for(int i = 0; i < (int)Xc.size(); ++i){
 			ct::Mat_<T>& Xi = Xc[i];
-			ct::m2mpaf(Xi, W[0], B[0], m_func, A1[i], m_params[ct::LEAKYRELU]);
+			ct::m2mpaf(Xi, W, B, m_func, A1[i], m_params[ct::LEAKYRELU]);
 		}
 		if(m_use_pool){
 			Mask.resize(Xc.size());
@@ -438,18 +416,18 @@ public:
 		}
 
 		//printf("2\n");
-		gW[0].setSize(W[0].size());
-		gW[0].fill(0);
-		gB[0].setSize(B[0].size());
-		gB[0].fill(0);
+		gW.setSize(W.size());
+		gW.fill(0);
+		gB.setSize(B.size());
+		gB.fill(0);
 
 		for(int i = 0; i < (int)D.size(); ++i){
 			ct::Mat_<T>& Xci = Xc[i];
 			ct::Mat_<T>& dSubi = dSub[i];
 			//ct::Mat_<T>& Wi = vgW;
 			//ct::Mat_<T>& vgBi = vgB;
-			ct::add2matmulT1(Xci, dSubi, gW[0]);
-			ct::add2sumRows(dSubi, gB[0], 1.f/dSubi.rows);
+			ct::add2matmulT1(Xci, dSubi, gW);
+			ct::add2sumRows(dSubi, gB, 1.f/dSubi.rows);
 
 //			ct::add(gW[0], vgW);
 //			ct::add(gB[0], vgB);
@@ -457,12 +435,12 @@ public:
 			//vgBi.swap_dims();
 		}
 		//printf("3\n");
-		gW[0] *= (T)1./(D.size() * convnn_abstract<T>::channels);
-		gB[0] *= (T)1./(D.size() * convnn_abstract<T>::channels);
+		gW *= (T)1./(D.size() * convnn_abstract<T>::channels);
+		gB *= (T)1./(D.size() * convnn_abstract<T>::channels);
 
 		//printf("4\n");
 		if(m_Lambda > 0){
-			ct::add<float>(gW[0],  W[0], 1., (m_Lambda / convnn_abstract<T>::kernels));
+			ct::add<float>(gW,  W, 1., (m_Lambda / convnn_abstract<T>::kernels));
 		}
 
 		//printf("5\n");
@@ -474,30 +452,25 @@ public:
 
 			Dc.resize(D.size());
 			for(int i = 0; i < (int)D.size(); ++i){
-				ct::matmulT2(dSub[i], W[0], Dc[i]);
+				ct::matmulT2(dSub[i], W, Dc[i]);
 				cols2imT(Dc[i], convnn_abstract<T>::szA1, convnn_abstract<T>::szA0, convnn_abstract<T>::channels, szW, stride, Dlt[i]);
 				//ct::Size sz = (*pX)[i].size();
 				//Dlt[i].set_dims(sz);
 			}
 		}
-
-		//printf("6\n");
-		m_optim->pass(gW, gB, W, B);
-
-		//printf("7\n");
 	}
 
 	void write(std::fstream& fs){
 		if(!W.size() || !B.size())
 			return;
-		ct::write_fs(fs, W[0]);
-		ct::write_fs(fs, B[0]);
+		ct::write_fs(fs, W);
+		ct::write_fs(fs, B);
 	}
 	void read(std::fstream& fs){
 		if(!W.size() || !B.size())
 			return;
-		ct::read_fs(fs, W[0]);
-		ct::read_fs(fs, B[0]);
+		ct::read_fs(fs, W);
+		ct::read_fs(fs, B);
 	}
 
 	void write2(std::fstream& fs){
@@ -506,8 +479,8 @@ public:
 		fs.write((char*)&(convnn_abstract<T>::channels), sizeof(convnn_abstract<T>::channels));
 		fs.write((char*)&(convnn_abstract<T>::kernels), sizeof(convnn_abstract<T>::kernels));
 
-		ct::write_fs2(fs, W[0]);
-		ct::write_fs2(fs, B[0]);
+		ct::write_fs2(fs, W);
+		ct::write_fs2(fs, B);
 	}
 
 	void read2(std::fstream& fs){
@@ -516,8 +489,8 @@ public:
 		fs.read((char*)&(convnn_abstract<T>::channels), sizeof(convnn_abstract<T>::channels));
 		fs.read((char*)&(convnn_abstract<T>::kernels), sizeof(convnn_abstract<T>::kernels));
 
-		ct::read_fs2(fs, W[0]);
-		ct::read_fs2(fs, B[0]);
+		ct::read_fs2(fs, W);
+		ct::read_fs2(fs, B);
 	}
 
 private:
@@ -678,6 +651,60 @@ public:
 		conv2::mat2vec(D2, m_c2->szK, Dlt2);
 	}
 };
+
+///////////////////////////////
+
+template< typename T >
+class CnvAdamOptimizer: public ct::AdamOptimizer<T>{
+public:
+	CnvAdamOptimizer() : ct::AdamOptimizer<T>(){
+
+	}
+
+	void init(const std::vector< convnn<T> >& cnv){
+		int index = 0;
+		init_iteration();
+		m_mW.resize(cnv.size());
+		m_mb.resize(cnv.size());
+		m_vW.resize(cnv.size());
+		m_vb.resize(cnv.size());
+		for(const convnn<T>& item: cnv){
+			initI(item.W, item.B, index++);
+		}
+	}
+	void pass(std::vector< convnn<T> >& cnv){
+		pass_iteration();
+		int index = 0;
+		for(convnn<T>& item: cnv){
+			passI(item.gW, item.gB, item.W, item.B, index++);
+		}
+	}
+};
+
+template< typename T >
+class CnvMomentumOptimizer: public ct::MomentOptimizer<T>{
+public:
+	CnvMomentumOptimizer() : ct::MomentOptimizer<T>(){
+
+	}
+
+	void init(const std::vector< convnn<T> >& cnv){
+		int index = 0;
+		m_mW.resize(cnv.size());
+		m_mb.resize(cnv.size());
+		for(const convnn<T>& item: cnv){
+			initI(item.W, item.B, index++);
+		}
+	}
+	void pass(std::vector< convnn<T> >& cnv){
+		int index = 0;
+		for(convnn<T>& item: cnv){
+			passI(item.gW, item.gB, item.W, item.B, index++);
+		}
+	}
+};
+
+///////////////////////////////
 
 typedef convnn<float> convnnf;
 

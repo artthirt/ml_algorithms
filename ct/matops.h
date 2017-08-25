@@ -2041,6 +2041,56 @@ void mul2deriv(const Mat_<T> &D, const Mat_<T> &A, etypefunction func, Mat_<T> &
 }
 
 template< typename T >
+void adamGrad(const ct::Mat_<T>& gW, ct::Mat_<T>& mW, ct::Mat_<T>& vW, ct::Mat_<T>& W, T sb1, T sb2, T alpha, T betha1, T betha2)
+{
+	if(gW.empty() || mW.empty() || vW.empty() || W.empty() || gW.size() != mW.size()
+			|| gW.size() != vW.size() || gW.size() != W.size())
+		throw new std::invalid_argument("adamGrad: wrong parameters");
+
+	const T eps = (T)(10e-8);
+
+#pragma omp parallel for
+	for(int i = 0; i < gW.rows; ++i){
+		const T *dgW	= gW.ptr(i);
+		T *dmW			= mW.ptr(i);
+		T *dvW			= vW.ptr(i);
+		T *dW			= W.ptr(i);
+		for(int j = 0; j < gW.cols; ++j){
+			T g = dgW[j];
+			T g2 = g * g;
+			T m = betha1 * dmW[j] + (1 - betha1) * g;
+			T v = betha2 * dvW[j] + (1 - betha2) * g2;
+			dmW[j] = m;
+			dvW[j] = v;
+
+			dW[j] -= alpha * (sb1 * m) / (sqrt(sb2 * v) + eps);
+		}
+	}
+}
+
+template< typename T >
+void momentumGrad(const ct::Mat_<T>& gW, ct::Mat_<T>& mW,ct::Mat_<T>& W, T alpha, T betha)
+{
+	if(gW.empty() || mW.empty() || W.empty() || gW.size() != mW.size()
+			|| gW.size() != W.size())
+		throw new std::invalid_argument("momentumGrad: wrong parameters");
+
+#pragma omp parallel for
+	for(int i = 0; i < gW.rows; ++i){
+		const T *dgW	= gW.ptr(i);
+		T *dmW			= mW.ptr(i);
+		T *dW			= W.ptr(i);
+		for(int j = 0; j < gW.cols; ++j){
+			T g = dgW[j];
+			T m = betha * dmW[j] + (1 - betha) * g;
+			dmW[j] = m;
+
+			dW[j] -= alpha * m;
+		}
+	}
+}
+
+template< typename T >
 void get_mean(const ct::Mat_<T>& X, ct::Mat_<T>& Y, int axis = 0)
 {
 	if(X.empty())
