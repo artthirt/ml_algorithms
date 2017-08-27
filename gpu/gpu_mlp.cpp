@@ -379,6 +379,7 @@ bool MlpOptimAdam::init(const std::vector<mlp> &_mlp)
 	for(const mlp& item: _mlp){
 		initI(item.W, item.B, index++);
 	}
+	init_iteration();
 
 	m_init_matB = true;
 
@@ -394,32 +395,12 @@ bool MlpOptimAdam::pass(std::vector<mlp> &_mlp)
 		throw new std::invalid_argument("MlpOptim::pass: not initialized");
 	}
 
-	m_iteration++;
-	double sb1 = (1. / (1. - pow(m_betha1, m_iteration)));
-	double sb2 = (1. / (1. - pow(m_betha2, m_iteration)));
+	next_iteration();
 
 	for(size_t i = 0; i < _mlp.size(); ++i){
 		mlp& mlpi = _mlp[i];
 
-//		gpumat::add(m_mW[i], mlpi.gW, m_betha1, (1. - m_betha1));
-//		gpumat::add(m_mb[i], mlpi.gB, m_betha1, (1. - m_betha1));
-
-//		gpumat::elemwiseSqr(mlpi.gW, sW[i]);
-//		gpumat::elemwiseSqr(mlpi.gB, sB[i]);
-
-////		mlpi.gW.release();
-////		mlpi.gB.release();
-
-//		gpumat::add(m_vW[i], sW[i], m_betha2, (1. - m_betha2));
-//		gpumat::add(m_vb[i], sB[i], m_betha2, (1. - m_betha2));
-
-		/// W = -alpha * (sb1 * mW / (sqrt(sb2 * vW) + eps))
-
-//		gpumat::add(W[i], m_mW[i], 1, -m_alpha);
-//		gpumat::add(b[i], m_mb[i], 1, -m_alpha);
-		gpumat::sub_adamGrad(mlpi.W, mlpi.gW, m_mW[i], m_vW[i], m_alpha, sb1, sb2, m_betha1, m_betha2);
-		gpumat::sub_adamGrad(mlpi.B, mlpi.gW, m_mb[i], m_vb[i], m_alpha, sb1, sb2, m_betha1, m_betha2);
-
+		passI(mlpi.gW, mlpi.gB, mlpi.W, mlpi.B, i);
 	}
 	return true;
 }
