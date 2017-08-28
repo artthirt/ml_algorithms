@@ -163,7 +163,7 @@ void convnn_gpu::init(const ct::Size &_szA0, int _channels, int stride, int _K,
 	gW.resize(W);
 	gB.resize(B);
 
-	printf("Out=[%dx%dx%d]\n", szOut().width, szOut().height, kernels);
+	printf("Out=[%dx%dx%d], W[%d, %d]\n", szOut().width, szOut().height, kernels, W.rows, W.cols);
 }
 
 template< typename T >
