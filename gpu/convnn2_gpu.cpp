@@ -321,8 +321,8 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 		//gpumat::add(gW[0], vgW);
 		//gpumat::add(gB[0], vgB);
 	}
-	gpumat::mulval(gW, (double)1./(D.size() * szW.area()));
-	gpumat::mulval(gB, (double)1./(D.size() * szW.area()));
+	gpumat::mulval(gW, (double)1./(D.size() * channels));
+	gpumat::mulval(gB, (double)1./(D.size() * channels));
 
 #if 0
 #if 0
@@ -828,9 +828,9 @@ void gpumat::subsample(const std::vector<gpumat::GpuMat> &X,
 
 	for(size_t i = 0; i < X.size(); ++i){
 		Y[i].resize(szO.area(), K, X[i].type);
-		//Y[i].zeros();
+		Y[i].zeros();
 		Mask[i].resize(X[i].rows, X[i].cols, X[i].type);
-		//Mask[i].zeros();
+		Mask[i].zeros();
 	}
 
 	cuda_subsample2_vec(X, szA, Y, Mask, szO);
