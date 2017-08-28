@@ -295,6 +295,8 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 		backcnv(D, dSub2);
 	}
 
+//	gpumat::save_gmat(dSub2[0], "gW.txt");
+
 	if(m_pool_dropout){
 		set_dropout(dSub2, m_Dropout);
 	}
@@ -798,8 +800,8 @@ void gpumat::subsample(const gpumat::GpuMat &X,
 	if(X.empty() || X.rows != szA.area())
 		throw new std::invalid_argument("subsample: empty parameters");
 
-	szO.width = szA.width / 2;
-	szO.height = szA.height / 2;
+	szO.width = (szA.width + 1) / 2;
+	szO.height = (szA.height + 1) / 2;
 	int K = X.cols;
 
 	Y.resize(szO.area(), K, X.type);
@@ -818,8 +820,8 @@ void gpumat::subsample(const std::vector<gpumat::GpuMat> &X,
 	if(X.empty() || X[0].rows != szA.area())
 		throw new std::invalid_argument("subsample: empty parameters");
 
-	szO.width = szA.width / 2;
-	szO.height = szA.height / 2;
+	szO.width = (szA.width + 1) / 2;
+	szO.height = (szA.height + 1) / 2;
 
 	int K = X[0].cols;
 

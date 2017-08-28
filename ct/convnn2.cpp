@@ -637,8 +637,8 @@ void _subsample(const ct::Mat_<T>& X, const ct::Size& szA, ct::Mat_<T>& Y, ct::M
 	if(X.empty() || X.rows != szA.area())
 		return;
 
-	szO.width = szA.width / 2;
-	szO.height = szA.height / 2;
+	szO.width = (szA.width + 1) / 2;
+	szO.height = (szA.height + 1) / 2;
 	int K = X.cols;
 
 	Y.setSize(szO.area(), K);
