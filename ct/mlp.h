@@ -34,7 +34,7 @@ public:
 
 		int index = 0;
 		for(const ct::mlp<T>& item: Mlp){
-			initI(item.W, item.B, index++);
+			ct::AdamOptimizer<T>::initI(item.W, item.B, index++);
 		}
 		ct::AdamOptimizer<T>::init_iteration();
 		AO m_init = true;
@@ -48,7 +48,7 @@ public:
 		ct::AdamOptimizer<T>::pass_iteration();
 		int index = 0;
 		for(ct::mlp<T>& item: Mlp){
-			passI(item.gW, item.gB, item.W, item.B, index++);
+			ct::AdamOptimizer<T>::passI(item.gW, item.gB, item.W, item.B, index++);
 		}
 
 		return true;
@@ -93,7 +93,7 @@ public:
 
 		int index = 0;
 		for(const ct::mlp<T>& item: Mlp){
-			initI(item.W, item.B, index++);
+			MomentumOptimizer<T>::initI(item.W, item.B, index++);
 		}
 		return true;
 	}
@@ -105,7 +105,7 @@ public:
 		Optimizer<T>::m_iteration++;
 		int index = 0;
 		for(ct::mlp<T>& item: Mlp){
-			passI(item.gW, item.gB, item.W, item.B, index++);
+			MomentumOptimizer<T>::passI(item.gW, item.gB, item.W, item.B, index++);
 		}
 
 		return true;

@@ -690,16 +690,16 @@ public:
 
 	void init(const std::vector< convnn<T> >& cnv){
 		int index = 0;
-		ct::AdamOptimizer<T>::m_mW.resize(cnv.size());
-		ct::AdamOptimizer<T>::m_mb.resize(cnv.size());
+		ct::MomentumOptimizer<T>::m_mW.resize(cnv.size());
+		ct::MomentumOptimizer<T>::m_mb.resize(cnv.size());
 		for(const convnn<T>& item: cnv){
-			initI(item.W, item.B, index++);
+			ct::MomentumOptimizer<T>::initI(item.W, item.B, index++);
 		}
 	}
 	void pass(std::vector< convnn<T> >& cnv){
 		int index = 0;
 		for(convnn<T>& item: cnv){
-			passI(item.gW, item.gB, item.W, item.B, index++);
+			ct::MomentumOptimizer<T>::passI(item.gW, item.gB, item.W, item.B, index++);
 		}
 	}
 };
