@@ -277,11 +277,6 @@ void MomentumOptimizer::initI(const GpuMat &W, const GpuMat &B, int index)
 
 void MomentumOptimizer::passI(const GpuMat &gW, const GpuMat &gB, GpuMat &W, GpuMat &B, int index)
 {
-	if(m_mW[index].empty() || m_mb[index].empty()){
-		gW.copyTo(m_mW[index]);
-		gB.copyTo(m_mb[index]);
-	}
-
 	gpumat::momentum_optimizer(W, m_mW[index], gW, m_alpha, m_betha);
 	gpumat::momentum_optimizer(B, m_mb[index], gB, m_alpha, m_betha);
 }
