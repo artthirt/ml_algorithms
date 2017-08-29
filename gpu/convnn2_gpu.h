@@ -368,11 +368,11 @@ void addvec(GpuMat& W, const std::vector< GpuMat >& vW, double alpha);
  * @param betha
  * Y = alpha * (X - Mean) / (sqrt(Sigma + 10e-8)) + betha
  */
-void batch_normalize(const std::vector<GpuMat> &X, GpuMat &Mean, GpuMat &Sigma, std::vector<GpuMat> &Y,
-					 double alpha = 1., double betha = 0., bool train = true);
+void batch_normalize(const std::vector<GpuMat> &X, const GpuMat &alpha, const GpuMat &betha,
+					 GpuMat &Mean, GpuMat &Sigma, std::vector<GpuMat> &Y, bool train = true);
 
 void batch_denormalize(const std::vector<GpuMat> &D, const std::vector<GpuMat> &X, const GpuMat &Mean, const GpuMat &Sigma,
-					   double& alpha, double &betha, std::vector<GpuMat> &Xout);
+					   GpuMat &alpha, GpuMat &betha, std::vector<GpuMat> &Xout);
 
 }
 

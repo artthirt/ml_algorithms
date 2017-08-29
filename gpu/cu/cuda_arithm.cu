@@ -473,6 +473,28 @@ __global__ void biasPlus(Mtx A, const Mtx bias)
 }
 
 /**
+ * @brief scale_and_shift
+ * @param A
+ * @param scales
+ * @param biases
+ * @param C[i, j] = A[i,j] * scales[j] + biases[j]
+ */
+template< class T >
+__global__ void scale_and_shift(const Mtx A, const Mtx scales, const Mtx biases, Mtx C)
+{
+	int row = threadIdx.y + blockIdx.y * blockDim.y;
+	int col = threadIdx.x + blockIdx.x * blockDim.x;
+
+	T* dA = (T*)A.data;
+	T* dC = (T*)C.data;
+	T* dBias = (T*)biases.data;
+	T* dScales = (T*)scales.data;
+
+	if(row < A.rows && col < A.cols)
+		dC[row * C.cols + col] = dA[row * A.cols + col] * dScales[col] + dBias[col];
+}
+
+/**
  * @brief elemwiseMul
  * @param A
  * @param B
@@ -2342,6 +2364,32 @@ void cuda_biasPlus(GpuMat& A, const GpuMat& bias)
 		break;
 	}
 }
+
+/**
+ * @brief scale_and_shift
+ * @param A
+ * @param scales
+ * @param biases
+ * @param C[i, j] = A[i,j] * scales[j] + biases[j]
+ */
+extern "C"
+void cuda_scale_and_shift(const GpuMat& A, const GpuMat& scales, const GpuMat& biases, GpuMat& C)
+{
+	int x1 = A.cols / BLOCKSIZE + 1;
+	int x2 = A.rows / BLOCKSIZE + 1;
+
+	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+
+	switch (A.type) {
+	case GPU_DOUBLE:
+		internal::scale_and_shift<double> <<<dimGrid, dimBlock>>>(A, scales, biases, C);
+		break;
+	case GPU_FLOAT:
+		internal::scale_and_shift<float> <<<dimGrid, dimBlock>>>(A, scales, biases, C);
+		break;
+	}
+}
+
 
 /**
  * @brief elemwiseMul

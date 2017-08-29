@@ -279,6 +279,15 @@ void subval(double value, GpuMat& A);
 void biasPlus(GpuMat& A, const GpuMat& bias);
 
 /**
+ * @brief scale_and_shift
+ * @param A
+ * @param scales
+ * @param biases
+ * @param C[i, j] = A[i,j] * scales[j] + biases[j]
+ */
+void scale_and_shift(const GpuMat& A, const GpuMat& scales, const GpuMat& biases, GpuMat& C);
+
+/**
  * @brief elemiseMul
  * @param A
  * @param B

@@ -627,12 +627,12 @@ extern "C"
 void cuda_addvec(gpumat::GpuMat &W, const std::vector<gpumat::GpuMat> &vW, double alpha);
 
 extern "C"
-void cuda_batch_normalize(const std::vector<GpuMat> &X, GpuMat &Mean, GpuMat &Sigma, std::vector<GpuMat> &Y,
-						   double alpha, double betha);
+void cuda_batch_normalize(const std::vector<GpuMat> &X, const GpuMat &alpha, const GpuMat &betha,
+						  GpuMat &Mean, GpuMat &Sigma, std::vector<GpuMat> &Y);
 
 extern "C"
 void cuda_batch_denormalize(const std::vector<GpuMat> &D, const std::vector<GpuMat> &X, const GpuMat &Mean, const GpuMat &Sigma,
-							double &alpha, double &betha, std::vector<GpuMat> &Xout);
+							GpuMat &alpha, GpuMat &betha, std::vector<GpuMat> &Xout);
 
 ///////////////////////////////
 
@@ -1042,8 +1042,8 @@ void gpumat::conv2(const gpumat::GpuMat &A, const ct::Size &szA, int channels, i
 	W.cols = cols;
 }
 
-void gpumat::batch_normalize(const std::vector<GpuMat> &X, GpuMat &Mean, GpuMat &Sigma, std::vector<GpuMat> &Y,
-							 double alpha, double betha, bool train)
+void gpumat::batch_normalize(const std::vector<GpuMat> &X, const GpuMat &alpha, const GpuMat &betha, GpuMat &Mean, GpuMat &Sigma, std::vector<GpuMat> &Y,
+							 bool train)
 {
 	if(X.empty() || X[0].empty())
 		throw new std::invalid_argument("batch_normalize: empty parameters");
@@ -1052,8 +1052,7 @@ void gpumat::batch_normalize(const std::vector<GpuMat> &X, GpuMat &Mean, GpuMat 
 		Y.resize(X.size());
 		int index = 0;
 		for(gpumat::GpuMat item: X){
-			gpumat::mulval(item, alpha, Y[index]);
-			gpumat::addval(Y[index], betha);
+			scale_and_shift(item, alpha, betha, Y[index]);
 			index++;
 		}
 		return;
@@ -1072,14 +1071,14 @@ void gpumat::batch_normalize(const std::vector<GpuMat> &X, GpuMat &Mean, GpuMat 
 		++index;
 	}
 
-	cuda_batch_normalize(X, Mean, Sigma, Y, alpha, betha);
+	cuda_batch_normalize(X, alpha, betha, Mean, Sigma, Y);
 }
 
 void gpumat::batch_denormalize(const std::vector<GpuMat> &D, const std::vector<GpuMat> &X, const GpuMat &Mean, const GpuMat &Sigma,
-					   double &alpha, double &betha, std::vector<GpuMat> &Xout)
+					   GpuMat &alpha, GpuMat &betha, std::vector<GpuMat> &Xout)
 {
 	if(D.empty() || D[0].empty() || Mean.empty() || Sigma.empty() || Mean.cols != D[0].cols
-			|| Sigma.cols != D[0].cols)
+			|| Sigma.cols != D[0].cols || alpha.empty() || betha.empty())
 		throw new std::invalid_argument("batch_denormalize: empty parameters");
 
 	Xout.resize(D.size());

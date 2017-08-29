@@ -744,7 +744,7 @@ __global__ void meanAndSigma(SmallMtxArray X, Mtx Mean, Mtx Sigma)
 }
 
 template< typename T >
-__global__ void batch_normalize(SmallMtxArray X, Mtx Mean, Mtx Sigma, SmallMtxArray Y, T alpha, T betha)
+__global__ void batch_normalize(SmallMtxArray X, Mtx Mean, Mtx Sigma, SmallMtxArray Y, Mtx alpha, Mtx betha)
 {
 	int row = threadIdx.y + blockDim.y * blockIdx.y;
 	int col = threadIdx.x + blockDim.x * blockIdx.x;
@@ -759,14 +759,16 @@ __global__ void batch_normalize(SmallMtxArray X, Mtx Mean, Mtx Sigma, SmallMtxAr
 		T *dYi		= (T*)Yi.data;
 		T *dMean	= (T*)Mean.data;
 		T *dSigma	= (T*)Sigma.data;
+		T *dAlpha	= (T*)alpha.data;
+		T *dBetha	= (T*)betha.data;
 
 		T val = (dXi[col] - dMean[col]) / (::sqrt(dSigma[col] + eps));
-		dYi[col] = alpha * val + betha;
+		dYi[col] = dAlpha[col] * val + dBetha[col];
 	}
 }
 
 template< typename T >
-__global__ void batch_denormalize(SmallMtxArray D, SmallMtxArray X, Mtx Mean, Mtx Sigma, T alpha, T betha,
+__global__ void batch_denormalize(SmallMtxArray D, SmallMtxArray X, Mtx Mean, Mtx Sigma, Mtx alpha, Mtx betha,
 									SmallMtxArray Xout)
 {
 	int row = threadIdx.y + blockDim.y * blockIdx.y;
@@ -1240,8 +1242,8 @@ void cuda_addvec(gpumat::GpuMat &W, const std::vector<gpumat::GpuMat> &vW, doubl
 }
 
 extern "C"
-void cuda_batch_normalize(const std::vector<GpuMat> &X, GpuMat &Mean,
-					 GpuMat &Sigma, std::vector<GpuMat> &Y, double alpha, double betha)
+void cuda_batch_normalize(const std::vector<GpuMat> &X, const GpuMat &alpha, const GpuMat &betha, GpuMat &Mean,
+					 GpuMat &Sigma, std::vector<GpuMat> &Y)
 {
 	int rows = X.size();
 	int cols = X[0].total();
@@ -1266,7 +1268,7 @@ void cuda_batch_normalize(const std::vector<GpuMat> &X, GpuMat &Mean,
 extern "C"
 void cuda_batch_denormalize(const std::vector<GpuMat> &D, const std::vector<GpuMat> &X,
 							const GpuMat &Mean, const GpuMat &Sigma,
-							double &alpha, double &betha, std::vector<GpuMat> &Xout)
+							GpuMat &alpha, GpuMat &betha, std::vector<GpuMat> &Xout)
 {
 	int rows = D.size();
 	int cols = D[0].total();

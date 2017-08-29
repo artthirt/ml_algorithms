@@ -243,6 +243,16 @@ extern "C"
 void cuda_biasPlus(GpuMat& A, const GpuMat& bias);
 
 /**
+ * @brief scale_and_shift
+ * @param A
+ * @param scales
+ * @param biases
+ * @param C[i, j] = A[i,j] * scales[j] + biases[j]
+ */
+extern "C"
+void cuda_scale_and_shift(const GpuMat& A, const GpuMat& scales, const GpuMat& biases, GpuMat& C);
+
+/**
  * @brief elemwiseMul
  * @param A
  * @param B
@@ -299,7 +309,6 @@ void cuda_sumrows(const GpuMat& A, GpuMat& C, double val);
  */
 extern "C"
 void cuda_add2sumrows(const GpuMat& A, GpuMat& sums, double val);
-
 
 /**
  * @brief cuda_sumrows_shared
@@ -1105,6 +1114,19 @@ void biasPlus(GpuMat &A, const GpuMat &bias)
 	}
 
 	cuda_biasPlus(A, bias);
+}
+
+void scale_and_shift(const GpuMat& A, const GpuMat& scales, const GpuMat& biases, GpuMat& C)
+{
+	if(A.empty() || scales.empty() || biases.empty()){
+		throw new std::invalid_argument("scale_and_shift");
+	}
+
+	if(C.rows != A.rows || C.cols != A.cols || A.type != C.type){
+		C.resize(A.rows, A.cols, A.type);
+	}
+
+	cuda_scale_and_shift(A, scales, biases, C);
 }
 
 void elemwiseMult(const GpuMat &A, const GpuMat &B, GpuMat &C)
