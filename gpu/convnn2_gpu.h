@@ -357,6 +357,23 @@ void mat2vec(const GpuMat& mat, const ct::Size& szOut, std::vector< GpuMat >& ve
  */
 void addvec(GpuMat& W, const std::vector< GpuMat >& vW, double alpha);
 
+////////// batch normalize /////////////
+/**
+ * @brief batch_normalize
+ * @param X			- input matrices
+ * @param Mean		- output mean
+ * @param Sigma		- output sigma
+ * @param Y			- output result
+ * @param alpha
+ * @param betha
+ * Y = alpha * (X - Mean) / (sqrt(Sigma + 10e-8)) + betha
+ */
+void batch_normalize(const std::vector<GpuMat> &X, GpuMat &Mean, GpuMat &Sigma, std::vector<GpuMat> &Y,
+					 double alpha = 1., double betha = 0., bool train = true);
+
+void batch_denormalize(const std::vector<GpuMat> &D, const std::vector<GpuMat> &X, const GpuMat &Mean, const GpuMat &Sigma,
+					   double& alpha, double &betha, std::vector<GpuMat> &Xout);
+
 }
 
 #endif // CONV2_GPU_H

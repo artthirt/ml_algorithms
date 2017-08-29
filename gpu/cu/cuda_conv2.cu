@@ -645,7 +645,6 @@ __global__ void addvec(Mtx mat,  SmallMtxArray vec, T alpha)
 	int col = threadIdx.x + blockDim.x * blockIdx.x;
 	int row = threadIdx.y + blockDim.y * blockIdx.y;
 
-
 	if(row < mat.rows && col < mat.cols){
 		T* dM = (T*)mat.data;
 
@@ -656,6 +655,125 @@ __global__ void addvec(Mtx mat,  SmallMtxArray vec, T alpha)
 		}
 
 		dM[row * mat.cols + col] = val * alpha;
+	}
+}
+
+template< typename T >
+__global__ void meanAndSigma(SmallMtxArray X, Mtx Mean, Mtx Sigma)
+{
+//	int row = threadIdx.y + blockDim.y * blockIdx.y;
+	int col = threadIdx.x + blockDim.x * blockIdx.x;
+
+	int coli = threadIdx.x;
+	int rowi = threadIdx.y;
+	__shared__ T data[BLOCKSIZE][BLOCKSIZE];
+
+	if(col < X.mtx[0].total()){
+		T *dMean	= (T*)Mean.data;
+		T *dSigma	= (T*)Sigma.data;
+
+//		int off = coli * BLOCKSIZE;
+//		int cnt = Xi.total() - off;
+//		cnt = min(BLOCKSIZE, cnt);
+
+		int offr = rowi * BLOCKSIZE;
+		int cntr = X.count - offr;
+		cntr = max(0, min(BLOCKSIZE, cntr));
+
+		T val = 0;
+
+		/// mean /////
+
+		for(int i = 0; i < cntr; ++i){
+			Mtx &Xi		= X.mtx[offr + i];
+			T *dXi		= (T*)Xi.data;
+			val			+= dXi[col];
+		}
+		data[rowi][coli] = val;
+
+		__syncthreads();
+
+//		if(coli == 0){
+//			T val = 0;
+//			for(int i = 0; i < cnt; ++i){
+//				val += data[rowi][i];
+//			}
+//			val /= Xi.total();
+//			data[rowi][0] = val;
+//		}
+		if(rowi == 0){
+			T val = 0;
+			for(int i = 0; i < cntr; ++i){
+				val += data[i][coli];
+			}
+			val /= X.count;
+			dMean[col] = val;
+		}
+
+		__syncthreads();
+		/// sigma /////
+
+		val = 0;
+		for(int i = 0; i < cntr; ++i){
+			Mtx &Xi		= X.mtx[offr + i];
+			T *dXi		= (T*)Xi.data;
+			T v2		= dXi[col] - dMean[col];
+			val			+= v2 * v2;
+		}
+		data[rowi][coli] = val;
+
+		__syncthreads();
+
+//		if(coli == 0){
+//			T val = 0;
+//			for(int i = 0; i < cnt; ++i){
+//				val += data[rowi][i];
+//			}
+//			val /= Xi.total();
+//			data[rowi][0] = val;
+//		}
+		if(rowi == 0){
+			T val = 0;
+			for(int i = 0; i < cntr; ++i){
+				val += data[i][coli];
+			}
+			val /= X.count;
+			dSigma[col] = val;
+		}
+	}
+}
+
+template< typename T >
+__global__ void batch_normalize(SmallMtxArray X, Mtx Mean, Mtx Sigma, SmallMtxArray Y, T alpha, T betha)
+{
+	int row = threadIdx.y + blockDim.y * blockIdx.y;
+	int col = threadIdx.x + blockDim.x * blockIdx.x;
+
+	T eps = 10e-8;
+
+	if(row < X.count && col < X.mtx[0].total()){
+		Mtx &Xi = X.mtx[row];
+		Mtx &Yi = Y.mtx[row];
+
+		T *dXi		= (T*)Xi.data;
+		T *dYi		= (T*)Yi.data;
+		T *dMean	= (T*)Mean.data;
+		T *dSigma	= (T*)Sigma.data;
+
+		T val = (dXi[col] - dMean[col]) / (::sqrt(dSigma[col] + eps));
+		dYi[col] = alpha * val + betha;
+	}
+}
+
+template< typename T >
+__global__ void batch_denormalize(SmallMtxArray D, SmallMtxArray X, Mtx Mean, Mtx Sigma, T alpha, T betha,
+									SmallMtxArray Xout)
+{
+	int row = threadIdx.y + blockDim.y * blockIdx.y;
+	int col = threadIdx.x + blockDim.x * blockIdx.x;
+
+	if(row < D.count && col < D.mtx[0].total()){
+
 	}
 }
 
@@ -1119,6 +1237,51 @@ void cuda_addvec(gpumat::GpuMat &W, const std::vector<gpumat::GpuMat> &vW, doubl
 			internal::addvec<float> <<<dimGrid, dimBlock>>>(W, vW, alpha);
 			break;
 	}
-
 }
 
+extern "C"
+void cuda_batch_normalize(const std::vector<GpuMat> &X, GpuMat &Mean,
+					 GpuMat &Sigma, std::vector<GpuMat> &Y, double alpha, double betha)
+{
+	int rows = X.size();
+	int cols = X[0].total();
+
+	int x1 = cols / BLOCKSIZE + 1;
+	int x2 = rows / BLOCKSIZE + 1;
+
+	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+
+	switch (X[0].type) {
+		case GPU_DOUBLE:
+			internal::meanAndSigma<double><<<dim3(x1, 1), dimBlock>>>(X, Mean, Sigma);
+			internal::batch_normalize<double> <<<dimGrid, dimBlock>>>(X, Mean, Sigma, Y, alpha, betha);
+			break;
+		case GPU_FLOAT:
+			internal::meanAndSigma<float><<<dim3(x1, 1), dimBlock>>>(X, Mean, Sigma);
+			internal::batch_normalize<float> <<<dimGrid, dimBlock>>>(X, Mean, Sigma, Y, alpha, betha);
+			break;
+	}
+}
+
+extern "C"
+void cuda_batch_denormalize(const std::vector<GpuMat> &D, const std::vector<GpuMat> &X,
+							const GpuMat &Mean, const GpuMat &Sigma,
+							double &alpha, double &betha, std::vector<GpuMat> &Xout)
+{
+	int rows = D.size();
+	int cols = D[0].total();
+
+	int x1 = cols / BLOCKSIZE + 1;
+	int x2 = rows / BLOCKSIZE + 1;
+
+	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+
+	switch (D[0].type) {
+		case GPU_DOUBLE:
+			internal::batch_denormalize<double> <<<dimGrid, dimBlock>>>(D, Xout, Mean, Sigma, alpha, betha, Xout);
+			break;
+		case GPU_FLOAT:
+			internal::batch_denormalize<float> <<<dimGrid, dimBlock>>>(D, Xout, Mean, Sigma, alpha, betha, Xout);
+			break;
+	}
+}

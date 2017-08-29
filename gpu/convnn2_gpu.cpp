@@ -626,6 +626,14 @@ void cuda_upsample2vec(const std::vector<gpumat::GpuMat> &Y, const std::vector<g
 extern "C"
 void cuda_addvec(gpumat::GpuMat &W, const std::vector<gpumat::GpuMat> &vW, double alpha);
 
+extern "C"
+void cuda_batch_normalize(const std::vector<GpuMat> &X, GpuMat &Mean, GpuMat &Sigma, std::vector<GpuMat> &Y,
+						   double alpha, double betha);
+
+extern "C"
+void cuda_batch_denormalize(const std::vector<GpuMat> &D, const std::vector<GpuMat> &X, const GpuMat &Mean, const GpuMat &Sigma,
+							double &alpha, double &betha, std::vector<GpuMat> &Xout);
+
 ///////////////////////////////
 
 void gpumat::im2cols(const gpumat::GpuMat &X, const ct::Size &szA0,
@@ -1032,4 +1040,53 @@ void gpumat::conv2(const gpumat::GpuMat &A, const ct::Size &szA, int channels, i
 
 	W.rows = rows;
 	W.cols = cols;
+}
+
+void gpumat::batch_normalize(const std::vector<GpuMat> &X, GpuMat &Mean, GpuMat &Sigma, std::vector<GpuMat> &Y,
+							 double alpha, double betha, bool train)
+{
+	if(X.empty() || X[0].empty())
+		throw new std::invalid_argument("batch_normalize: empty parameters");
+
+	if(X.size() == 1 || !train){
+		Y.resize(X.size());
+		int index = 0;
+		for(gpumat::GpuMat item: X){
+			gpumat::mulval(item, alpha, Y[index]);
+			gpumat::addval(Y[index], betha);
+			index++;
+		}
+		return;
+	}
+
+	Mean.resize(1, X[0].total(), X[0].type);
+	Sigma.resize(1, X[0].total(), X[0].type);
+	Y.resize(X.size());
+
+	Mean.zeros();
+	Sigma.zeros();
+
+	int index = 0;
+	for(const GpuMat& Xi: X){
+		Y[index].resize(Xi);
+		++index;
+	}
+
+	cuda_batch_normalize(X, Mean, Sigma, Y, alpha, betha);
+}
+
+void gpumat::batch_denormalize(const std::vector<GpuMat> &D, const std::vector<GpuMat> &X, const GpuMat &Mean, const GpuMat &Sigma,
+					   double &alpha, double &betha, std::vector<GpuMat> &Xout)
+{
+	if(D.empty() || D[0].empty() || Mean.empty() || Sigma.empty() || Mean.cols != D[0].cols
+			|| Sigma.cols != D[0].cols)
+		throw new std::invalid_argument("batch_denormalize: empty parameters");
+
+	Xout.resize(D.size());
+	int index = 0;
+	for(const GpuMat& Di: D){
+		Xout[index++].resize(Di);
+	}
+
+	cuda_batch_denormalize(D, X, Mean, Sigma, alpha, betha, Xout);
 }
