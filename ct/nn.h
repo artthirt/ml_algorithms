@@ -1050,6 +1050,166 @@ void deriv_prev_cnv(const std::vector< ct::Mat_<T> >& deriv,
 	}
 }
 
+template< typename T>
+struct BN{
+	BN(){
+		X = Y = D = 0;
+	}
+
+	/// inputs and output;
+	std::vector< Mat_<T> > *X;
+	std::vector< Mat_<T> > *Y;
+	std::vector< Mat_<T> > *D;
+
+	/// internal variables
+	std::vector< Mat_<T> > Xu;
+	Mat_<T> Mean;
+	Mat_<T> Var;
+	Mat_<T> gamma;
+	Mat_<T> betha;
+
+	Mat_<T> dgamma;
+	Mat_<T> dbetha;
+	std::vector< Mat_<T> > Dout;
+
+	void meanAndVar(){
+		std::vector< Mat_<T> >& _X = *X;
+		std::vector< Mat_<T> >& _Y = *Y;
+
+		T eps = 1e-8;
+		T N = _X.size();
+
+		Mean.setSize(1, _X.front().total());
+		Var.setSize(1, _X.front().total());
+
+		if(gamma.empty() || betha.empty())
+			initGammBetha();
+
+		Xu.resize(_X.size());
+		int index = 0;
+		for(Mat_<T> &Xi: _X){
+			Xu[index++].setSize(Xi.size());
+		}
+
+		T *dM = Mean.ptr();
+		T *dV = Var.ptr();
+		T *dG = gamma.ptr();
+		T *dB = betha.ptr();
+		for(int c = 0; c < _X.front().total(); ++c){
+			T val = 0;
+			for(int i = 0; i < _X.size(); ++i){
+				T *dX = _X[i].ptr();
+				val += dX[c];
+			}
+			val /= N;
+			dM[c] = val;
+
+			val = 0;
+			for(int i = 0; i < _X.size(); ++i){
+				T *dX = _X[i].ptr();
+				T *dXu = Xu[i].ptr();
+				T s = dX[c] - dM[c];
+				dXu[c] = s;
+				val += s * s;
+			}
+			val /= N;
+			dV[c] = ::sqrt(val + eps);
+
+			for(int i = 0; i < _X.size(); ++i){
+				T *dY = _Y[i].ptr();
+				T *dXu = Xu[i].ptr();
+				T v = (dXu[c]) / dV[c];
+				v = dG[c] * v + dB[c];
+				dY[c] = v;
+			}
+
+		}
+	}
+
+	void normalize(){
+		if(!X || X->empty() || !Y)
+			return;
+
+		Y->resize(X->size());
+		int index = 0;
+		for(Mat_<T>& Xi: *X){
+			(*Y)[index++].setSize(Xi.size());
+		}
+
+		meanAndVar();
+	}
+	void denormalize(){
+		if(!D || D->empty() || gamma.empty() || betha.empty() || Mean.empty() || Var.empty())
+			return;
+
+		Dout.resize(D->size());
+		int index = 0;
+		for(Mat_<T>& item: *D){
+			Dout[index++].setSize(item.size());
+		}
+		std::vector< Mat_<T> >& _D = *D;
+
+		dbetha.setSize(betha.size());
+		dgamma.setSize(gamma.size());
+
+		T N = _D.size();
+		T *ddB = dbetha.ptr();
+		T *ddG = dgamma.ptr();
+		T *dV = Var.ptr();
+		T *dG = gamma.ptr();
+		for(int c = 0; c < _D.front().total(); ++c){
+			T val = 0;
+			for(int x = 0; x < _D.size(); ++x){
+				T *dD = _D[x].ptr();
+				T *dDout = Dout[x].ptr();
+				val += dD[c];
+				dDout[c] = dD[c] * dG[c];
+			}
+			ddB[c] = val;
+
+			val = 0;
+			for(int x = 0; x < _D.size(); ++x){
+				T *dXu = Xu[x].ptr();
+				val += dXu[c]/dV[c];
+			}
+			ddG[c] = val;
+
+			val = 0;
+			for(int x = 0; x < _D.size(); ++x){
+				T *dDout = Dout[x].ptr();
+				T *dXu = Xu[x].ptr();
+				val += dDout[c] * dXu[c];
+			}
+			T s = -val/(dV[c] * dV[c]);
+			s *= 0.5 * (1/dV[c]);
+			s /= N;
+
+			val = 0;
+			for(int x = 0; x < _D.size(); ++x){
+				T *dDout = Dout[x].ptr();
+				T *dXu = Xu[x].ptr();
+				T dsq = 2 * dXu[c] * s;
+				val -= (dDout[c] + dsq);
+				dDout[c] += dsq;
+			}
+			val /= N;
+
+			for(int x = 0; x < _D.size(); ++x){
+				T *dDout = Dout[x].ptr();
+				dDout[c] += val;
+			}
+		}
+	}
+
+	void initGammBetha(){
+		gamma.setSize(Mean.size());
+		betha.setSize(Mean.size());
+		gamma.fill(1);
+		betha.fill(0);
+	}
+
+};
+
 }
 
 #endif // NN_H
