@@ -1268,22 +1268,22 @@ void cuda_addvec(gpumat::GpuMat &W, const std::vector<gpumat::GpuMat> &vW, doubl
 extern "C"
 void cuda_batch_normalize(BN &bn)
 {
-	int rows = bn.X.size();
-	int cols = bn.X[0].total();
+	int rows = bn.X->size();
+	int cols = bn.X->front().total();
 
 	int x1 = cols / BLOCKSIZE + 1;
 	int x2 = rows / BLOCKSIZE + 1;
 
 	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
 
-	switch (bn.X[0].type) {
+	switch (bn.X->front().type) {
 		case GPU_DOUBLE:
-			internal::meanAndVar<double><<<dim3(x1, 1), dimBlock>>>(bn.X, bn.Mean, bn.Var);
-			internal::batch_normalize<double> <<<dimGrid, dimBlock>>>(bn.X, bn.Mean, bn.Var, bn.Xu, bn.Y, bn.gamma, bn.betha);
+			internal::meanAndVar<double><<<dim3(x1, 1), dimBlock>>>(*bn.X, bn.Mean, bn.Var);
+			internal::batch_normalize<double> <<<dimGrid, dimBlock>>>(*bn.X, bn.Mean, bn.Var, bn.Xu, *bn.Y, bn.gamma, bn.betha);
 			break;
 		case GPU_FLOAT:
-			internal::meanAndVar<float><<<dim3(x1, 1), dimBlock>>>(bn.X, bn.Mean, bn.Var);
-			internal::batch_normalize<float> <<<dimGrid, dimBlock>>>(bn.X, bn.Mean, bn.Var, bn.Xu, bn.Y, bn.gamma, bn.betha);
+			internal::meanAndVar<float><<<dim3(x1, 1), dimBlock>>>(*bn.X, bn.Mean, bn.Var);
+			internal::batch_normalize<float> <<<dimGrid, dimBlock>>>(*bn.X, bn.Mean, bn.Var, bn.Xu, *bn.Y, bn.gamma, bn.betha);
 			break;
 	}
 }
@@ -1468,8 +1468,8 @@ __global__ void scales(SmallMtxArray D, Mtx gamma, SmallMtxArray Dout)
 extern "C"
 void cuda_batch_denormalize(BN &bn)
 {
-	int rows = bn.D.size();
-	int cols = bn.D[0].total();
+	int rows = bn.D->size();
+	int cols = bn.D->front().total();
 
 	int x1 = cols / BLOCKSIZE + 1;
 	int x2 = rows / BLOCKSIZE + 1;
@@ -1479,20 +1479,20 @@ void cuda_batch_denormalize(BN &bn)
 	bn.dgamma.resize(bn.gamma);
 	bn.dbetha.resize(bn.betha);
 
-	switch (bn.D[0].type) {
+	switch (bn.D->front().type) {
 		case GPU_DOUBLE:
-			internal::get_dalpha		<double> <<<dim3(x1, 1), dimBlock>>>(bn.D, bn.dgamma);
-			internal::get_dbetha		<double> <<<dim3(x1, 1), dimBlock>>>(bn.D, bn.Xu, bn.Var, bn.dbetha);
-			internal::scales			<double> <<<dimGrid, dimBlock>>>(bn.D, bn.gamma, bn.Dout);
+			internal::get_dalpha		<double> <<<dim3(x1, 1), dimBlock>>>(*bn.D, bn.dgamma);
+			internal::get_dbetha		<double> <<<dim3(x1, 1), dimBlock>>>(*bn.D, bn.Xu, bn.Var, bn.dbetha);
+			internal::scales			<double> <<<dimGrid, dimBlock>>>(*bn.D, bn.gamma, bn.Dout);
 			internal::get_dsigma		<double> <<<dim3(x1, 1), dimBlock>>>(bn.Dout, bn.Xu, bn.Var, bn.Var);
 			internal::get_dmean			<double> <<<dim3(x1, 1), dimBlock>>>(bn.Dout, bn.Var, bn.Mean);
 			internal::batch_denormalize	<double> <<<dimGrid, dimBlock>>>(bn.Dout, bn.Mean, bn.Var,
 																		bn.Xu, bn.Dout);
 			break;
 		case GPU_FLOAT:
-			internal::get_dalpha		<float> <<<dim3(x1, 1), dimBlock>>>(bn.D, bn.dgamma);
-			internal::get_dbetha		<float> <<<dim3(x1, 1), dimBlock>>>(bn.D, bn.Xu, bn.Var, bn.dbetha);
-			internal::scales			<float> <<<dimGrid, dimBlock>>>(bn.D, bn.gamma, bn.Dout);
+			internal::get_dalpha		<float> <<<dim3(x1, 1), dimBlock>>>(*bn.D, bn.dgamma);
+			internal::get_dbetha		<float> <<<dim3(x1, 1), dimBlock>>>(*bn.D, bn.Xu, bn.Var, bn.dbetha);
+			internal::scales			<float> <<<dimGrid, dimBlock>>>(*bn.D, bn.gamma, bn.Dout);
 			internal::get_dsigma		<float> <<<dim3(x1, 1), dimBlock>>>(bn.Dout, bn.Xu, bn.Var, bn.Var);
 			internal::get_dmean			<float> <<<dim3(x1, 1), dimBlock>>>(bn.Dout, bn.Var, bn.Mean);
 			internal::batch_denormalize	<float> <<<dimGrid, dimBlock>>>(bn.Dout, bn.Mean, bn.Var,

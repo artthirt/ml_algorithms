@@ -91,9 +91,17 @@ private:
 /////////////////////////
 
 struct BN{
-	std::vector< GpuMat > X;
+	BN(){
+		X = Y = D = 0;
+	}
+
+	/// inputs and output;
+	std::vector< GpuMat > *X;
+	std::vector< GpuMat > *Y;
+	std::vector< GpuMat > *D;
+
+	/// internal variables
 	std::vector< GpuMat > Xu;
-	std::vector< GpuMat > Y;
 	GpuMat Mean;
 	GpuMat Var;
 	GpuMat gamma;
@@ -101,7 +109,6 @@ struct BN{
 
 	GpuMat dgamma;
 	GpuMat dbetha;
-	std::vector< GpuMat > D;
 	std::vector< GpuMat > Dout;
 };
 

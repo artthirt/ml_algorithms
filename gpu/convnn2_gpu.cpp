@@ -1042,30 +1042,30 @@ void gpumat::conv2(const gpumat::GpuMat &A, const ct::Size &szA, int channels, i
 
 void gpumat::batch_normalize(BN &bn, bool train)
 {
-	if(bn.X.empty() || bn.X[0].empty())
+	if(!bn.X || !bn.Y || bn.X->empty() || bn.X->front().empty())
 		throw new std::invalid_argument("batch_normalize: empty parameters");
 
-	if(bn.X.size() == 1 || !train){
-		bn.Y.resize(bn.X.size());
+	if(bn.X->size() == 1 || !train){
+		bn.Y->resize(bn.X->size());
 		int index = 0;
-		for(gpumat::GpuMat item: bn.X){
-			scale_and_shift(item, bn.gamma, bn.betha, bn.Y[index]);
+		for(gpumat::GpuMat item: *bn.X){
+			scale_and_shift(item, bn.gamma, bn.betha, bn.Y->operator [](index));
 			index++;
 		}
 		return;
 	}
 
-	bn.Mean.resize(1, bn.X[0].total(), bn.X[0].type);
-	bn.Var.resize(1, bn.X[0].total(), bn.X[0].type);
-	bn.Y.resize(bn.X.size());
-	bn.Xu.resize(bn.X.size());
+	bn.Mean.resize(1, bn.X->front().total(), bn.X->front().type);
+	bn.Var.resize(1, bn.X->front().total(), bn.X->front().type);
+	bn.Y->resize(bn.X->size());
+	bn.Xu.resize(bn.X->size());
 
 	bn.Mean.zeros();
 	bn.Var.zeros();
 
 	int index = 0;
-	for(const GpuMat& Xi: bn.X){
-		bn.Y[index].resize(Xi);
+	for(const GpuMat& Xi: *bn.X){
+		bn.Y->operator [](index).resize(Xi);
 		bn.Xu[index].resize(Xi);
 		++index;
 	}
@@ -1075,13 +1075,14 @@ void gpumat::batch_normalize(BN &bn, bool train)
 
 void gpumat::batch_denormalize(BN &bn)
 {
-	if(bn.D.empty() || bn.D[0].empty() || bn.Mean.empty() || bn.Var.empty() || bn.Mean.cols != bn.X[0].cols
-			|| bn.Var.cols != bn.D[0].cols || bn.gamma.empty() || bn.betha.empty())
+	if(!bn.D || bn.D->empty() || bn.D->front().empty() || bn.Mean.empty() || bn.Var.empty()
+			|| bn.Mean.cols != bn.D->front().cols
+			|| bn.Var.cols != bn.D->front().cols || bn.gamma.empty() || bn.betha.empty())
 		throw new std::invalid_argument("batch_denormalize: empty parameters");
 
-	bn.Dout.resize(bn.D.size());
+	bn.Dout.resize(bn.D->size());
 	int index = 0;
-	for(const GpuMat& Di: bn.D){
+	for(const GpuMat& Di: *bn.D){
 		bn.Dout[index++].resize(Di);
 	}
 
