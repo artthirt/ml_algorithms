@@ -771,33 +771,19 @@ __global__ void batch_normalize(SmallMtxArray X, Mtx Mean, Mtx Var, SmallMtxArra
 }
 
 template< typename T >
-__global__ void batch_denormalize(SmallMtxArray Dout, Mtx DMean, Mtx DVar,
-								  SmallMtxArray Xu, SmallMtxArray Xout)
+__global__ void batch_denormalize(SmallMtxArray Dout, Mtx DMean, SmallMtxArray Xout)
 {
 	int row = threadIdx.y + blockDim.y * blockIdx.y;
 	int col = threadIdx.x + blockDim.x * blockIdx.x;
 
 	if(row < Dout.count && col < Dout.mtx[0].total()){
-		T N			= Dout.count;
 		T *dDout	= (T*)Dout.mtx[row].data;
-		T *dDMean	= (T*)DMean.data;
-		T *dVar		= (T*)DVar.data;
-		T *dXu		= (T*)Xu.mtx[row].data;
 		T *dXout	= (T*)Xout.mtx[row].data;
+		T *dDMean	= (T*)DMean.data;
 
-		T dout = dDout[col];
-		T dvar = dVar[col];
-		T xu = dXu[col];
-		T dmean = dDMean[col];
 		T xout = dXout[col];
 
-		T dxmu1 = dout;
-		T dxmu2 = 2 /N * xu * dvar;
-
-		T dx1 = dxmu1 + dxmu2;
-		T dx2 = dmean / N;
-
-		xout = dx1 + dx2;
+		xout = dDout[col] + dDMean[col];
 
 		dXout[col] = xout;
 	}
@@ -1404,13 +1390,13 @@ __global__ void get_dsigma(SmallMtxArray Dout, SmallMtxArray Xu, Mtx Var, Mtx ds
 			}
 			T res = -val * (1/(dVar[col] * dVar[col]));
 			res = res * 0.5 * (1/dVar[col]);
-			dS[col] = res;
+			dS[col] = res / Dout.count;
 		}
 	}
 }
 
 template< typename T >
-__global__ void get_dmean(SmallMtxArray D, Mtx DVar, Mtx dMean)
+__global__ void get_dmean(SmallMtxArray D, SmallMtxArray Xmu, Mtx DVar, Mtx dMean)
 {
 	int col = threadIdx.x + blockDim.x * blockIdx.x;
 
@@ -1420,6 +1406,7 @@ __global__ void get_dmean(SmallMtxArray D, Mtx DVar, Mtx dMean)
 
 	if(col < D.mtx[0].total()){
 		T *dA	= (T*)dMean.data;
+		T *dDVar = (T*)DVar.data;
 
 		int offr = rowi * BLOCKSIZE;
 		int cntr = D.count - offr;
@@ -1429,19 +1416,21 @@ __global__ void get_dmean(SmallMtxArray D, Mtx DVar, Mtx dMean)
 
 		for(int i = 0; i < cntr; ++i){
 			T *dDi		= (T*)D.mtx[offr + i].data;
-			val			+= dDi[col];
+			T *dXmu		= (T*)Xmu.mtx[offr + i].data;
+			T dsq		= 2 * dDVar[col] * dXmu[col];
+			val			+= dsq + dDi[col];
+			dDi[col]	+= dsq;
 		}
 		data[rowi][coli] = val;
 
 		__syncthreads();
 
 		if(rowi == 0){
-			T *dDVar = (T*)DVar.data;
 			T val = 0;
 			for(int i = 0; i < cntr; ++i){
 				val += data[i][coli];
 			}
-			dA[col] = -(val + dDVar[col]);
+			dA[col] = -val/D.count;
 		}
 	}
 }
@@ -1485,18 +1474,16 @@ void cuda_batch_denormalize(BN &bn)
 			internal::get_dbetha		<double> <<<dim3(x1, 1), dimBlock>>>(*bn.D, bn.Xu, bn.Var, bn.dbetha);
 			internal::scales			<double> <<<dimGrid, dimBlock>>>(*bn.D, bn.gamma, bn.Dout);
 			internal::get_dsigma		<double> <<<dim3(x1, 1), dimBlock>>>(bn.Dout, bn.Xu, bn.Var, bn.Var);
-			internal::get_dmean			<double> <<<dim3(x1, 1), dimBlock>>>(bn.Dout, bn.Var, bn.Mean);
-			internal::batch_denormalize	<double> <<<dimGrid, dimBlock>>>(bn.Dout, bn.Mean, bn.Var,
-																		bn.Xu, bn.Dout);
+			internal::get_dmean			<double> <<<dim3(x1, 1), dimBlock>>>(bn.Dout, bn.Xu, bn.Var, bn.Mean);
+			internal::batch_denormalize	<double> <<<dimGrid, dimBlock>>>(bn.Dout, bn.Mean, bn.Dout);
 			break;
 		case GPU_FLOAT:
 			internal::get_dalpha		<float> <<<dim3(x1, 1), dimBlock>>>(*bn.D, bn.dgamma);
 			internal::get_dbetha		<float> <<<dim3(x1, 1), dimBlock>>>(*bn.D, bn.Xu, bn.Var, bn.dbetha);
 			internal::scales			<float> <<<dimGrid, dimBlock>>>(*bn.D, bn.gamma, bn.Dout);
 			internal::get_dsigma		<float> <<<dim3(x1, 1), dimBlock>>>(bn.Dout, bn.Xu, bn.Var, bn.Var);
-			internal::get_dmean			<float> <<<dim3(x1, 1), dimBlock>>>(bn.Dout, bn.Var, bn.Mean);
-			internal::batch_denormalize	<float> <<<dimGrid, dimBlock>>>(bn.Dout, bn.Mean, bn.Var,
-																		bn.Xu, bn.Dout);
+			internal::get_dmean			<float> <<<dim3(x1, 1), dimBlock>>>(bn.Dout, bn.Xu, bn.Var, bn.Mean);
+			internal::batch_denormalize	<float> <<<dimGrid, dimBlock>>>(bn.Dout, bn.Mean, bn.Dout);
 			break;
 	}
 }
