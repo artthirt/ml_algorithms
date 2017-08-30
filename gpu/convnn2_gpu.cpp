@@ -1076,8 +1076,8 @@ void gpumat::batch_normalize(BN &bn, bool train)
 void gpumat::batch_denormalize(BN &bn)
 {
 	if(!bn.D || bn.D->empty() || bn.D->front().empty() || bn.Mean.empty() || bn.Var.empty()
-			|| bn.Mean.cols != bn.D->front().cols
-			|| bn.Var.cols != bn.D->front().cols || bn.gamma.empty() || bn.betha.empty())
+			|| bn.Mean.cols != bn.D->front().total()
+			|| bn.Var.cols != bn.D->front().total() || bn.gamma.empty() || bn.betha.empty())
 		throw new std::invalid_argument("batch_denormalize: empty parameters");
 
 	bn.Dout.resize(bn.D->size());
