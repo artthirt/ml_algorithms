@@ -88,6 +88,25 @@ public:
 private:
 };
 
+/////////////////////////
+
+struct BN{
+	std::vector< GpuMat > X;
+	std::vector< GpuMat > Xu;
+	std::vector< GpuMat > Y;
+	GpuMat Mean;
+	GpuMat Var;
+	GpuMat gamma;
+	GpuMat betha;
+
+	GpuMat dgamma;
+	GpuMat dbetha;
+	std::vector< GpuMat > D;
+	std::vector< GpuMat > Dout;
+};
+
+/////////////////////////
+
 /**
  * @brief memset
  * @param A
