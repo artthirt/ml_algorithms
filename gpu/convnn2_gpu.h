@@ -111,6 +111,33 @@ public:
 
 //////////////////////
 
+class BN: public _BN{
+public:
+	BN(): _BN(){
+		train = true;
+	}
+	bool train;
+
+	/**
+	 * @brief normalize
+	 */
+	void normalize();
+	/**
+	 * @brief denormalize
+	 */
+	void denormalize();
+	/**
+	 * @brief initGammaAndBetha
+	 */
+	void initGammaAndBetha();
+	/**
+	 * @brief scaleAndShoft
+	 */
+	void scaleAndShift();
+};
+
+//////////////////////
+
 /**
  * @brief im2cols
  * @param X
@@ -356,21 +383,6 @@ void mat2vec(const GpuMat& mat, const ct::Size& szOut, std::vector< GpuMat >& ve
  * @param alpha
  */
 void addvec(GpuMat& W, const std::vector< GpuMat >& vW, double alpha);
-
-////////// batch normalize /////////////
-/**
- * @brief batch_normalize
- * @param X			- input matrices
- * @param Mean		- output mean
- * @param Sigma		- output sigma
- * @param Y			- output result
- * @param alpha
- * @param betha
- * Y = alpha * (X - Mean) / (sqrt(Sigma + 10e-8)) + betha
- */
-void batch_normalize(BN& bn, bool train = true);
-
-void batch_denormalize(BN &bn);
 
 }
 

@@ -90,8 +90,9 @@ private:
 
 /////////////////////////
 
-struct BN{
-	BN(){
+class _BN{
+public:
+	_BN(){
 		X = Y = D = 0;
 	}
 

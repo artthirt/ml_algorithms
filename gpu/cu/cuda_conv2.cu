@@ -1252,7 +1252,7 @@ void cuda_addvec(gpumat::GpuMat &W, const std::vector<gpumat::GpuMat> &vW, doubl
 }
 
 extern "C"
-void cuda_batch_normalize(BN &bn)
+void cuda_batch_normalize(_BN &bn)
 {
 	int rows = bn.X->size();
 	int cols = bn.X->front().total();
@@ -1455,7 +1455,7 @@ __global__ void scales(SmallMtxArray D, Mtx gamma, SmallMtxArray Dout)
 }
 
 extern "C"
-void cuda_batch_denormalize(BN &bn)
+void cuda_batch_denormalize(_BN &bn)
 {
 	int rows = bn.D->size();
 	int cols = bn.D->front().total();

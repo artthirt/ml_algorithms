@@ -1054,7 +1054,12 @@ template< typename T>
 struct BN{
 	BN(){
 		X = Y = D = 0;
+		train = true;
+		channels = 1;
 	}
+
+	bool train;
+	int channels;
 
 	/// inputs and output;
 	std::vector< Mat_<T> > *X;
@@ -1077,10 +1082,11 @@ struct BN{
 		std::vector< Mat_<T> >& _Y = *Y;
 
 		T eps = 1e-8;
-		T N = _X.size();
 
-		Mean.setSize(1, _X.front().total());
-		Var.setSize(1, _X.front().total());
+		Mean.setSize(1, channels);
+		Var.setSize(1, channels);
+		int spatial = _X[0].total() / channels;
+		T N = _X.size() * spatial;
 
 		if(gamma.empty() || betha.empty())
 			initGammBetha();
@@ -1095,11 +1101,15 @@ struct BN{
 		T *dV = Var.ptr();
 		T *dG = gamma.ptr();
 		T *dB = betha.ptr();
-		for(int c = 0; c < _X.front().total(); ++c){
+
+#pragma omp parallel for
+		for(int c = 0; c < channels; ++c){
 			T val = 0;
 			for(int i = 0; i < _X.size(); ++i){
 				T *dX = _X[i].ptr();
-				val += dX[c];
+				for(int s = 0; s < spatial; ++s){
+					val += dX[c + s * channels];
+				}
 			}
 			val /= N;
 			dM[c] = val;
@@ -1108,21 +1118,50 @@ struct BN{
 			for(int i = 0; i < _X.size(); ++i){
 				T *dX = _X[i].ptr();
 				T *dXu = Xu[i].ptr();
-				T s = dX[c] - dM[c];
-				dXu[c] = s;
-				val += s * s;
+				for(int s = 0; s < spatial; ++s){
+					T w = dX[c + s * channels] - dM[c];
+					dXu[c + s * channels] = w;
+					val += w * w;
+				}
 			}
-			val /= N;
+			val /= (N - 1);
 			dV[c] = ::sqrt(val + eps);
 
 			for(int i = 0; i < _X.size(); ++i){
 				T *dY = _Y[i].ptr();
 				T *dXu = Xu[i].ptr();
-				T v = (dXu[c]) / dV[c];
-				v = dG[c] * v + dB[c];
-				dY[c] = v;
+				for(int s = 0; s < spatial; ++s){
+					T v = (dXu[c + s * channels]) / dV[c];
+					v = dG[c] * v + dB[c];
+					dY[c + s * channels] = v;
+				}
 			}
 
+		}
+	}
+
+	void scaleAndShift(){
+		std::vector< Mat_<T> >& _X = *X;
+		std::vector< Mat_<T> >& _Y = *Y;
+
+		if(gamma.empty() || betha.empty())
+			initGammBetha();
+
+		T *dG = gamma.ptr();
+		T *dB = betha.ptr();
+		int spatial = _X[0].total() / channels;
+
+#pragma omp parallel for
+		for(int c = 0; c < channels; ++c){
+			for(int i = 0; i < _X.size(); ++i){
+				T *dY = _Y[i].ptr();
+				T *dX = _X[i].ptr();
+				for(int s = 0; s < spatial; ++s){
+					T v = dX[c + s * channels];
+					v = dG[c] * v + dB[c];
+					dY[c + s * channels] = v;
+				}
+			}
 		}
 	}
 
@@ -1132,11 +1171,16 @@ struct BN{
 
 		Y->resize(X->size());
 		int index = 0;
+
 		for(Mat_<T>& Xi: *X){
 			(*Y)[index++].setSize(Xi.size());
 		}
 
-		meanAndVar();
+//		if(train){
+			meanAndVar();
+//		}else{
+//			scaleAndShift();
+//		}
 	}
 	void denormalize(){
 		if(!D || D->empty() || gamma.empty() || betha.empty() || Mean.empty() || Var.empty())
@@ -1152,25 +1196,34 @@ struct BN{
 		dbetha.setSize(betha.size());
 		dgamma.setSize(gamma.size());
 
-		T N = _D.size();
+		int spatial = _D[0].total() / channels;
+
+		T N = _D.size() * spatial;
 		T *ddB = dbetha.ptr();
 		T *ddG = dgamma.ptr();
 		T *dV = Var.ptr();
 		T *dG = gamma.ptr();
-		for(int c = 0; c < _D.front().total(); ++c){
+
+#pragma omp parallel for
+		for(int c = 0; c < channels; ++c){
 			T val = 0;
 			for(int x = 0; x < _D.size(); ++x){
 				T *dD = _D[x].ptr();
 				T *dDout = Dout[x].ptr();
-				val += dD[c];
-				dDout[c] = dD[c] * dG[c];
+				for(int s = 0; s < spatial; ++s){
+					val += dD[c + s * channels];
+					dDout[c + s * channels] = dD[c + s * channels] * dG[c];
+				}
 			}
 			ddB[c] = val;
 
 			val = 0;
 			for(int x = 0; x < _D.size(); ++x){
 				T *dXu = Xu[x].ptr();
-				val += dXu[c]/dV[c];
+				T *dD = _D[x].ptr();
+				for(int s = 0; s < spatial; ++s){
+					val += dD[c + s * channels] * (dXu[c + s * channels]/dV[c]);
+				}
 			}
 			ddG[c] = val;
 
@@ -1178,25 +1231,32 @@ struct BN{
 			for(int x = 0; x < _D.size(); ++x){
 				T *dDout = Dout[x].ptr();
 				T *dXu = Xu[x].ptr();
-				val += dDout[c] * dXu[c];
+				for(int s = 0; s < spatial; ++s){
+					val += dDout[c + s * channels] * dXu[c + s * channels];
+					dDout[c + s * channels] *= 1 / (dV[c]);
+				}
 			}
-			T s = -val/(dV[c] * dV[c]);
-			s *= 0.5 * (1/dV[c]);
-			s /= N;
+			T _s = -val/(dV[c] * dV[c]);
+			_s *= 0.5 * (1/dV[c]);
+			_s /= (N - 1);
 
 			val = 0;
 			for(int x = 0; x < _D.size(); ++x){
 				T *dDout = Dout[x].ptr();
 				T *dXu = Xu[x].ptr();
-				T dsq = 2 * dXu[c] * s;
-				val -= (dDout[c] + dsq);
-				dDout[c] += dsq;
+				for(int s = 0; s < spatial; ++s){
+					T dsq = 2 * dXu[c + s * channels] * _s;
+					val -= (dDout[c + s * channels] + dsq);
+					dDout[c + s * channels] += dsq;
+				}
 			}
 			val /= N;
 
 			for(int x = 0; x < _D.size(); ++x){
 				T *dDout = Dout[x].ptr();
-				dDout[c] += val;
+				for(int s = 0; s < spatial; ++s){
+					dDout[c + s * channels] += val;
+				}
 			}
 		}
 	}

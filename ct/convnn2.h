@@ -242,6 +242,7 @@ public:
 	std::vector< ct::Mat_<T> > Xc;			///
 	std::vector< ct::Mat_<T> > A1;			/// out after appl nonlinear function
 	std::vector< ct::Mat_<T> > A2;			/// out after pooling
+	std::vector< ct::Mat_<T> > A3;			/// out after bn
 	std::vector< ct::Mat_<T> > Dlt;			/// delta after backward pass
 	std::vector< ct::Mat_<T> > Mask;		/// masks for bakward pass (created in forward pass)
 
@@ -258,6 +259,7 @@ public:
 		m_use_transpose = true;
 		m_Lambda = 0;
 		m_params[ct::LEAKYRELU] = 0.1;
+		m_use_bn = false;
 	}
 
 	void setParams(ct::etypefunction type, T param){
@@ -265,12 +267,16 @@ public:
 	}
 
 	std::vector< ct::Mat_<T> >& XOut(){
+		if(m_use_bn)
+			return A3;
 		if(m_use_pool)
 			return A2;
 		return A1;
 	}
 
 	const std::vector< ct::Mat_<T> >& XOut() const{
+		if(m_use_bn)
+			return A3;
 		if(m_use_pool)
 			return A2;
 		return A1;
@@ -291,9 +297,24 @@ public:
 	std::vector< ct::Mat_<T> >& XOut2(){
 		return A2;
 	}
+	/**
+	 * @brief XOut2
+	 * out after pooling
+	 * @return
+	 */
+	std::vector< ct::Mat_<T> >& XOut3(){
+		return A3;
+	}
 
 	bool use_pool() const{
 		return m_use_pool;
+	}
+	bool use_bn(){
+		return m_use_bn;
+	}
+
+	ct::BN<T>& bn(){
+		return m_bn;
 	}
 
 	int outputFeatures() const{
@@ -313,20 +334,46 @@ public:
 			return convnn_abstract<T>::szA1;
 	}
 
+	/**
+	 * @brief setLambda
+	 * @param val
+	 */
 	void setLambda(T val){
 		m_Lambda = val;
 	}
+	/**
+	 * @brief setTrain
+	 * @param val
+	 */
+	void setTrain(bool val){
+		m_bn.train = val;
+	}
 
+	/**
+	 * @brief init
+	 * @param _szA0
+	 * @param _channels
+	 * @param stride
+	 * @param _K
+	 * @param _szW
+	 * @param func
+	 * @param use_pool
+	 * @param use_transpose
+	 * @param use_bn
+	 */
 	void init(const ct::Size& _szA0, int _channels, int stride, int _K, const ct::Size& _szW, ct::etypefunction func,
-			  bool use_pool = true, bool use_transpose = true){
+			  bool use_pool = true, bool use_transpose = true, bool use_bn = false){
 		szW = _szW;
 		m_use_pool = use_pool;
+		m_use_bn = use_bn;
 		m_use_transpose = use_transpose;
 		m_func = func;
 		convnn_abstract<T>::kernels = _K;
 		convnn_abstract<T>::channels = _channels;
 		convnn_abstract<T>::szA0 = _szA0;
 		this->stride = stride;
+
+		m_bn.channels = _K;
 
 		int rows = szW.area() * convnn_abstract<T>::channels;
 		int cols = convnn_abstract<T>::kernels;
@@ -381,8 +428,19 @@ public:
 				conv2::subsample(A1i, convnn_abstract<T>::szA1, A2i, Mask[i], szOut);
 			}
 			convnn_abstract<T>::szK = A2[0].size();
+
+			if(m_use_bn){
+				m_bn.X = &A2;
+				m_bn.Y = &A3;
+				m_bn.normalize();
+			}
 		}else{
 			convnn_abstract<T>::szK = A1[0].size();
+			if(m_use_bn){
+				m_bn.X = &A1;
+				m_bn.Y = &A3;
+				m_bn.normalize();
+			}
 		}
 	}
 
@@ -405,14 +463,31 @@ public:
 
 		//printf("1\n");
 		if(m_use_pool){
-			for(int i = 0; i < (int)D.size(); ++i){
-				ct::Mat_<T> Di = D[i];
+
+			std::vector< ct::Mat_<T> >& _D = (std::vector< ct::Mat_<T> >&)D;
+
+			if(m_use_bn){
+				m_bn.D = (std::vector< ct::Mat_<T> >*)&D;
+				m_bn.denormalize();
+				_D = m_bn.Dout;
+			}
+
+			for(int i = 0; i < (int)_D.size(); ++i){
+				ct::Mat_<T> Di = _D[i];
 				//Di.set_dims(szA2.area(), K);
 				upsample(Di, convnn_abstract<T>::kernels, Mask[i],convnn_abstract<T>:: szA2, convnn_abstract<T>::szA1, dSub[i]);
 			}
 			backcnv(dSub, dSub);
 		}else{
-			backcnv(D, dSub);
+			std::vector< ct::Mat_<T> >& _D = (std::vector< ct::Mat_<T> >&)D;
+
+			if(m_use_bn){
+				m_bn.D = (std::vector< ct::Mat_<T> >*)&D;
+				m_bn.denormalize();
+				_D = m_bn.Dout;
+			}
+
+			backcnv(_D, dSub);
 		}
 
 		//printf("2\n");
@@ -495,10 +570,13 @@ public:
 
 private:
 	bool m_use_pool;
+	bool m_use_bn;
 	ct::etypefunction m_func;
 	bool m_use_transpose;
 	std::map< ct::etypefunction, T > m_params;
 	T m_Lambda;
+
+	ct::BN<T> m_bn;
 };
 
 template< typename T >
@@ -687,11 +765,17 @@ public:
 	CnvMomentumOptimizer() : ct::MomentumOptimizer<T>(){
 
 	}
+	std::vector< ct::Mat_<T> > m_mG;
+	std::vector< ct::Mat_<T> > m_mB;
+
 
 	void init(const std::vector< convnn<T> >& cnv){
 		int index = 0;
 		ct::MomentumOptimizer<T>::m_mW.resize(cnv.size());
 		ct::MomentumOptimizer<T>::m_mb.resize(cnv.size());
+
+		m_mG.resize(cnv.size());
+		m_mB.resize(cnv.size());
 		for(const convnn<T>& item: cnv){
 			ct::MomentumOptimizer<T>::initI(item.W, item.B, index++);
 		}
@@ -699,7 +783,22 @@ public:
 	void pass(std::vector< convnn<T> >& cnv){
 		int index = 0;
 		for(convnn<T>& item: cnv){
+			if(item.use_bn()){
+				if(m_mG[index].empty()){
+					m_mG[index].setSize(item.bn().gamma.size());
+					m_mG[index].fill(0);
+					m_mB[index].setSize(item.bn().betha.size());
+					m_mB[index].fill(0);
+				}
+				ct::momentumGrad(item.bn().dgamma, m_mG[index], item.bn().gamma, Optimizer<T>::m_alpha, m_betha);
+				ct::momentumGrad(item.bn().dbetha, m_mB[index], item.bn().betha, Optimizer<T>::m_alpha, m_betha);
+
+				ct::save_mat(item.bn().gamma, "gamma_" + std::to_string(index) + ".txt");
+				ct::save_mat(item.bn().betha, "betha_" + std::to_string(index) + ".txt");
+
+			}
 			ct::MomentumOptimizer<T>::passI(item.gW, item.gB, item.W, item.B, index++);
+
 		}
 	}
 };

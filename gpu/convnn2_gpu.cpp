@@ -478,6 +478,85 @@ bool CnvMomentumOptimizer::pass(std::vector<convnn_gpu> &cnv)
 	return true;
 }
 
+///////////////////////////////
+///////////////////////////////
+
+extern "C"
+void cuda_batch_normalize(_BN &bn);
+
+extern "C"
+void cuda_batch_denormalize(_BN &bn);
+
+///////////////////////////////
+
+void gpumat::BN::normalize()
+{
+	if(!X || !Y || X->empty() || X->front().empty())
+		throw new std::invalid_argument("batch_normalize: empty parameters");
+
+	if(X->size() == 1 || !train){
+		scaleAndShift();
+		return;
+	}
+
+	Mean.resize(1, X->front().total(), X->front().type);
+	Var.resize(1, X->front().total(), X->front().type);
+	Y->resize(X->size());
+	Xu.resize(X->size());
+
+	Mean.zeros();
+	Var.zeros();
+
+	if(gamma.empty() || betha.empty())
+		initGammaAndBetha();
+
+	int index = 0;
+	for(const GpuMat& Xi: *X){
+		Y->operator [](index).resize(Xi);
+		Xu[index].resize(Xi);
+		++index;
+	}
+
+	cuda_batch_normalize(*this);
+}
+
+void gpumat::BN::denormalize()
+{
+	if(!D || D->empty() || D->front().empty() || Mean.empty() || Var.empty()
+			|| Mean.cols != D->front().total()
+			|| Var.cols != D->front().total() || gamma.empty() || betha.empty())
+		throw new std::invalid_argument("batch_denormalize: empty parameters");
+
+	Dout.resize(D->size());
+	int index = 0;
+	for(const GpuMat& Di: *D){
+		Dout[index++].resize(Di);
+	}
+
+	cuda_batch_denormalize(*this);
+}
+
+void BN::initGammaAndBetha()
+{
+	gamma.resize(Mean);
+	betha.resize(Mean);
+
+	gamma.ones();
+	betha.zeros();
+}
+
+void BN::scaleAndShift()
+{
+	if(gamma.empty() || betha.empty())
+		initGammaAndBetha();
+
+	Y->resize(X->size());
+	int index = 0;
+	for(gpumat::GpuMat item: *X){
+		scale_and_shift(item, gamma, betha, Y->operator [](index));
+		index++;
+	}
+}
 
 ///////////////////////////////
 ///////////////////////////////
@@ -625,12 +704,6 @@ void cuda_upsample2vec(const std::vector<gpumat::GpuMat> &Y, const std::vector<g
 
 extern "C"
 void cuda_addvec(gpumat::GpuMat &W, const std::vector<gpumat::GpuMat> &vW, double alpha);
-
-extern "C"
-void cuda_batch_normalize(BN &bn);
-
-extern "C"
-void cuda_batch_denormalize(BN &bn);
 
 ///////////////////////////////
 
@@ -1040,51 +1113,3 @@ void gpumat::conv2(const gpumat::GpuMat &A, const ct::Size &szA, int channels, i
 	W.cols = cols;
 }
 
-void gpumat::batch_normalize(BN &bn, bool train)
-{
-	if(!bn.X || !bn.Y || bn.X->empty() || bn.X->front().empty())
-		throw new std::invalid_argument("batch_normalize: empty parameters");
-
-	if(bn.X->size() == 1 || !train){
-		bn.Y->resize(bn.X->size());
-		int index = 0;
-		for(gpumat::GpuMat item: *bn.X){
-			scale_and_shift(item, bn.gamma, bn.betha, bn.Y->operator [](index));
-			index++;
-		}
-		return;
-	}
-
-	bn.Mean.resize(1, bn.X->front().total(), bn.X->front().type);
-	bn.Var.resize(1, bn.X->front().total(), bn.X->front().type);
-	bn.Y->resize(bn.X->size());
-	bn.Xu.resize(bn.X->size());
-
-	bn.Mean.zeros();
-	bn.Var.zeros();
-
-	int index = 0;
-	for(const GpuMat& Xi: *bn.X){
-		bn.Y->operator [](index).resize(Xi);
-		bn.Xu[index].resize(Xi);
-		++index;
-	}
-
-	cuda_batch_normalize(bn);
-}
-
-void gpumat::batch_denormalize(BN &bn)
-{
-	if(!bn.D || bn.D->empty() || bn.D->front().empty() || bn.Mean.empty() || bn.Var.empty()
-			|| bn.Mean.cols != bn.D->front().total()
-			|| bn.Var.cols != bn.D->front().total() || bn.gamma.empty() || bn.betha.empty())
-		throw new std::invalid_argument("batch_denormalize: empty parameters");
-
-	bn.Dout.resize(bn.D->size());
-	int index = 0;
-	for(const GpuMat& Di: *bn.D){
-		bn.Dout[index++].resize(Di);
-	}
-
-	cuda_batch_denormalize(bn);
-}
