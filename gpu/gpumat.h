@@ -94,7 +94,9 @@ class _BN{
 public:
 	_BN(){
 		X = Y = D = 0;
+		channels = 1;
 	}
+	int channels;
 
 	/// inputs and output;
 	std::vector< GpuMat > *X;
@@ -108,6 +110,8 @@ public:
 	GpuMat gamma;
 	GpuMat betha;
 
+//	GpuMat dMean;
+	GpuMat dVar;
 	GpuMat dgamma;
 	GpuMat dbetha;
 	std::vector< GpuMat > Dout;

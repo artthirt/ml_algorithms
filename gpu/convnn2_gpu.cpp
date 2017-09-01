@@ -62,6 +62,7 @@ void check_deriv(const std::vector< gpumat::GpuMat >& Delta,
 convnn_gpu::convnn_gpu()
 {
 	m_use_pool = false;
+	m_use_bn = false;
 	pX = nullptr;
 	stride = 1;
 	m_use_transpose = true;
@@ -94,6 +95,8 @@ void convnn_gpu::setParams(etypefunction type, double param)
 
 std::vector<gpumat::GpuMat> &convnn_gpu::XOut()
 {
+	if(m_use_bn)
+		return A3;
 	if(m_use_pool)
 		return A2;
 	return A1;
@@ -109,9 +112,19 @@ std::vector<gpumat::GpuMat> &convnn_gpu::XOut2()
 	return A2;
 }
 
+std::vector<GpuMat> &convnn_gpu::XOut3()
+{
+	return A3;
+}
+
 bool convnn_gpu::use_pool() const
 {
 	return m_use_pool;
+}
+
+bool convnn_gpu::use_bn() const
+{
+	return m_use_bn;
 }
 
 int convnn_gpu::outputFeatures() const
@@ -134,7 +147,7 @@ ct::Size convnn_gpu::szOut() const
 }
 
 void convnn_gpu::init(const ct::Size &_szA0, int _channels, int stride, int _K,
-					  const ct::Size &_szW, etypefunction func, bool use_pool, bool use_transpose)
+					  const ct::Size &_szW, etypefunction func, bool use_pool, bool use_bn, bool use_transpose)
 {
 	szW = _szW;
 	kernels = _K;
@@ -144,6 +157,8 @@ void convnn_gpu::init(const ct::Size &_szA0, int _channels, int stride, int _K,
 	szA0 = _szA0;
 	this->stride = stride;
 	m_func = func;
+
+	bn.channels = _K;
 
 	int rows = szW.area() * channels;
 	int cols = kernels;
@@ -238,8 +253,20 @@ void convnn_gpu::forward(const std::vector<gpumat::GpuMat> *_pX)
 		ct::Size szOut;
 		gpumat::subsample(A1, szA1, A2, Mask, szOut);
 		szK = A2[0].sz();
+
+		if(m_use_bn){
+			bn.X = &A2;
+			bn.Y = &A3;
+			bn.normalize();
+		}
 	}else{
 		szK = A1[0].sz();
+
+		if(m_use_bn){
+			bn.X = &A1;
+			bn.Y = &A3;
+			bn.normalize();
+		}
 	}
 
 #if 0
@@ -287,12 +314,26 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 
 	dSub2.resize(D.size());
 
+	std::vector< GpuMat >& _D = (std::vector< GpuMat >&)D;
+
 	if(m_use_pool){
-		gpumat::upsample(D, kernels, Mask, szA2, szA1, dSub2);
+		if(m_use_bn){
+			bn.D = (std::vector< GpuMat >*)&D;
+			bn.denormalize();
+			_D = bn.Dout;
+		}
+
+		gpumat::upsample(_D, kernels, Mask, szA2, szA1, dSub2);
 
 		backcnv(dSub2, dSub2);
 	}else{
-		backcnv(D, dSub2);
+		if(m_use_bn){
+			bn.D = (std::vector< GpuMat >*)&D;
+			bn.denormalize();
+			_D = bn.Dout;
+		}
+
+		backcnv(_D, dSub2);
 	}
 
 //	gpumat::save_gmat(dSub2[0], "gW.txt");
@@ -424,6 +465,13 @@ bool CnvAdamOptimizer::init(std::vector<convnn_gpu> &cnv)
 	m_mb.resize(cnv.size());
 	m_vW.resize(cnv.size());
 	m_vb.resize(cnv.size());
+
+	mG.resize(cnv.size());
+	mB.resize(cnv.size());
+
+	vG.resize(cnv.size());
+	vB.resize(cnv.size());
+
 	for(convnn_gpu& item: cnv){
 		initI(item.W, item.B, index++);
 	}
@@ -438,6 +486,17 @@ bool CnvAdamOptimizer::pass(std::vector<convnn_gpu> &cnv)
 	int index = 0;
 	next_iteration();
 	for(convnn_gpu& item: cnv){
+		if(item.use_bn()){
+			if(mG[index].empty()){
+				mG[index].resize(item.bn.dgamma);
+				mB[index].resize(item.bn.dbetha);
+				vG[index].resize(item.bn.dgamma);
+				vB[index].resize(item.bn.dbetha);
+			}
+			sub_adamGrad(item.bn.gamma, item.bn.dgamma, mG[index], vG[index], m_alpha, m_sb1, m_sb2, m_betha1, m_betha2);
+			sub_adamGrad(item.bn.betha, item.bn.dbetha, mB[index], vB[index], m_alpha, m_sb1, m_sb2, m_betha1, m_betha2);
+		}
+
 		passI(item.gW, item.gB, item.W, item.B, index++);
 	}
 	return true;
@@ -458,6 +517,10 @@ bool CnvMomentumOptimizer::init(std::vector<convnn_gpu> &cnv)
 	int index = 0;
 	m_mW.resize(cnv.size());
 	m_mb.resize(cnv.size());
+
+	mG.resize(cnv.size());
+	mB.resize(cnv.size());
+
 	for(convnn_gpu& item: cnv){
 		initI(item.W, item.B, index++);
 	}
@@ -473,6 +536,15 @@ bool CnvMomentumOptimizer::pass(std::vector<convnn_gpu> &cnv)
 	m_iteration++;
 	int index = 0;
 	for(convnn_gpu& item: cnv){
+		if(item.use_bn()){
+			if(mG[index].empty()){
+				mG[index].resize(item.bn.dgamma);
+				mB[index].resize(item.bn.dbetha);
+			}
+			momentum_optimizer(item.bn.gamma, mG[index], item.bn.dgamma, m_alpha, m_betha);
+			momentum_optimizer(item.bn.betha, mG[index], item.bn.dbetha, m_alpha, m_betha);
+		}
+
 		passI(item.gW, item.gB, item.W, item.B, index++);
 	}
 	return true;
@@ -494,13 +566,8 @@ void gpumat::BN::normalize()
 	if(!X || !Y || X->empty() || X->front().empty())
 		throw new std::invalid_argument("batch_normalize: empty parameters");
 
-	if(X->size() == 1 || !train){
-		scaleAndShift();
-		return;
-	}
-
-	Mean.resize(1, X->front().total(), X->front().type);
-	Var.resize(1, X->front().total(), X->front().type);
+	Mean.resize(1, channels, X->front().type);
+	Var.resize(1, channels, X->front().type);
 	Y->resize(X->size());
 	Xu.resize(X->size());
 
@@ -523,8 +590,8 @@ void gpumat::BN::normalize()
 void gpumat::BN::denormalize()
 {
 	if(!D || D->empty() || D->front().empty() || Mean.empty() || Var.empty()
-			|| Mean.cols != D->front().total()
-			|| Var.cols != D->front().total() || gamma.empty() || betha.empty())
+			|| Mean.cols != channels
+			|| Var.cols != channels || gamma.empty() || betha.empty())
 		throw new std::invalid_argument("batch_denormalize: empty parameters");
 
 	Dout.resize(D->size());
@@ -545,18 +612,18 @@ void BN::initGammaAndBetha()
 	betha.zeros();
 }
 
-void BN::scaleAndShift()
-{
-	if(gamma.empty() || betha.empty())
-		initGammaAndBetha();
+//void BN::scaleAndShift()
+//{
+//	if(gamma.empty() || betha.empty())
+//		initGammaAndBetha();
 
-	Y->resize(X->size());
-	int index = 0;
-	for(gpumat::GpuMat item: *X){
-		scale_and_shift(item, gamma, betha, Y->operator [](index));
-		index++;
-	}
-}
+//	Y->resize(X->size());
+//	int index = 0;
+//	for(gpumat::GpuMat item: *X){
+//		scale_and_shift(item, gamma, betha, Y->operator [](index));
+//		index++;
+//	}
+//}
 
 ///////////////////////////////
 ///////////////////////////////

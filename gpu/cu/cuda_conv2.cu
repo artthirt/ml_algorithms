@@ -658,92 +658,116 @@ __global__ void addvec(Mtx mat,  SmallMtxArray vec, T alpha)
 	}
 }
 
-template< typename T >
-__global__ void meanAndVar(SmallMtxArray X, Mtx Mean, Mtx Var)
+__device__ void get_offset_and_cnt(int& off, int& cnt, int count, int rowi)
 {
-	T eps = 10e-8;
+	off = rowi * BLOCKSIZE;
+	cnt = count - off;
+	cnt = max(0, min(BLOCKSIZE, cnt));
+}
+
+template< typename T >
+__device__ T sqr(T val)
+{
+	return val * val;
+}
+
+template< typename T >
+__global__ void get_mean(const SmallMtxArray X,  Mtx Mean, int spatial, int channels)
+{
+	T eps = 1e-8;
 //	int row = threadIdx.y + blockDim.y * blockIdx.y;
 	int col = threadIdx.x + blockDim.x * blockIdx.x;
 
-	int coli = threadIdx.x;
-	int rowi = threadIdx.y;
+	T N = X.count * spatial, val;
+	int offr, cntr;
+	int coli = threadIdx.x; int rowi = threadIdx.y;
+	get_offset_and_cnt(offr, cntr, X.count, rowi);
+
 	__shared__ T data[BLOCKSIZE][BLOCKSIZE];
 
-	if(col < X.mtx[0].total()){
+	if(col < channels){
+
 		T *dMean	= (T*)Mean.data;
-		T *dVar		= (T*)Var.data;
-
-//		int off = coli * BLOCKSIZE;
-//		int cnt = Xi.total() - off;
-//		cnt = min(BLOCKSIZE, cnt);
-
-		int offr = rowi * BLOCKSIZE;
-		int cntr = X.count - offr;
-		cntr = max(0, min(BLOCKSIZE, cntr));
-
-		T val = 0;
-
-		/// mean /////
-
-		for(int i = 0; i < cntr; ++i){
-			Mtx &Xi		= X.mtx[offr + i];
-			T *dXi		= (T*)Xi.data;
-			val			+= dXi[col];
-		}
-		data[rowi][coli] = val;
-
-		__syncthreads();
-
-//		if(coli == 0){
-//			T val = 0;
-//			for(int i = 0; i < cnt; ++i){
-//				val += data[rowi][i];
-//			}
-//			val /= Xi.total();
-//			data[rowi][0] = val;
-//		}
-		if(rowi == 0){
-			T val = 0;
-			for(int i = 0; i < cntr; ++i){
-				val += data[i][coli];
-			}
-			val /= X.count;
-			dMean[col] = val;
-		}
-
-		__syncthreads();
-		/// sigma /////
 
 		val = 0;
 		for(int i = 0; i < cntr; ++i){
-			Mtx &Xi		= X.mtx[offr + i];
-			T *dXi		= (T*)Xi.data;
-			T v2		= dXi[col] - dMean[col];
-			val			+= v2 * v2;
+			T *dX = (T*)X.mtx[offr + i].data;
+			for(int s = 0; s < spatial; ++s) val += dX[col + s * channels];
 		}
 		data[rowi][coli] = val;
 
 		__syncthreads();
 
-//		if(coli == 0){
-//			T val = 0;
-//			for(int i = 0; i < cnt; ++i){
-//				val += data[rowi][i];
-//			}
-//			val /= Xi.total();
-//			data[rowi][0] = val;
-//		}
 		if(rowi == 0){
-			T val = 0;
-			for(int i = 0; i < cntr; ++i){
-				val += data[i][coli];
-			}
-			val /= X.count;
-			//dSigma[col] = val;
-			dVar[col] = sqrt(val + eps);
+			val = 0;
+			for(int i = 0; i < cntr; ++i) val += data[i][coli];
+			dMean[col] = val / N;
 		}
 	}
 }
+
+template< typename T >
+__global__ void get_var(const SmallMtxArray X, const Mtx Mean, SmallMtxArray Xmu, Mtx Var, int spatial, int channels)
+{
+	T eps = 1e-8;
+//	int row = threadIdx.y + blockDim.y * blockIdx.y;
+	int col = threadIdx.x + blockDim.x * blockIdx.x;
+
+	T N = X.count * spatial, val;
+	int offr, cntr;
+	int coli = threadIdx.x; int rowi = threadIdx.y;
+	get_offset_and_cnt(offr, cntr, X.count, rowi);
+
+	__shared__ T data[BLOCKSIZE][BLOCKSIZE];
+
+	if(col < channels){
+
+		T *dMean	= (T*)Mean.data;
+		T *dV		= (T*)Var.data;
+
+		val = 0;
+		for(int i = 0; i < cntr; ++i){
+			T *dX = (T*)X.mtx[offr + i].data;
+			T *dXmu = (T*)Xmu.mtx[offr + i].data;
+			for(int s = 0; s < spatial; ++s){
+				T w = dX[col + s * channels] - dMean[col];
+				val += w * w;
+				dXmu[col + s * channels] = w;
+			}
+		}
+		data[rowi][coli] = val;
+
+		__syncthreads();
+
+		if(rowi == 0){
+			val = 0;
+			for(int i = 0; i < cntr; ++i) val += data[i][coli];
+			dV[col] = sqrt((val / (N - 1)) + eps);
+		}
+	}
+}
+
+template< typename T >
+__global__ void get_shift(const SmallMtxArray Xmu, const Mtx gamma, const Mtx betha,
+						   const Mtx Var, SmallMtxArray Y, int spatial, int channels)
+{
+	int row = threadIdx.y + blockDim.y * blockIdx.y;
+	int col = threadIdx.x + blockDim.x * blockIdx.x;
+
+	if(row < Xmu.count && col < channels){
+		T *dG	= (T*)gamma.data;
+		T *dB	= (T*)betha.data;
+		T *dXmu		= (T*)Xmu.mtx[row].data;
+		T *dVar		= (T*)Var.data;
+		T *dY		= (T*)Y.mtx[row].data;
+
+		for(int s = 0; s < spatial; ++s){
+			T val = dXmu[col + s * channels] / dVar[col];
+			dY[col + s * channels] = dG[col] * val + dB[col];
+		}
+	}
+}
+
 
 template< typename T >
 __global__ void batch_normalize(SmallMtxArray X, Mtx Mean, Mtx Var, SmallMtxArray Xu,
@@ -751,7 +775,6 @@ __global__ void batch_normalize(SmallMtxArray X, Mtx Mean, Mtx Var, SmallMtxArra
 {
 	int row = threadIdx.y + blockDim.y * blockIdx.y;
 	int col = threadIdx.x + blockDim.x * blockIdx.x;
-
 
 	if(row < X.count && col < X.mtx[0].total()){
 		T *dXi		= (T*)X.mtx[row].data;
@@ -767,25 +790,6 @@ __global__ void batch_normalize(SmallMtxArray X, Mtx Mean, Mtx Var, SmallMtxArra
 		T val = xu / dVar[col];
 		dYi[col] = dAlpha[col] * val + dBetha[col];
 		dXu[col] = xu;
-	}
-}
-
-template< typename T >
-__global__ void batch_denormalize(SmallMtxArray Dout, Mtx DMean, SmallMtxArray Xout)
-{
-	int row = threadIdx.y + blockDim.y * blockIdx.y;
-	int col = threadIdx.x + blockDim.x * blockIdx.x;
-
-	if(row < Dout.count && col < Dout.mtx[0].total()){
-		T *dDout	= (T*)Dout.mtx[row].data;
-		T *dXout	= (T*)Xout.mtx[row].data;
-		T *dDMean	= (T*)DMean.data;
-
-		T xout = dXout[col];
-
-		xout = dDout[col] + dDMean[col];
-
-		dXout[col] = xout;
 	}
 }
 
@@ -1254,22 +1258,28 @@ void cuda_addvec(gpumat::GpuMat &W, const std::vector<gpumat::GpuMat> &vW, doubl
 extern "C"
 void cuda_batch_normalize(_BN &bn)
 {
+	int spatial = bn.X->front().total() / bn.channels;
+
 	int rows = bn.X->size();
 	int cols = bn.X->front().total();
 
 	int x1 = cols / BLOCKSIZE + 1;
 	int x2 = rows / BLOCKSIZE + 1;
 
-	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE), dimGridC(bn.channels / BLOCKSIZE + 1, x2);
 
 	switch (bn.X->front().type) {
 		case GPU_DOUBLE:
-			internal::meanAndVar<double><<<dim3(x1, 1), dimBlock>>>(*bn.X, bn.Mean, bn.Var);
-			internal::batch_normalize<double> <<<dimGrid, dimBlock>>>(*bn.X, bn.Mean, bn.Var, bn.Xu, *bn.Y, bn.gamma, bn.betha);
+			internal::get_mean	<double><<<dimGridC, dimBlock>>>(*bn.X, bn.Mean, spatial, bn.channels);
+			internal::get_var	<double><<<dimGridC, dimBlock>>>(*bn.X, bn.Mean, bn.Xu, bn.Var, spatial, bn.channels);
+			internal::get_shift	<double><<<dimGridC, dimBlock>>>(bn.Xu, bn.gamma, bn.betha, bn.Var, *bn.Y, spatial, bn.channels);
+//			internal::batch_normalize<double> <<<dimGrid, dimBlock>>>(*bn.X, bn.Mean, bn.Var, bn.Xu, *bn.Y, bn.gamma, bn.betha);
 			break;
 		case GPU_FLOAT:
-			internal::meanAndVar<float><<<dim3(x1, 1), dimBlock>>>(*bn.X, bn.Mean, bn.Var);
-			internal::batch_normalize<float> <<<dimGrid, dimBlock>>>(*bn.X, bn.Mean, bn.Var, bn.Xu, *bn.Y, bn.gamma, bn.betha);
+			internal::get_mean	<float ><<<dimGridC, dimBlock>>>(*bn.X, bn.Mean, spatial, bn.channels);
+			internal::get_var	<float ><<<dimGridC, dimBlock>>>(*bn.X, bn.Mean, bn.Xu, bn.Var, spatial, bn.channels);
+			internal::get_shift	<float ><<<dimGridC, dimBlock>>>(bn.Xu, bn.gamma, bn.betha, bn.Var, *bn.Y, spatial, bn.channels);
+//			internal::batch_normalize<float> <<<dimGrid, dimBlock>>>(*bn.X, bn.Mean, bn.Var, bn.Xu, *bn.Y, bn.gamma, bn.betha);
 			break;
 	}
 }
@@ -1281,26 +1291,29 @@ namespace gpumat{
 namespace internal{
 
 template< typename T >
-__global__ void get_dalpha(SmallMtxArray D, Mtx dalpha)
+__global__ void get_dbetha(const SmallMtxArray D, const Mtx gamma, Mtx dbetha, SmallMtxArray Dout, int spatial, int channels)
 {
 	int col = threadIdx.x + blockDim.x * blockIdx.x;
 
-	int coli = threadIdx.x;
-	int rowi = threadIdx.y;
 	__shared__ T data[BLOCKSIZE][BLOCKSIZE];
 
-	if(col < D.mtx[0].total()){
-		T *dA	= (T*)dalpha.data;
+	T val;
+	int offr, cntr;
+	int coli = threadIdx.x; int rowi = threadIdx.y;
+	get_offset_and_cnt(offr, cntr, D.count, rowi);
 
-		int offr = rowi * BLOCKSIZE;
-		int cntr = D.count - offr;
-		cntr = max(0, min(BLOCKSIZE, cntr));
+	if(col < channels){
+		T *dG	= (T*)gamma.data;
+		T *ddB	= (T*)dbetha.data;
 
-		T val = 0;
-
+		val = 0;
 		for(int i = 0; i < cntr; ++i){
-			T *dDi		= (T*)D.mtx[offr + i].data;
-			val			+= dDi[col];
+			T *dD		= (T*)D.mtx[offr + i].data;
+			T *dDout		= (T*)Dout.mtx[offr + i].data;
+			for(int s = 0; s < spatial; ++s){
+				val						   += dD[col + s * channels];
+				dDout[col + s * channels]	= dD[col + s * channels] * dG[col];
+			}
 		}
 		data[rowi][coli] = val;
 
@@ -1311,34 +1324,33 @@ __global__ void get_dalpha(SmallMtxArray D, Mtx dalpha)
 			for(int i = 0; i < cntr; ++i){
 				val += data[i][coli];
 			}
-			dA[col] = val;
+			ddB[col] = val;
 		}
 	}
 }
 
 template< typename T >
-__global__ void get_dbetha(SmallMtxArray D, SmallMtxArray Xu, Mtx Var, Mtx dbetha)
+__global__ void get_dgamma(const SmallMtxArray D, const SmallMtxArray Xu, const Mtx Var, Mtx dgamma, int spatial, int channels)
 {
 	int col = threadIdx.x + blockDim.x * blockIdx.x;
 
-	int coli = threadIdx.x;
-	int rowi = threadIdx.y;
+	T val;
+	int offr, cntr;
+	int coli = threadIdx.x; int rowi = threadIdx.y;
+	get_offset_and_cnt(offr, cntr, D.count, rowi);
 	__shared__ T data[BLOCKSIZE][BLOCKSIZE];
 
-	if(col < D.mtx[0].total()){
-		T *dB	= (T*)dbetha.data;
-		T *dVar = (T*)Var.data;
+	if(col < channels){
+		T *dG	= (T*)dgamma.data;
+		T *dV = (T*)Var.data;
 
-		int offr = rowi * BLOCKSIZE;
-		int cntr = D.count - offr;
-		cntr = max(0, min(BLOCKSIZE, cntr));
-
-		T val = 0;
-
+		val = 0;
 		for(int i = 0; i < cntr; ++i){
 			T *dDi		= (T*)D.mtx[offr + i].data;
 			T *dXu		= (T*)Xu.mtx[offr + i].data;
-			val			+= dDi[col] * (dXu[col] / dVar[col]);
+			for(int s = 0; s < spatial; ++s){
+				val			+= dDi[col + s * channels] * (dXu[col + s * channels] / dV[col]);
+			}
 		}
 		data[rowi][coli] = val;
 
@@ -1349,77 +1361,94 @@ __global__ void get_dbetha(SmallMtxArray D, SmallMtxArray Xu, Mtx Var, Mtx dbeth
 			for(int i = 0; i < cntr; ++i){
 				val += data[i][coli];
 			}
-			dB[col] = val;
+			dG[col] = val;
 		}
 	}
 }
 
 template< typename T >
-__global__ void get_dsigma(SmallMtxArray Dout, SmallMtxArray Xu, Mtx Var, Mtx dsigma)
+__global__ void get_dxmu(const SmallMtxArray D, const Mtx Var, SmallMtxArray Dout, int spatial, int channels)
+{
+	int row = threadIdx.y + blockDim.y * blockIdx.y;
+	int col = threadIdx.x + blockDim.x * blockIdx.x;
+
+	if(col < channels && row < Dout.count){
+		T *dV	= (T*)Var.data;
+
+		T *dD		= (T*)D.mtx[row].data;
+		T *dDout	= (T*)Dout.mtx[row].data;
+		for(int s = 0; s < spatial; ++s){
+			dDout[col + s * channels]	= dD[col + s * channels] / dV[col];
+		}
+	}
+}
+
+template< typename T >
+__global__ void get_dsigma(const SmallMtxArray D, const SmallMtxArray Xmu, const Mtx Var, Mtx DVar, int spatial, int channels)
 {
 	int col = threadIdx.x + blockDim.x * blockIdx.x;
 
-	int coli = threadIdx.x;
-	int rowi = threadIdx.y;
+	T N = D.count * spatial, val;
+	int offr, cntr;
+	int coli = threadIdx.x; int rowi = threadIdx.y;
+	get_offset_and_cnt(offr, cntr, D.count, rowi);
 	__shared__ T data[BLOCKSIZE][BLOCKSIZE];
 
-	if(col < Dout.mtx[0].total()){
-		T *dS	= (T*)dsigma.data;
+	if(col < channels){
+		T *dV	= (T*)Var.data;
 
-		int offr = rowi * BLOCKSIZE;
-		int cntr = Dout.count - offr;
-		cntr = max(0, min(BLOCKSIZE, cntr));
-
-		T val = 0;
-
+		val = 0;
 		for(int i = 0; i < cntr; ++i){
-			T *dDi		= (T*)Dout.mtx[offr + i].data;
-			T *dXu		= (T*)Xu.mtx[offr + i].data;
-			val			+= dDi[col] * dXu[col];
+			T *dD		= (T*)D.mtx[offr + i].data;
+			T *dXmu		= (T*)Xmu.mtx[offr + i].data;
+			for(int s = 0; s < spatial; ++s){
+				val += dD[col + s * channels] * dXmu[col + s * channels];
+			}
 		}
 		data[rowi][coli] = val;
 
 		__syncthreads();
 
 		if(rowi == 0){
-			T *dVar = (T*)Var.data;
+			T *ddV	= (T*)DVar.data;
 
 			T val = 0;
 			for(int i = 0; i < cntr; ++i){
 				val += data[i][coli];
 			}
-			T res = -val * (1/(dVar[col] * dVar[col]));
-			res = res * 0.5 * (1/dVar[col]);
-			dS[col] = res / Dout.count;
+			T s = dV[col];
+			T res = -val * (1/(s * s));
+			res = res * 0.5 * (1/s);
+			ddV[col] = res / (N - 1);
 		}
 	}
 }
 
 template< typename T >
-__global__ void get_dmean(SmallMtxArray D, SmallMtxArray Xmu, Mtx DVar, Mtx dMean)
+__global__ void get_dmean(const SmallMtxArray D, const SmallMtxArray Xmu, const Mtx DVar, Mtx dMean, SmallMtxArray Dout, int spatial, int channels)
 {
 	int col = threadIdx.x + blockDim.x * blockIdx.x;
 
-	int coli = threadIdx.x;
-	int rowi = threadIdx.y;
+	T N = Dout.count * spatial, val;
+	int offr, cntr;
+	int coli = threadIdx.x; int rowi = threadIdx.y;
+	get_offset_and_cnt(offr, cntr, Dout.count, rowi);
 	__shared__ T data[BLOCKSIZE][BLOCKSIZE];
 
-	if(col < D.mtx[0].total()){
+	if(col < channels){
 		T *dA	= (T*)dMean.data;
 		T *dDVar = (T*)DVar.data;
 
-		int offr = rowi * BLOCKSIZE;
-		int cntr = D.count - offr;
-		cntr = max(0, min(BLOCKSIZE, cntr));
-
-		T val = 0;
-
+		val = 0;
 		for(int i = 0; i < cntr; ++i){
-			T *dDi		= (T*)D.mtx[offr + i].data;
-			T *dXmu		= (T*)Xmu.mtx[offr + i].data;
-			T dsq		= 2 * dDVar[col] * dXmu[col];
-			val			+= dsq + dDi[col];
-			dDi[col]	+= dsq;
+			T *dD			= (T*)D.mtx[offr + i].data;
+			T *dDout		= (T*)Dout.mtx[offr + i].data;
+			T *dXmu			= (T*)Xmu.mtx[offr + i].data;
+			for(int s = 0; s < spatial; ++s){
+				T dsq						= 2 * dDVar[col] * dXmu[col + s * channels];
+				val							-= (dsq + dD[col + s * channels]);
+				dDout[col + s * channels]	= dD[col + s * channels] + dsq;
+			}
 		}
 		data[rowi][coli] = val;
 
@@ -1430,60 +1459,71 @@ __global__ void get_dmean(SmallMtxArray D, SmallMtxArray Xmu, Mtx DVar, Mtx dMea
 			for(int i = 0; i < cntr; ++i){
 				val += data[i][coli];
 			}
-			dA[col] = -val/D.count;
+			dA[col] = val/N;
 		}
 	}
 }
 
 template< typename T >
-__global__ void scales(SmallMtxArray D, Mtx gamma, SmallMtxArray Dout)
+__global__ void add2mean(const SmallMtxArray Dout, const Mtx DMean, SmallMtxArray Xout, int spatial, int channels)
 {
-	int col = threadIdx.x + blockDim.x * blockIdx.x;
 	int row = threadIdx.y + blockDim.y * blockIdx.y;
+	int col = threadIdx.x + blockDim.x * blockIdx.x;
 
-	if(row < D.count && col < D.mtx[0].total()){
-		T *dD = (T*)D.mtx[row].data;
-		T *dDout = (T*)Dout.mtx[row].data;
-		T *dG = (T*)gamma.data;
+	if(col < channels && row < Dout.count){
+		T *dDMean	= (T*)DMean.data;
 
-		dDout[col] = dD[col] * dG[col];
+		T *dDout	= (T*)Dout.mtx[row].data;
+		T *dXout	= (T*)Xout.mtx[row].data;
+		for(int s = 0; s < spatial; ++s){
+			T xout = dDout[col + s * channels] + dDMean[col];
+			dXout[col + s * channels] = xout;
+		}
 	}
 }
 
-}
+}	/** @endnamespace internal */
 
-}
+}	/** @endnamespace gpumat */
 
 extern "C"
 void cuda_batch_denormalize(_BN &bn)
 {
-	int rows = bn.D->size();
-	int cols = bn.D->front().total();
+	int spatial = bn.X->front().total() / bn.channels;
+
+	int rows = bn.X->size();
+	int cols = bn.X->front().total();
 
 	int x1 = cols / BLOCKSIZE + 1;
 	int x2 = rows / BLOCKSIZE + 1;
 
-	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+	dim3 dimBlock(BLOCKSIZE, BLOCKSIZE), dimGridC(bn.channels / BLOCKSIZE + 1, x2);
 
 	bn.dgamma.resize(bn.gamma);
 	bn.dbetha.resize(bn.betha);
+//	bn.dMean.resize(bn.Mean);
+	bn.dVar.resize(bn.Var);
 
 	switch (bn.D->front().type) {
 		case GPU_DOUBLE:
-			internal::get_dalpha		<double> <<<dim3(x1, 1), dimBlock>>>(*bn.D, bn.dgamma);
-			internal::get_dbetha		<double> <<<dim3(x1, 1), dimBlock>>>(*bn.D, bn.Xu, bn.Var, bn.dbetha);
-			internal::scales			<double> <<<dimGrid, dimBlock>>>(*bn.D, bn.gamma, bn.Dout);
-			internal::get_dsigma		<double> <<<dim3(x1, 1), dimBlock>>>(bn.Dout, bn.Xu, bn.Var, bn.Var);
-			internal::get_dmean			<double> <<<dim3(x1, 1), dimBlock>>>(bn.Dout, bn.Xu, bn.Var, bn.Mean);
-			internal::batch_denormalize	<double> <<<dimGrid, dimBlock>>>(bn.Dout, bn.Mean, bn.Dout);
+			internal::get_dbetha	<double> <<<dimGridC, dimBlock>>>(*bn.D, bn.gamma, bn.dbetha, bn.Dout, spatial, bn.channels);
+			internal::get_dgamma	<double> <<<dimGridC, dimBlock>>>(*bn.D, bn.Xu, bn.Var, bn.dgamma, spatial, bn.channels);
+			internal::get_dxmu		<double> <<<dimGridC, dimBlock>>>(bn.Dout, bn.Var, *bn.D, spatial, bn.channels);
+			internal::get_dsigma	<double> <<<dimGridC, dimBlock>>>(bn.Dout, bn.Xu, bn.Var, bn.dVar, spatial, bn.channels);
+			internal::get_dmean		<double> <<<dimGridC, dimBlock>>>(*bn.D, bn.Xu, bn.dVar, bn.Mean, bn.Dout, spatial, bn.channels);
+			internal::add2mean		<double> <<<dimGridC, dimBlock>>>(bn.Dout, bn.Mean, bn.Dout, spatial, bn.channels);
 			break;
 		case GPU_FLOAT:
-			internal::get_dalpha		<float> <<<dim3(x1, 1), dimBlock>>>(*bn.D, bn.dgamma);
-			internal::get_dbetha		<float> <<<dim3(x1, 1), dimBlock>>>(*bn.D, bn.Xu, bn.Var, bn.dbetha);
-			internal::scales			<float> <<<dimGrid, dimBlock>>>(*bn.D, bn.gamma, bn.Dout);
-			internal::get_dsigma		<float> <<<dim3(x1, 1), dimBlock>>>(bn.Dout, bn.Xu, bn.Var, bn.Var);
-			internal::get_dmean			<float> <<<dim3(x1, 1), dimBlock>>>(bn.Dout, bn.Xu, bn.Var, bn.Mean);
-			internal::batch_denormalize	<float> <<<dimGrid, dimBlock>>>(bn.Dout, bn.Mean, bn.Dout);
+			internal::get_dbetha	<float > <<<dimGridC, dimBlock>>>(*bn.D, bn.gamma, bn.dbetha, bn.Dout, spatial, bn.channels);
+			internal::get_dgamma	<float > <<<dimGridC, dimBlock>>>(*bn.D, bn.Xu, bn.Var, bn.dgamma, spatial, bn.channels);
+			internal::get_dxmu		<float > <<<dimGridC, dimBlock>>>(bn.Dout, bn.Var, *bn.D, spatial, bn.channels);
+			internal::get_dsigma	<float > <<<dimGridC, dimBlock>>>(bn.Dout, bn.Xu, bn.Var, bn.dVar, spatial, bn.channels);
+			internal::get_dmean		<float > <<<dimGridC, dimBlock>>>(*bn.D, bn.Xu, bn.dVar, bn.Mean, bn.Dout, spatial, bn.channels);
+			internal::add2mean		<float > <<<dimGridC, dimBlock>>>(bn.Dout, bn.Mean, bn.Dout, spatial, bn.channels);
 			break;
 	}
+//	int index = 0;
+//	for(GpuMat &D: *bn.D){
+//		D.copyTo(bn.Dout[index++]);
+//	}
 }

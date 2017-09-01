@@ -341,13 +341,6 @@ public:
 	void setLambda(T val){
 		m_Lambda = val;
 	}
-	/**
-	 * @brief setTrain
-	 * @param val
-	 */
-	void setTrain(bool val){
-		m_bn.train = val;
-	}
 
 	/**
 	 * @brief init
@@ -362,7 +355,7 @@ public:
 	 * @param use_bn
 	 */
 	void init(const ct::Size& _szA0, int _channels, int stride, int _K, const ct::Size& _szW, ct::etypefunction func,
-			  bool use_pool = true, bool use_transpose = true, bool use_bn = false){
+			  bool use_pool, bool use_bn, bool use_transpose){
 		szW = _szW;
 		m_use_pool = use_pool;
 		m_use_bn = use_bn;

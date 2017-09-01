@@ -781,10 +781,10 @@ std::string getString(void* data, int rows, int cols)
 
 	std::stringstream stream;
 
-	stream << std::fixed << std::setprecision(4) << "[";
+	stream << std::fixed << "[";
 	for(int i = 0; i < rows; i++){
 		for(int j = 0; j < cols; j++){
-			stream << std::setprecision(4) << vec[i * cols + j] << " ";
+			stream << std::setprecision(5) << vec[i * cols + j] << " ";
 		}
 		if(i != rows - 1)stream << ";\n ";
 	}

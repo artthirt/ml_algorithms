@@ -8,6 +8,29 @@
 
 namespace gpumat{
 
+////////////////////////
+
+class BN: public _BN{
+public:
+	BN(): _BN(){
+	}
+
+	/**
+	 * @brief normalize
+	 */
+	void normalize();
+	/**
+	 * @brief denormalize
+	 */
+	void denormalize();
+	/**
+	 * @brief initGammaAndBetha
+	 */
+	void initGammaAndBetha();
+};
+
+//////////////////////
+
 class convnn_gpu
 {
 public:
@@ -25,10 +48,13 @@ public:
 	std::vector< gpumat::GpuMat > Xc;		///
 	std::vector< gpumat::GpuMat > A1;		/// out after appl nonlinear function
 	std::vector< gpumat::GpuMat > A2;		/// out after pooling
+	std::vector< gpumat::GpuMat > A3;		/// out after BN
 	std::vector< gpumat::GpuMat > Dlt;		/// delta after backward pass
 	std::vector< gpumat::GpuMat > Mask;		/// masks for bakward pass (created in forward pass)
 	gpumat::GpuMat gW;		/// gradient for weights
 	gpumat::GpuMat gB;		/// gradient for biases
+
+	BN bn;					/// batch normalize
 
 	bool m_pool_dropout;
 	double m_prob_dropout;
@@ -55,14 +81,22 @@ public:
 	 * @return
 	 */
 	std::vector< gpumat::GpuMat >& XOut2();
+	/**
+	 * @brief XOut3
+	 * @return after batch normalize
+	 */
+	std::vector<gpumat::GpuMat> &XOut3();
 
 	bool use_pool() const;
+
+	bool use_bn() const;
 
 	int outputFeatures() const;
 
 	ct::Size szOut() const;
 
-	void init(const ct::Size& _szA0, int _channels, int stride, int _K, const ct::Size& _szW, etypefunction func, bool use_pool = true, bool use_transpose = true);
+	void init(const ct::Size& _szA0, int _channels, int stride, int _K, const ct::Size& _szW,
+			  etypefunction func, bool use_pool, bool use_bn, bool use_transpose);
 
 	void forward(const std::vector< gpumat::GpuMat >* _pX);
 
@@ -77,6 +111,7 @@ public:
 	void read2(std::fstream& fs);
 
 private:
+	bool m_use_bn;
 	bool m_use_pool;
 	gpumat::etypefunction m_func;
 	gpumat::GpuMat m_Dropout;
@@ -96,6 +131,8 @@ class CnvAdamOptimizer: public AdamOptimizer
 public:
 	CnvAdamOptimizer();
 
+	std::vector< GpuMat > mG, mB, vG, vB;
+
 	bool init(std::vector<convnn_gpu> &cnv);
 	bool pass(std::vector<convnn_gpu> &cnv);
 };
@@ -105,35 +142,10 @@ class CnvMomentumOptimizer: public MomentumOptimizer
 public:
 	CnvMomentumOptimizer();
 
+	std::vector< GpuMat > mG, mB;
+
 	bool init(std::vector<convnn_gpu> &cnv);
 	bool pass(std::vector<convnn_gpu> &cnv);
-};
-
-//////////////////////
-
-class BN: public _BN{
-public:
-	BN(): _BN(){
-		train = true;
-	}
-	bool train;
-
-	/**
-	 * @brief normalize
-	 */
-	void normalize();
-	/**
-	 * @brief denormalize
-	 */
-	void denormalize();
-	/**
-	 * @brief initGammaAndBetha
-	 */
-	void initGammaAndBetha();
-	/**
-	 * @brief scaleAndShoft
-	 */
-	void scaleAndShift();
 };
 
 //////////////////////
