@@ -65,7 +65,6 @@ convnn_gpu::convnn_gpu()
 	m_use_bn = false;
 	pX = nullptr;
 	stride = 1;
-	m_train = true;
 	m_use_transpose = true;
 	m_pool_dropout = false;
 	m_prob_dropout = 0.9;
@@ -76,7 +75,7 @@ convnn_gpu::convnn_gpu()
 
 void convnn_gpu::setTrainMode(bool val)
 {
-	m_train = val;
+	bn.train = val;
 }
 
 void convnn_gpu::setLambda(double val)
@@ -101,7 +100,7 @@ void convnn_gpu::setParams(etypefunction type, double param)
 
 std::vector<gpumat::GpuMat> &convnn_gpu::XOut()
 {
-	if(m_use_bn && m_train)
+	if(m_use_bn)
 		return A3;
 	if(m_use_pool)
 		return A2;
@@ -260,7 +259,7 @@ void convnn_gpu::forward(const std::vector<gpumat::GpuMat> *_pX)
 		gpumat::subsample(A1, szA1, A2, Mask, szOut);
 		szK = A2[0].sz();
 
-		if(m_use_bn && m_train){
+		if(m_use_bn){
 			bn.X = &A2;
 			bn.Y = &A3;
 			bn.normalize();
@@ -268,7 +267,7 @@ void convnn_gpu::forward(const std::vector<gpumat::GpuMat> *_pX)
 	}else{
 		szK = A1[0].sz();
 
-		if(m_use_bn && m_train){
+		if(m_use_bn){
 			bn.X = &A1;
 			bn.Y = &A3;
 			bn.normalize();
@@ -565,7 +564,15 @@ void cuda_batch_normalize(_BN &bn);
 extern "C"
 void cuda_batch_denormalize(_BN &bn);
 
+extern "C"
+void cuda_scale_and_shift_bn(_BN &bn);
+
 ///////////////////////////////
+
+BN::BN(): _BN()
+{
+	train = true;
+}
 
 void gpumat::BN::normalize()
 {
@@ -583,14 +590,18 @@ void gpumat::BN::normalize()
 	if(gamma.empty() || betha.empty())
 		initGammaAndBetha();
 
-	int index = 0;
-	for(const GpuMat& Xi: *X){
-		Y->operator [](index).resize(Xi);
-		Xu[index].resize(Xi);
-		++index;
-	}
+	if(train){
+		int index = 0;
+		for(const GpuMat& Xi: *X){
+			Y->operator [](index).resize(Xi);
+			Xu[index].resize(Xi);
+			++index;
+		}
 
-	cuda_batch_normalize(*this);
+		cuda_batch_normalize(*this);
+	}else{
+		scaleAndShift();
+	}
 }
 
 void gpumat::BN::denormalize()
@@ -618,18 +629,14 @@ void BN::initGammaAndBetha()
 	betha.zeros();
 }
 
-//void BN::scaleAndShift()
-//{
-//	if(gamma.empty() || betha.empty())
-//		initGammaAndBetha();
+void BN::scaleAndShift()
+{
+	if(gamma.empty() || betha.empty())
+		initGammaAndBetha();
 
-//	Y->resize(X->size());
-//	int index = 0;
-//	for(gpumat::GpuMat item: *X){
-//		scale_and_shift(item, gamma, betha, Y->operator [](index));
-//		index++;
-//	}
-//}
+	Y->resize(X->size());
+	cuda_scale_and_shift_bn(*this);
+}
 
 ///////////////////////////////
 ///////////////////////////////

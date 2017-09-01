@@ -12,8 +12,8 @@ namespace gpumat{
 
 class BN: public _BN{
 public:
-	BN(): _BN(){
-	}
+	BN();
+	bool train;
 
 	/**
 	 * @brief normalize
@@ -27,6 +27,10 @@ public:
 	 * @brief initGammaAndBetha
 	 */
 	void initGammaAndBetha();
+	/**
+	 * @brief scaleAndShift
+	 */
+	void scaleAndShift();
 };
 
 //////////////////////
@@ -115,7 +119,6 @@ public:
 private:
 	bool m_use_bn;
 	bool m_use_pool;
-	bool m_train;
 	gpumat::etypefunction m_func;
 	gpumat::GpuMat m_Dropout;
 	double m_lambda;

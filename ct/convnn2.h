@@ -260,7 +260,6 @@ public:
 		m_Lambda = 0;
 		m_params[ct::LEAKYRELU] = 0.1;
 		m_use_bn = false;
-		m_train = true;
 	}
 
 	void setParams(ct::etypefunction type, T param){
@@ -268,11 +267,11 @@ public:
 	}
 
 	void setTrainMode(bool val){
-		m_train = val;
+		m_bn.train = val;
 	}
 
 	std::vector< ct::Mat_<T> >& XOut(){
-		if(m_use_bn && m_train)
+		if(m_use_bn)
 			return A3;
 		if(m_use_pool)
 			return A2;
@@ -280,7 +279,7 @@ public:
 	}
 
 	const std::vector< ct::Mat_<T> >& XOut() const{
-		if(m_use_bn && m_train)
+		if(m_use_bn)
 			return A3;
 		if(m_use_pool)
 			return A2;
@@ -427,14 +426,14 @@ public:
 			}
 			convnn_abstract<T>::szK = A2[0].size();
 
-			if(m_use_bn && m_train){
+			if(m_use_bn){
 				m_bn.X = &A2;
 				m_bn.Y = &A3;
 				m_bn.normalize();
 			}
 		}else{
 			convnn_abstract<T>::szK = A1[0].size();
-			if(m_use_bn && m_train){
+			if(m_use_bn){
 				m_bn.X = &A1;
 				m_bn.Y = &A3;
 				m_bn.normalize();
@@ -569,7 +568,6 @@ public:
 private:
 	bool m_use_pool;
 	bool m_use_bn;
-	bool m_train;
 	ct::etypefunction m_func;
 	bool m_use_transpose;
 	std::map< ct::etypefunction, T > m_params;
@@ -789,8 +787,8 @@ public:
 					m_mB[index].setSize(item.bn().betha.size());
 					m_mB[index].fill(0);
 				}
-				ct::momentumGrad(item.bn().dgamma, m_mG[index], item.bn().gamma, Optimizer<T>::m_alpha, m_betha);
-				ct::momentumGrad(item.bn().dbetha, m_mB[index], item.bn().betha, Optimizer<T>::m_alpha, m_betha);
+				ct::momentumGrad(item.bn().dgamma, m_mG[index], item.bn().gamma, ct::Optimizer<T>::m_alpha, ct::MomentumOptimizer<T>::m_betha);
+				ct::momentumGrad(item.bn().dbetha, m_mB[index], item.bn().betha, ct::Optimizer<T>::m_alpha, ct::MomentumOptimizer<T>::m_betha);
 
 				ct::save_mat(item.bn().gamma, "gamma_" + std::to_string(index) + ".txt");
 				ct::save_mat(item.bn().betha, "betha_" + std::to_string(index) + ".txt");

@@ -1055,8 +1055,10 @@ struct BN{
 	BN(){
 		X = Y = D = 0;
 		channels = 1;
+		train = true;
 	}
 
+	bool train;
 	int channels;
 
 	/// inputs and output;
@@ -1138,30 +1140,30 @@ struct BN{
 		}
 	}
 
-//	void scaleAndShift(){
-//		std::vector< Mat_<T> >& _X = *X;
-//		std::vector< Mat_<T> >& _Y = *Y;
+	void scaleAndShift(){
+		std::vector< Mat_<T> >& _X = *X;
+		std::vector< Mat_<T> >& _Y = *Y;
 
-//		if(gamma.empty() || betha.empty())
-//			initGammBetha();
+		if(gamma.empty() || betha.empty())
+			initGammBetha();
 
-//		T *dG = gamma.ptr();
-//		T *dB = betha.ptr();
-//		int spatial = _X[0].total() / channels;
+		T *dG = gamma.ptr();
+		T *dB = betha.ptr();
+		int spatial = _X[0].total() / channels;
 
-//#pragma omp parallel for
-//		for(int c = 0; c < channels; ++c){
-//			for(int i = 0; i < _X.size(); ++i){
-//				T *dY = _Y[i].ptr();
-//				T *dX = _X[i].ptr();
-//				for(int s = 0; s < spatial; ++s){
-//					T v = dX[c + s * channels];
-//					v = dG[c] * v + dB[c];
-//					dY[c + s * channels] = v;
-//				}
-//			}
-//		}
-//	}
+#pragma omp parallel for
+		for(int c = 0; c < channels; ++c){
+			for(int i = 0; i < _X.size(); ++i){
+				T *dY = _Y[i].ptr();
+				T *dX = _X[i].ptr();
+				for(int s = 0; s < spatial; ++s){
+					T v = dX[c + s * channels];
+					v = dG[c] * v + dB[c];
+					dY[c + s * channels] = v;
+				}
+			}
+		}
+	}
 
 	void normalize(){
 		if(!X || X->empty() || !Y)
@@ -1174,7 +1176,11 @@ struct BN{
 			(*Y)[index++].setSize(Xi.size());
 		}
 
-		meanAndVar();
+		if(train){
+			meanAndVar();
+		}else{
+			scaleAndShift();
+		}
 	}
 	void denormalize(){
 		if(!D || D->empty() || gamma.empty() || betha.empty() || Mean.empty() || Var.empty())

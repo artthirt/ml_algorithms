@@ -1481,6 +1481,24 @@ __global__ void add2mean(const SmallMtxArray Dout, const Mtx DMean, SmallMtxArra
 		}
 	}
 }
+template< typename T >
+__global__ void scale_and_shift(const SmallMtxArray X, const Mtx gamma, Mtx betha, SmallMtxArray Y, int spatial, int channels)
+{
+	int row = threadIdx.y + blockDim.y * blockIdx.y;
+	int col = threadIdx.x + blockDim.x * blockIdx.x;
+
+	if(col < channels && row < X.count){
+		T *dG	= (T*)gamma.data;
+		T *dB	= (T*)betha.data;
+
+		T *dX	= (T*)X.mtx[row].data;
+		T *dY	= (T*)Y.mtx[row].data;
+		for(int s = 0; s < spatial; ++s){
+			T xout = dX[col + s * channels];
+			dY[col + s * channels] = dG[col] * xout + dB[col];
+		}
+	}
+}
 
 }	/** @endnamespace internal */
 
@@ -1526,4 +1544,28 @@ void cuda_batch_denormalize(_BN &bn)
 //	for(GpuMat &D: *bn.D){
 //		D.copyTo(bn.Dout[index++]);
 //	}
+}
+
+extern "C"
+void cuda_scale_and_shift_bn(_BN &bn)
+{
+	int spatial = bn.X->front().total() / bn.channels;
+
+	int rows = bn.X->size();
+	int cols = bn.X->front().total();
+
+	int x1 = cols / BLOCKSIZE + 1;
+	int x2 = rows / BLOCKSIZE + 1;
+
+	dim3 dimBlock(BLOCKSIZE, BLOCKSIZE), dimGridC(bn.channels / BLOCKSIZE + 1, x2);
+
+	switch (bn.D->front().type) {
+		case GPU_DOUBLE:
+			internal::scale_and_shift	<double> <<<dimGridC, dimBlock>>>(*bn.X, bn.gamma, bn.betha, *bn.Y, spatial, bn.channels);
+			break;
+		case GPU_FLOAT:
+			internal::scale_and_shift	<float > <<<dimGridC, dimBlock>>>(*bn.X, bn.gamma, bn.betha, *bn.Y, spatial, bn.channels);
+			break;
+	}
+
 }
