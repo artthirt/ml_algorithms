@@ -260,14 +260,19 @@ public:
 		m_Lambda = 0;
 		m_params[ct::LEAKYRELU] = 0.1;
 		m_use_bn = false;
+		m_train = true;
 	}
 
 	void setParams(ct::etypefunction type, T param){
 		m_params[type] = param;
 	}
 
+	void setTrainMode(bool val){
+		m_train = val;
+	}
+
 	std::vector< ct::Mat_<T> >& XOut(){
-		if(m_use_bn)
+		if(m_use_bn && m_train)
 			return A3;
 		if(m_use_pool)
 			return A2;
@@ -275,7 +280,7 @@ public:
 	}
 
 	const std::vector< ct::Mat_<T> >& XOut() const{
-		if(m_use_bn)
+		if(m_use_bn && m_train)
 			return A3;
 		if(m_use_pool)
 			return A2;
@@ -422,14 +427,14 @@ public:
 			}
 			convnn_abstract<T>::szK = A2[0].size();
 
-			if(m_use_bn){
+			if(m_use_bn && m_train){
 				m_bn.X = &A2;
 				m_bn.Y = &A3;
 				m_bn.normalize();
 			}
 		}else{
 			convnn_abstract<T>::szK = A1[0].size();
-			if(m_use_bn){
+			if(m_use_bn && m_train){
 				m_bn.X = &A1;
 				m_bn.Y = &A3;
 				m_bn.normalize();
@@ -564,6 +569,7 @@ public:
 private:
 	bool m_use_pool;
 	bool m_use_bn;
+	bool m_train;
 	ct::etypefunction m_func;
 	bool m_use_transpose;
 	std::map< ct::etypefunction, T > m_params;

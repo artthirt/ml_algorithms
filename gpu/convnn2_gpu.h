@@ -61,6 +61,8 @@ public:
 
 	convnn_gpu();
 
+	void setTrainMode(bool val);
+
 	void setLambda(double val);
 
 	void setDropout(bool val);
@@ -113,6 +115,7 @@ public:
 private:
 	bool m_use_bn;
 	bool m_use_pool;
+	bool m_train;
 	gpumat::etypefunction m_func;
 	gpumat::GpuMat m_Dropout;
 	double m_lambda;

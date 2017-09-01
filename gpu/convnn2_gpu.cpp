@@ -65,12 +65,18 @@ convnn_gpu::convnn_gpu()
 	m_use_bn = false;
 	pX = nullptr;
 	stride = 1;
+	m_train = true;
 	m_use_transpose = true;
 	m_pool_dropout = false;
 	m_prob_dropout = 0.9;
 	m_lambda = 0;
 
 	m_params[LEAKYRELU] = 0.1;
+}
+
+void convnn_gpu::setTrainMode(bool val)
+{
+	m_train = val;
 }
 
 void convnn_gpu::setLambda(double val)
@@ -95,7 +101,7 @@ void convnn_gpu::setParams(etypefunction type, double param)
 
 std::vector<gpumat::GpuMat> &convnn_gpu::XOut()
 {
-	if(m_use_bn)
+	if(m_use_bn && m_train)
 		return A3;
 	if(m_use_pool)
 		return A2;
@@ -254,7 +260,7 @@ void convnn_gpu::forward(const std::vector<gpumat::GpuMat> *_pX)
 		gpumat::subsample(A1, szA1, A2, Mask, szOut);
 		szK = A2[0].sz();
 
-		if(m_use_bn){
+		if(m_use_bn && m_train){
 			bn.X = &A2;
 			bn.Y = &A3;
 			bn.normalize();
@@ -262,7 +268,7 @@ void convnn_gpu::forward(const std::vector<gpumat::GpuMat> *_pX)
 	}else{
 		szK = A1[0].sz();
 
-		if(m_use_bn){
+		if(m_use_bn && m_train){
 			bn.X = &A1;
 			bn.Y = &A3;
 			bn.normalize();
