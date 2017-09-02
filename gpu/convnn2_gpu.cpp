@@ -591,7 +591,7 @@ void gpumat::BN::normalize()
 	if(gamma.empty() || betha.empty())
 		initGammaAndBetha();
 
-	if(train){
+	if(1){
 		int index = 0;
 		for(const GpuMat& Xi: *X){
 			Y->operator [](index).resize(Xi);
