@@ -158,6 +158,7 @@ void convnn_gpu::init(const ct::Size &_szA0, int _channels, int stride, int _K,
 	kernels = _K;
 	channels = _channels;
 	m_use_pool = use_pool;
+	m_use_bn = use_bn;
 	m_use_transpose = use_transpose;
 	szA0 = _szA0;
 	this->stride = stride;
@@ -541,14 +542,14 @@ bool CnvMomentumOptimizer::pass(std::vector<convnn_gpu> &cnv)
 	m_iteration++;
 	int index = 0;
 	for(convnn_gpu& item: cnv){
-		if(item.use_bn()){
-			if(mG[index].empty()){
-				mG[index].resize(item.bn.dgamma);
-				mB[index].resize(item.bn.dbetha);
-			}
-			momentum_optimizer(item.bn.gamma, mG[index], item.bn.dgamma, m_alpha, m_betha);
-			momentum_optimizer(item.bn.betha, mG[index], item.bn.dbetha, m_alpha, m_betha);
-		}
+//		if(item.use_bn()){
+//			if(mG[index].empty()){
+//				mG[index].resize(item.bn.dgamma);
+//				mB[index].resize(item.bn.dbetha);
+//			}
+//			momentum_optimizer(item.bn.gamma, mG[index], item.bn.dgamma, m_alpha, m_betha);
+//			momentum_optimizer(item.bn.betha, mG[index], item.bn.dbetha, m_alpha, m_betha);
+//		}
 
 		passI(item.gW, item.gB, item.W, item.B, index++);
 	}
