@@ -71,7 +71,7 @@ void read_fs(std::fstream &fs, gpumat::GpuMat& mat);
  * @param fs
  * @param mat
  */
-void read_fs2(std::fstream &fs, gpumat::GpuMat& mat);
+void read_fs2(std::fstream &fs, gpumat::GpuMat& mat, int type = GPU_FLOAT);
 
 /////////////////////////////////////////
 

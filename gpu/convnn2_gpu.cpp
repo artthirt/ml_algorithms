@@ -542,14 +542,14 @@ bool CnvMomentumOptimizer::pass(std::vector<convnn_gpu> &cnv)
 	m_iteration++;
 	int index = 0;
 	for(convnn_gpu& item: cnv){
-//		if(item.use_bn()){
-//			if(mG[index].empty()){
-//				mG[index].resize(item.bn.dgamma);
-//				mB[index].resize(item.bn.dbetha);
-//			}
-//			momentum_optimizer(item.bn.gamma, mG[index], item.bn.dgamma, m_alpha, m_betha);
-//			momentum_optimizer(item.bn.betha, mG[index], item.bn.dbetha, m_alpha, m_betha);
-//		}
+		if(item.use_bn()){
+			if(mG[index].empty()){
+				mG[index].resize(item.bn.dgamma);
+				mB[index].resize(item.bn.dbetha);
+			}
+			momentum_optimizer(item.bn.gamma, mG[index], item.bn.dgamma, m_alpha, m_betha);
+			momentum_optimizer(item.bn.betha, mG[index], item.bn.dbetha, m_alpha, m_betha);
+		}
 
 		passI(item.gW, item.gB, item.W, item.B, index++);
 	}
@@ -637,6 +637,18 @@ void BN::scaleAndShift()
 
 	Y->resize(X->size());
 	cuda_scale_and_shift_bn(*this);
+}
+
+void BN::read(std::fstream &fs)
+{
+	gpumat::read_fs2(fs, gamma);
+	gpumat::read_fs2(fs, betha);
+}
+
+void BN::write(std::fstream &fs)
+{
+	gpumat::write_fs2(fs, gamma);
+	gpumat::write_fs2(fs, betha);
 }
 
 ///////////////////////////////

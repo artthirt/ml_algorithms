@@ -125,17 +125,15 @@ void read_mat2(std::fstream &fs, gpumat::GpuMat& mat)
 	convert_to_gpu(mmat, mat);
 }
 
-void read_fs2(std::fstream &fs, gpumat::GpuMat& mat)
+void read_fs2(std::fstream &fs, gpumat::GpuMat& mat, int type)
 {
-	if(!mat.empty()){
-		switch (mat.type) {
-		case GPU_DOUBLE:
-			read_mat2<double>(fs, mat);
-			break;
-		case GPU_FLOAT:
-			read_mat2<float>(fs, mat);
-			break;
-		}
+	switch (type) {
+	case GPU_DOUBLE:
+		read_mat2<double>(fs, mat);
+		break;
+	case GPU_FLOAT:
+		read_mat2<float>(fs, mat);
+		break;
 	}
 }
 

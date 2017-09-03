@@ -31,6 +31,9 @@ public:
 	 * @brief scaleAndShift
 	 */
 	void scaleAndShift();
+
+	void read(std::fstream& fs);
+	void write(std::fstream& fs);
 };
 
 //////////////////////
