@@ -1176,11 +1176,11 @@ struct BN{
 			(*Y)[index++].setSize(Xi.size());
 		}
 
-		if(train){
-			meanAndVar();
-		}else{
-			scaleAndShift();
-		}
+//		if(train){
+		meanAndVar();
+//		}else{
+//			scaleAndShift();
+//		}
 	}
 	void denormalize(){
 		if(!D || D->empty() || gamma.empty() || betha.empty() || Mean.empty() || Var.empty())
