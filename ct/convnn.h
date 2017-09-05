@@ -33,7 +33,6 @@ public:
 	ct::Size szA2;
 	int stride;
 	int weight_size;
-	ct::AdamOptimizer<T> m_optim;
 
 	tvmat gradW;
 	std::vector< T > gradB;
@@ -85,10 +84,6 @@ public:
 			W[i].randn(0, 0.1);
 			B[i] = (T)0.1;
 		}
-	}
-
-	void setAlpha(T alpha){
-		m_optim.setAlpha(alpha);
 	}
 
 	void clear(){
@@ -183,7 +178,6 @@ public:
 		if(!last_layer)
 			ct::deriv_prev_cnv(dA1, W, szA1, szA0, DltA0);
 
-		m_optim.pass(gradW, gradB, W, B);
 	}
 
 	void backward(const std::vector< convnn >& Delta, int first = -1, int last = -1, bool last_layer = false){
@@ -203,7 +197,7 @@ public:
 		if(!last_layer)
 			ct::deriv_prev_cnv(dA1, W, szA1, szA0, DltA0);
 
-		m_optim.pass(gradW, gradB, W, B);
+//		m_optim.pass(gradW, gradB, W, B);
 	}
 
 	static void hconcat(const std::vector< convnn<T> > &cnv, ct::Mat_<T>& _out){
