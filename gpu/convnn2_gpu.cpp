@@ -277,13 +277,15 @@ void convnn_gpu::forward(const std::vector<gpumat::GpuMat> *_pX)
 
 #if 0
 	if(channels == 3){
-		qt_work_mat::q_save_mat((*pX)[26], "testPx26.txt");
-		qt_work_mat::q_save_mat(Xc[26], "testXc26.txt");
-		qt_work_mat::q_save_mat(A1[26], "testA126.txt");
-		qt_work_mat::q_save_mat(A2[26], "testA226.txt");
-		qt_work_mat::q_save_mat(W[0], "testW.txt");
-		qt_work_mat::q_save_mat(B[0], "testB.txt");
-		qt_work_mat::q_save_mat(Mask[26], "testMask.txt");
+		gpumat::save_gmat((*pX)[0], "testPx26.txt");
+		gpumat::save_gmat(Xc[0], "testXc26.txt");
+		gpumat::save_gmat(A1[0], "testA126.txt");
+		if(!A3.empty())gpumat::save_gmat(A3[0], "testA326.txt");
+		if(!A2.empty())gpumat::save_gmat(A2[0], "testA226.txt");
+		gpumat::save_gmat(W, "testW.txt");
+		gpumat::save_gmat(B, "testB.txt");
+		if(!Mask.empty())gpumat::save_gmat(Mask[0], "testMask.txt");
+		throw new std::string("ee");
 	}
 #endif
 
@@ -602,7 +604,16 @@ void gpumat::BN::normalize()
 			++index;
 		}
 
+
 		cuda_batch_normalize(*this);
+//		index = 0;
+//		for(gpumat::GpuMat& x : *X){
+//			gpumat::save_gmat(x, "X" + std::to_string(index++) + ".txt");
+//		}
+//		gpumat::save_gmat(Mean, "mean.txt");
+//		gpumat::save_gmat(Var, "var.txt");
+//		gpumat::save_gmat(gamma, "g.txt");
+//		gpumat::save_gmat(betha, "b.txt");
 	}else{
 		scaleAndShift();
 	}
@@ -810,8 +821,7 @@ void gpumat::im2cols(const gpumat::GpuMat &X, const ct::Size &szA0,
 	if(X.empty() || ! channels || !szA0.area() || !szW.area() || !stride)
 		throw new std::invalid_argument("im2cols: empty parameters");
 
-	szOut.width = (szA0.width - szW.width)/stride + 1;
-	szOut.height = (szA0.height - szW.height)/stride + 1;
+	ct::get_cnv_sizes(szA0, szW, stride, szOut);
 
 	int rows = szOut.area();
 	int cols = szW.area() * channels;
