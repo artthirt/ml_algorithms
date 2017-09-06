@@ -9,8 +9,7 @@ void _im2cols(const ct::Mat_<T>& X, const ct::Size& szA0, int channels, const ct
 	if(X.empty() || !channels)
 		return;
 
-	szOut.width = (szA0.width - szW.width)/stride + 1;
-	szOut.height = (szA0.height - szW.height)/stride + 1;
+	ct::get_cnv_sizes(szA0, szW, stride, szOut);
 
 	int rows = szOut.area();
 	int cols = szW.area() * channels;
@@ -71,8 +70,7 @@ void _im2colsT(const ct::Mat_<T>& X, const ct::Size& szA0, int channels, const c
 	if(X.empty() || !channels)
 		return;
 
-	szOut.width = (szA0.width - szW.width)/stride + 1;
-	szOut.height = (szA0.height - szW.height)/stride + 1;
+	ct::get_cnv_sizes(szA0, szW, stride, szOut);
 
 	int rows = szOut.area();
 	int cols = szW.area() * channels;
@@ -134,8 +132,7 @@ void _im2cols_same(const ct::Mat_<T>& X, const ct::Size& szA0, int channels, con
 	if(X.empty() || !channels)
 		return;
 
-	szOut.width = (szA0.width)/stride;
-	szOut.height = (szA0.height)/stride;
+	ct::get_cnv_size_same(szA0, stride, szOut);
 
 	int rows = szOut.area();
 	int cols = szW.area() * channels;
@@ -198,8 +195,7 @@ void _im2colsT_same(const ct::Mat_<T>& X, const ct::Size& szA0, int channels, co
 	if(X.empty() || !channels)
 		return;
 
-	szOut.width = (szA0.width)/stride;
-	szOut.height = (szA0.height)/stride;
+	ct::get_cnv_size_same(szA0, stride, szOut);
 
 	int rows = szOut.area();
 	int cols = szW.area() * channels;
@@ -452,10 +448,10 @@ void _col2imT(const ct::Mat_<T>& Delta, const ct::Size& szOut, const ct::Size& s
 	X.fill(0);
 
 	T *dR = Delta.ptr();
-#pragma omp parallel for
+//#pragma omp parallel for
 	for(int c = 0; c < channels; ++c){
 		T *dXi = X.ptr() + c;
-#pragma omp parallel for
+//#pragma omp parallel for
 		for(int y = 0; y < szOut.height; ++y){
 			int y0 = y * stride;
 			for(int x = 0; x < szOut.width; ++x){
@@ -661,7 +657,6 @@ void _subsample(const ct::Mat_<T>& X, const ct::Size& szA, ct::Mat_<T>& Y, ct::M
 
 				T mmax = dX[(y0 * szA.width + x0) * X.cols];
 				int xm = x0, ym = y0;
-				T resM = 0;
 #ifdef __GNUC__
 #pragma omp simd
 #endif
@@ -673,14 +668,13 @@ void _subsample(const ct::Mat_<T>& X, const ct::Size& szA, ct::Mat_<T>& Y, ct::M
 								mmax = val;
 								xm = x0 + b;
 								ym = y0 + a;
-								resM = 1;
 							}
 						}
 					}
 				}
 
 				dY[(y * szO.width + x) * Y.cols] = mmax;
-				dM[(ym * szA.width + xm) * Mask.cols] = resM;
+				dM[(ym * szA.width + xm) * Mask.cols] = 1;
 			}
 		}
 	}

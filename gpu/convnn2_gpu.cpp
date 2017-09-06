@@ -825,8 +825,7 @@ void gpumat::im2colsT(const gpumat::GpuMat &X, const ct::Size &szA0,
 	if(X.empty() || ! channels || !szA0.area() || !szW.area() || !stride)
 		throw new std::invalid_argument("im2cols: empty parameters");
 
-	szOut.width = (szA0.width - szW.width)/stride + 1;
-	szOut.height = (szA0.height - szW.height)/stride + 1;
+	ct::get_cnv_sizes(szA0, szW, stride, szOut);
 
 	int rows = szOut.area();
 	int cols = szW.area() * channels;
@@ -843,9 +842,8 @@ void gpumat::im2cols(const std::vector<gpumat::GpuMat> &X, const ct::Size &szA0,
 {
 	if(X.empty() || X[0].empty() || ! channels || !szA0.area() || !szW.area() || !stride)
 		throw new std::invalid_argument("im2cols: empty parameters");
-	szOut.width = (szA0.width - szW.width)/stride + 1;
 
-	szOut.height = (szA0.height - szW.height)/stride + 1;
+	ct::get_cnv_sizes(szA0, szW, stride, szOut);
 
 	int rows = szOut.area();
 	int cols = szW.area() * channels;
@@ -866,9 +864,8 @@ void gpumat::im2colsT(const std::vector<gpumat::GpuMat> &X, const ct::Size &szA0
 {
 	if(X.empty() || X[0].empty() || ! channels || !szA0.area() || !szW.area() || !stride)
 		throw new std::invalid_argument("im2colsT: empty parameters");
-	szOut.width = (szA0.width - szW.width)/stride + 1;
 
-	szOut.height = (szA0.height - szW.height)/stride + 1;
+	ct::get_cnv_sizes(szA0, szW, stride, szOut);
 
 	int rows = szOut.area();
 	int cols = szW.area() * channels;
@@ -1094,8 +1091,7 @@ void gpumat::im2cols_same(const gpumat::GpuMat &X, const ct::Size &szA0,
 	if(X.empty() || ! channels || !szA0.area() || !szW.area() || !stride)
 		throw new std::invalid_argument("im2cols: empty parameters");
 
-	szOut.width = (szA0.width)/stride;
-	szOut.height = (szA0.height)/stride;
+	ct::get_cnv_size_same(szA0, stride, szOut);
 
 	int rows = szOut.area();
 	int cols = szW.area() * channels;
@@ -1131,8 +1127,7 @@ void gpumat::im2cols_same(const std::vector<gpumat::GpuMat> &X, const ct::Size &
 	if(X.empty() || X[0].empty() || ! channels || !szA0.area() || !szW.area() || !stride)
 		throw new std::invalid_argument("im2cols: empty parameters");
 
-	szOut.width = (szA0.width)/stride;
-	szOut.height = (szA0.height)/stride;
+	ct::get_cnv_size_same(szA0, stride, szOut);
 
 	int rows = szOut.area();
 	int cols = szW.area() * channels;
@@ -1154,8 +1149,7 @@ void gpumat::im2colsT_same(const std::vector<gpumat::GpuMat> &X, const ct::Size 
 	if(X.empty() || X[0].empty() || ! channels || !szA0.area() || !szW.area() || !stride)
 		throw new std::invalid_argument("im2colsT: empty parameters");
 
-	szOut.width = (szA0.width)/stride;
-	szOut.height = (szA0.height)/stride;
+	ct::get_cnv_size_same(szA0, stride, szOut);
 
 	int rows = szOut.area();
 	int cols = szW.area() * channels;

@@ -489,7 +489,6 @@ __device__ void _subsample(const Mtx &X,
 
 		T mmax = dX[(y0 * szA.width + x0) * X.cols];
 		int xm = x0, ym = y0;
-		T resM = 0;
 
 		for(int a = 0; a < stride; ++a){
 			if(y0 + a < szA.height){
@@ -500,7 +499,6 @@ __device__ void _subsample(const Mtx &X,
 							mmax = val;
 							xm = x0 + b;
 							ym = y0 + a;
-							resM = 1;
 						}
 					}
 				}
@@ -508,7 +506,7 @@ __device__ void _subsample(const Mtx &X,
 		}
 
 		dY[(y * szO.width + x) * Y.cols] = mmax;
-		dM[(ym * szA.width + xm) * Mask.cols] = resM;
+		dM[(ym * szA.width + xm) * Mask.cols] = 1;
 	}
 }
 
