@@ -525,7 +525,10 @@ public:
 			Dc.resize(D.size());
 			for(int i = 0; i < (int)D.size(); ++i){
 				ct::matmulT2(dSub[i], W, Dc[i]);
-				cols2imT(Dc[i], convnn_abstract<T>::szA1, convnn_abstract<T>::szA0, convnn_abstract<T>::channels, szW, stride, Dlt[i]);
+				if(m_use_transpose)
+					cols2imT(Dc[i], convnn_abstract<T>::szA1, convnn_abstract<T>::szA0, convnn_abstract<T>::channels, szW, stride, Dlt[i]);
+				else
+					cols2im(Dc[i], convnn_abstract<T>::szA1, convnn_abstract<T>::szA0, convnn_abstract<T>::channels, szW, stride, Dlt[i]);
 				//ct::Size sz = (*pX)[i].size();
 				//Dlt[i].set_dims(sz);
 			}

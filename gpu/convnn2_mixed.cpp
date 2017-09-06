@@ -251,9 +251,15 @@ void convnn2_mixed::backward(const std::vector<ct::Matf> &D, bool last_level){
 			gpumat::convert_to_gpu(dSub[i], g_dSubi);
 			gpumat::convert_to_gpu(W, g_W);
 			gpumat::matmulT2(g_dSubi, g_W, g_Dci);
-			gpumat::cols2imT(g_Dci, convnn_abstract<float>::szA1,
-								convnn_abstract<float>::szA0, convnn_abstract<float>::channels,
-								szW, stride, g_Dlti);
+
+			if(m_use_transpose)
+				gpumat::cols2imT(g_Dci, convnn_abstract<float>::szA1,
+									convnn_abstract<float>::szA0, convnn_abstract<float>::channels,
+									szW, stride, g_Dlti);
+			else
+				gpumat::cols2im(g_Dci, convnn_abstract<float>::szA1,
+									convnn_abstract<float>::szA0, convnn_abstract<float>::channels,
+									szW, stride, g_Dlti);
 			gpumat::convert_to_mat(g_Dlti, Dlt[i]);
 			//ct::Size sz = (*pX)[i].size();
 			//Dlt[i].set_dims(sz);

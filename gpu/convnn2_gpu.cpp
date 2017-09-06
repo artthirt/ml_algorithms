@@ -408,7 +408,10 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 			gpumat::matmulT2(dSub2[i], W, Dci);
 		}
 
-		cols2imT(Dc, szA1, szA0, channels, szW, stride, Dlt);
+		if(m_use_transpose)
+			cols2imT(Dc, szA1, szA0, channels, szW, stride, Dlt);
+		else
+			cols2im(Dc, szA1, szA0, channels, szW, stride, Dlt);
 #if 0
 		check_deriv(Dc, szA1, szA0, channels, szW, stride, Dlt);
 #endif
@@ -912,7 +915,7 @@ void gpumat::cols2im(const std::vector<gpumat::GpuMat> &Delta,
 	int type = Delta[0].type;
 
 	for(size_t i = 0; i < X.size(); ++i){
-		X[i].resize(szA0.area(), channels, type);
+		X[i].resize(channels, szA0.area(), type);
 		X[i].zeros();
 	}
 
