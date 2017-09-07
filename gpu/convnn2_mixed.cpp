@@ -28,6 +28,8 @@ std::vector<ct::Matf> &convnn2_mixed::XOut(){
 
 const std::vector<ct::Matf> &convnn2_mixed::XOut() const
 {
+	if(m_use_bn)
+		return A3;
 	if(m_use_pool)
 		return A2;
 	return A1;
@@ -41,6 +43,11 @@ std::vector<ct::Matf> &convnn2_mixed::XOut1()
 std::vector<ct::Matf> &convnn2_mixed::XOut2()
 {
 	return A2;
+}
+
+std::vector<ct::Matf> &convnn2_mixed::XOut3()
+{
+	return A3;
 }
 
 bool convnn2_mixed::use_pool() const
@@ -74,10 +81,11 @@ void convnn2_mixed::setLambda(float val)
 
 void convnn2_mixed::init(const ct::Size &_szA0, int _channels, int stride,
 						 int _K, const ct::Size &_szW, ct::etypefunction func,
-						 bool use_pool, bool use_transpose)
+						 bool use_pool, bool use_bn, bool use_transpose)
 {
 	szW = _szW;
 	m_use_pool = use_pool;
+	m_use_bn = use_bn;
 	m_use_transpose = use_transpose;
 	convnn_abstract<float>::kernels = _K;
 	convnn_abstract<float>::channels = _channels;
@@ -152,8 +160,20 @@ void convnn2_mixed::forward(const std::vector<ct::Matf> *_pX)
 
 	if(m_use_pool){
 		convnn_abstract<float>::szK = A2[0].size();
+
+		if(m_use_bn){
+			bn.X = &A2;
+			bn.Y = &A3;
+			bn.normalize();
+		}
 	}else{
 		convnn_abstract<float>::szK = A1[0].size();
+
+		if(m_use_bn){
+			bn.X = &A1;
+			bn.Y = &A3;
+			bn.normalize();
+		}
 	}
 }
 
@@ -186,8 +206,15 @@ void convnn2_mixed::backward(const std::vector<ct::Matf> &D, bool last_level){
 	gpumat::convert_to_gpu(gW, g_gW0);
 	gpumat::convert_to_gpu(gB, g_gB0);
 
+	if(m_use_bn){
+		bn.D = (std::vector<ct::Matf>*)&D;
+		bn.denormalize();
+	}
+
+	std::vector<ct::Matf> &_D = m_use_bn? bn.Dout : (std::vector<ct::Matf>&)D;
+
 	for(int i = 0; i < (int)D.size(); ++i){
-		const ct::Matf &Di = D[i];
+		const ct::Matf &Di = _D[i];
 
 		gpumat::convert_to_gpu(Di, g_Di);
 		if(m_func != ct::LINEAR)
