@@ -11,8 +11,8 @@ void get_cnv_sizes(const ct::Size sizeIn, const ct::Size szW, int stride, ct::Si
 
 void get_cnv_sizes(const Size sizeIn, const Size szW, int stride, Size &szA1)
 {
-	szA1.width		= (sizeIn.width - szW.width) / stride + 1;
-	szA1.height		= (sizeIn.height - szW.height) / stride + 1;
+	szA1.width		= std::round((float)(sizeIn.width - szW.width) / stride + 1);
+	szA1.height		= std::round((float)(sizeIn.height - szW.height) / stride + 1);
 }
 
 void get_cnv_size_same(const Size szA0, int stride, Size &szA1)
