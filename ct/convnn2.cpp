@@ -34,13 +34,14 @@ void _im2cols(const ct::Mat_<T>& X, const ct::Size& szA0, int channels, const ct
 #pragma omp simd
 #endif
 				for(int a = 0; a < szW.height; ++a){
-					if(y0 + a < szA0.height){
-						for(int b = 0; b < szW.width; ++b){
-							int col = c * szW.area() + (a * szW.width + b);
-							if(x0 + b < szA0.width){
-								dR[row * Res.cols + col] = dXi[(y0 + a) * szA0.width + (x0 + b)];
-							}
+					for(int b = 0; b < szW.width; ++b){
+						int col = c * szW.area() + (a * szW.width + b);
+						T val = 0;
+						if(y0 + a < szA0.height && x0 + b < szA0.width){
+							val = dXi[(y0 + a) * szA0.width + (x0 + b)];
 						}
+						if(col < Res.cols)
+							dR[row * Res.cols + col] = val;
 					}
 				}
 
@@ -96,13 +97,14 @@ void _im2colsT(const ct::Mat_<T>& X, const ct::Size& szA0, int channels, const c
 #pragma omp simd
 #endif
 				for(int a = 0; a < szW.height; ++a){
-					if(y0 + a < szA0.height){
-						for(int b = 0; b < szW.width; ++b){
-							int col = c * szW.area() + (a * szW.width + b);
-							if(x0 + b < szA0.width){
-								dR[row * Res.cols + col] = dXi[((y0 + a) * szA0.width + (x0 + b)) * colsX];
-							}
+					for(int b = 0; b < szW.width; ++b){
+						int col = c * szW.area() + (a * szW.width + b);
+						T val = 0;
+						if(y0 + a < szA0.height && x0 + b < szA0.width){
+							val = dXi[((y0 + a) * szA0.width + (x0 + b)) * colsX];
 						}
+						if(col < Res.cols)
+							dR[row * Res.cols + col] = val;
 					}
 				}
 
@@ -158,14 +160,15 @@ void _im2cols_same(const ct::Mat_<T>& X, const ct::Size& szA0, int channels, con
 #endif
 				for(int _a = 0; _a < szW.height; ++_a){
 					int a = _a - szW.height/2;
-					if(y0 + a >= 0 && y0 + a < szA0.height){
-						for(int _b = 0; _b < szW.width; ++_b){
-							int b = _b - szW.width/2;
-							int col = c * szW.area() + (_a * szW.width + _b);
-							if(x0 + b >= 0 && x0 + b < szA0.width){
-								dR[row * Res.cols + col] = dXi[(y0 + a) * szA0.width + (x0 + b)];
-							}
+					for(int _b = 0; _b < szW.width; ++_b){
+						int b = _b - szW.width/2;
+						T val = 0;
+						int col = c * szW.area() + (_a * szW.width + _b);
+						if(y0 + a >= 0 && y0 + a < szA0.height && x0 + b >= 0 && x0 + b < szA0.width){
+							val = dXi[(y0 + a) * szA0.width + (x0 + b)];
 						}
+						if(col < Res.cols)
+							dR[row * Res.cols + col] = val;
 					}
 				}
 
@@ -222,14 +225,15 @@ void _im2colsT_same(const ct::Mat_<T>& X, const ct::Size& szA0, int channels, co
 #endif
 				for(int _a = 0; _a < szW.height; ++_a){
 					int a = _a - szW.height/2;
-					if(y0 + a >= 0 && y0 + a < szA0.height){
-						for(int _b = 0; _b < szW.width; ++_b){
-							int b = _b - szW.width/2;
-							int col = c * szW.area() + (_a * szW.width + _b);
-							if(x0 + b >= 0 && x0 + b < szA0.width){
-								dR[row * Res.cols + col] = dXi[((y0 + a) * szA0.width + (x0 + b)) * colsX];
-							}
+					for(int _b = 0; _b < szW.width; ++_b){
+						int b = _b - szW.width/2;
+						T val = 0;
+						int col = c * szW.area() + (_a * szW.width + _b);
+						if(y0 + a >= 0 && y0 + a < szA0.height && x0 + b >= 0 && x0 + b < szA0.width){
+							val = dXi[((y0 + a) * szA0.width + (x0 + b)) * colsX];
 						}
+						if(col < Res.cols)
+							dR[row * Res.cols + col] = val;
 					}
 				}
 

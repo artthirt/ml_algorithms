@@ -46,13 +46,14 @@ __device__ void _im2cols(const Mtx& X, const ct::Size& szA0, int channels, const
 		T *dXi = &dX[c * szA0area];
 
 		for(int a = 0; a < szW.height; ++a){
-			if(y0 + a < szA0.height){
-				for(int b = 0; b < szW.width; ++b){
-					int col2 = c * szWarea + (a * szW.width + b);
-					if(x0 + b < szA0.width){
-						dR[row2 * Res.cols + col2] = dXi[(y0 + a) * szA0.width + (x0 + b)];
-					}
+			for(int b = 0; b < szW.width; ++b){
+				int col2 = c * szWarea + (a * szW.width + b);
+				T val = 0;
+				if(y0 + a < szA0.height && x0 + b < szA0.width){
+					val = dXi[(y0 + a) * szA0.width + (x0 + b)];
 				}
+				if(col2 < Res.cols)
+					dR[row2 * Res.cols + col2] = val;
 			}
 		}
 	}
@@ -84,13 +85,14 @@ __device__ void _im2colsT(const Mtx& X, const ct::Size& szA0, int channels, cons
 		T *dXi = (T*)X.data + c;
 
 		for(int a = 0; a < szW.height; ++a){
-			if(y0 + a < szA0.height){
-				for(int b = 0; b < szW.width; ++b){
-					int col2 = c * szWarea + (a * szW.width + b);
-					if(x0 + b < szA0.width){
-						dR[row2 * Res.cols + col2] = dXi[((y0 + a) * szA0.width + (x0 + b)) * channels];
-					}
+			for(int b = 0; b < szW.width; ++b){
+				int col2 = c * szWarea + (a * szW.width + b);
+				T val = 0;
+				if(y0 + a < szA0.height && x0 + b < szA0.width){
+					val = dXi[((y0 + a) * szA0.width + (x0 + b)) * channels];
 				}
+				if(col2 < Res.cols)
+					dR[row2 * Res.cols + col2] = val;
 			}
 		}
 	}
