@@ -155,7 +155,7 @@ void write_gmat(const std::string &name, const GpuMat &mat)
 Optimizer::Optimizer()
 {
 	m_alpha = 0.001;
-	m_iteration = 1;
+	m_iteration = 0;
 }
 
 Optimizer::~Optimizer()
@@ -283,6 +283,7 @@ void MomentumOptimizer::passI(const GpuMat &gW, const GpuMat &gB, GpuMat &W, Gpu
 
 AdamOptimizer::AdamOptimizer(): Optimizer()
 {
+	m_delim_iter = 1;
 	m_betha1 = 0.9;
 	m_betha2 = 0.99;
 	init_iteration();
@@ -307,6 +308,13 @@ double AdamOptimizer::betha2() const{
 void AdamOptimizer::setBetha2(double v)
 {
 	m_betha2 = v;
+}
+
+void AdamOptimizer::setDelimiterIteration(double val)
+{
+	m_delim_iter = val;
+	if(m_delim_iter < 0.1)
+		m_delim_iter = 1;
 }
 
 bool AdamOptimizer::empty() const
@@ -338,9 +346,10 @@ bool AdamOptimizer::init(const std::vector<GpuMat> &gradW, const std::vector<Gpu
 
 void AdamOptimizer::next_iteration()
 {
+	double iter = 1. + m_iteration / m_delim_iter;
+	m_sb1 = (1. / (1. - pow(m_betha1, iter)));
+	m_sb2 = (1. / (1. - pow(m_betha2, iter)));
 	m_iteration++;
-	m_sb1 = (1. / (1. - pow(m_betha1, m_iteration)));
-	m_sb2 = (1. / (1. - pow(m_betha2, m_iteration)));
 }
 
 void AdamOptimizer::init_iteration()

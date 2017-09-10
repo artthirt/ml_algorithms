@@ -36,11 +36,13 @@ public:
 		return m_iteration;
 	}
 	virtual bool init(const std::vector< ct::Mat_<T> >& W, const std::vector< ct::Mat_<T> >& B){
+		W; B;
 		return false;
 	}
 
 	virtual bool pass(const std::vector< ct::Mat_< T > >& gradW, const std::vector< ct::Mat_< T > >& gradB,
 			  std::vector< ct::Mat_<T> >& W, std::vector< ct::Mat_<T> >& b){
+		gradW; gradB; W; b;
 		return false;
 	}
 
@@ -184,7 +186,7 @@ public:
 
 	bool init(const std::vector<ct::Mat_<T> > &W, const std::vector<ct::Mat_<T> > &B){
 		Optimizer<T>::m_iteration = 0;
-		for(int i = 0; i < W.size(); ++i){
+		for(uint i = 0; i < W.size(); ++i){
 			initI(W[i], B[i], i);
 		}
 		return true;
@@ -226,6 +228,7 @@ public:
 	bool init(const std::vector<ct::Mat_<T> > &W, const std::vector<ct::Mat_<T> > &B)
 	{
 		Optimizer<T>::m_iteration = 0;
+		return true;
 	}
 	bool pass(const std::vector<ct::Mat_<T> > &gradW, const std::vector<ct::Mat_<T> > &gradB,
 			  std::vector<ct::Mat_<T> > &W, std::vector<ct::Mat_<T> > &b)

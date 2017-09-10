@@ -143,7 +143,6 @@ class AdamOptimizer: public Optimizer{
 public:
 	AdamOptimizer();
 
-
 	double betha1() const;
 
 	void setBetha1(double v);
@@ -152,6 +151,12 @@ public:
 
 	void setBetha2(double v);
 
+	/**
+	 * @brief setDelimiterIteration
+	 * set use for iter = m_iteration / val
+	 * @param val
+	 */
+	void setDelimiterIteration(double val);
 
 	bool empty() const;
 
@@ -168,6 +173,7 @@ protected:
 	bool m_init_matB;
 	double m_sb1;
 	double m_sb2;
+	double m_delim_iter;
 
 	std::vector< gpumat::GpuMat > m_mW;
 	std::vector< gpumat::GpuMat > m_mb;

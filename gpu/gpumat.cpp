@@ -604,6 +604,12 @@ GpuMat::GpuMat(int rows, int cols, int type, void *data)
 
 GpuMat::GpuMat(const GpuMat &mat)
 {
+	if(this == &mat || data == mat.data)
+		return;
+
+	if(!empty())
+		release();
+
 	rows = mat.rows;
 	cols = mat.cols;
 	type = mat.type;
@@ -625,6 +631,9 @@ GpuMat::~GpuMat()
 GpuMat &GpuMat::operator =(const GpuMat &mat)
 {
 	if(mat.empty())
+		return *this;
+
+	if(this == &mat || data == mat.data)
 		return *this;
 
 	cudaError_t err = cudaSuccess;

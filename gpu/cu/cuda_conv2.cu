@@ -674,7 +674,6 @@ __device__ T sqr(T val)
 template< typename T >
 __global__ void get_mean(const SmallMtxArray X,  Mtx Mean, int spatial, int channels)
 {
-	T eps = 1e-8;
 //	int row = threadIdx.y + blockDim.y * blockIdx.y;
 	int col = threadIdx.x + blockDim.x * blockIdx.x;
 
