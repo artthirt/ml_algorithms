@@ -602,13 +602,10 @@ GpuMat::GpuMat(int rows, int cols, int type, void *data)
 	}
 }
 
-GpuMat::GpuMat(const GpuMat &mat)
+GpuMat::GpuMat(const GpuMat &mat) : GpuMat()
 {
-	if(this == &mat || data == mat.data)
+	if(this == &mat)
 		return;
-
-	if(!empty())
-		release();
 
 	rows = mat.rows;
 	cols = mat.cols;

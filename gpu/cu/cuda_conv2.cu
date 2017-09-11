@@ -1511,7 +1511,7 @@ void cuda_batch_denormalize(_BN &bn)
 	int rows = bn.X->size();
 	int cols = bn.X->front().total();
 
-	int x1 = cols / BLOCKSIZE + 1;
+//	int x1 = cols / BLOCKSIZE + 1;
 	int x2 = rows / BLOCKSIZE + 1;
 
 	dim3 dimBlock(BLOCKSIZE, BLOCKSIZE), dimGridC(bn.channels / BLOCKSIZE + 1, x2);
@@ -1553,7 +1553,7 @@ void cuda_scale_and_shift_bn(_BN &bn)
 	int rows = bn.X->size();
 	int cols = bn.X->front().total();
 
-	int x1 = cols / BLOCKSIZE + 1;
+//	int x1 = cols / BLOCKSIZE + 1;
 	int x2 = rows / BLOCKSIZE + 1;
 
 	dim3 dimBlock(BLOCKSIZE, BLOCKSIZE), dimGridC(bn.channels / BLOCKSIZE + 1, x2);
