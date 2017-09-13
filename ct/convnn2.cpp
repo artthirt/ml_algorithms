@@ -256,12 +256,14 @@ void im2colsT_same(const ct::Matd& X, const ct::Size& szA0, int channels, const 
 
 //////////////////////////////////////////
 
-void conv2(const ct::Matf &A, const ct::Size &szA, int channels, int stride, const ct::Matf &B, const ct::Size &szB, ct::Matf &C, ct::Size &szOut, TYPE_CONV type, bool transpose)
+template<typename T>
+void _conv2(const ct::Mat_<T> &A, const ct::Size &szA, int channels, int stride, const ct::Mat_<T> &B, const ct::Size &szB,
+			ct::Mat_<T> &C, ct::Size &szOut, TYPE_CONV type, bool transpose)
 {
 	if(A.empty() || B.empty())
 		return;
 
-	ct::Matf X;
+	ct::Mat_<T> X;
 
 	if(type == SAME){
 		if(transpose)
@@ -278,7 +280,7 @@ void conv2(const ct::Matf &A, const ct::Size &szA, int channels, int stride, con
 	if(X.empty())
 		return;
 
-	ct::Matf& W = (ct::Matf&)B;
+	ct::Mat_<T>& W = (ct::Mat_<T>&)B;
 	int rows = W.rows;
 	int cols = W.cols;
 	W.rows = szB.area();
@@ -290,38 +292,16 @@ void conv2(const ct::Matf &A, const ct::Size &szA, int channels, int stride, con
 	W.cols = cols;
 }
 
-void conv2(const ct::Matd &A, const ct::Size &szA, int channels, int stride, const ct::Matd &B, const ct::Size &szB, ct::Matd &C, ct::Size& szOut, TYPE_CONV type, bool transpose)
+void conv2(const ct::Matf &A, const ct::Size &szA, int channels, int stride, const ct::Matf &B,
+		   const ct::Size &szB, ct::Matf &C, ct::Size &szOut, TYPE_CONV type, bool transpose)
 {
-	if(A.empty() || B.empty())
-		return;
+	_conv2<float>(A, szA, channels, stride, B, szB, C, szOut, type, transpose);
+}
 
-	ct::Matd X;
-
-	if(type == SAME){
-		if(transpose)
-			im2colsT_same(A, szA, channels, szB, stride, X, szOut);
-		else
-			im2cols_same(A, szA, channels, szB, stride, X, szOut);
-	}else{
-		if(transpose)
-			im2colsT(A, szA, channels, szB, stride, X, szOut);
-		else
-			im2cols(A, szA, channels, szB, stride, X, szOut);
-	}
-
-	if(X.empty())
-		return;
-
-	ct::Matd& W = (ct::Matd&)B;
-	int rows = W.rows;
-	int cols = W.cols;
-	W.rows = szB.area();
-	W.cols = (rows * cols) / W.rows;
-
-	ct::matmul(X, W, C);
-
-	W.rows = rows;
-	W.cols = cols;
+void conv2(const ct::Matd &A, const ct::Size &szA, int channels, int stride, const ct::Matd &B,
+		   const ct::Size &szB, ct::Matd &C, ct::Size& szOut, TYPE_CONV type, bool transpose)
+{
+	_conv2<double>(A, szA, channels, stride, B, szB, C, szOut, type, transpose);
 }
 
 //////////////////////////////////////////
@@ -554,15 +534,16 @@ void cols2imT_same(const ct::Matd& Delta, const ct::Size& szA0,
 
 ///////////// conv2_transpose //////////////////////
 
-void conv2_transpose(const ct::Matf &C, const ct::Size &szA, int channels, int stride,
-					 const ct::Matf &B, const ct::Size &szB, const ct::Size &szOut, ct::Matf &A,
+template<typename T>
+void _conv2_transpose(const ct::Mat_<T> &C, const ct::Size &szA, int channels, int stride,
+					 const ct::Mat_<T> &B, const ct::Size &szB, const ct::Size &szOut, ct::Mat_<T> &A,
 					 TYPE_CONV type, bool transpose)
 {
 	if(C.empty() || B.empty())
 		return;
 
-	ct::Matf D;
-	ct::Matf& W = (ct::Matf&)B;
+	ct::Mat_<T> D;
+	ct::Mat_<T>& W = (ct::Mat_<T>&)B;
 	int rows = W.rows;
 	int cols = W.cols;
 	W.rows = szB.area();
@@ -591,42 +572,19 @@ void conv2_transpose(const ct::Matf &C, const ct::Size &szA, int channels, int s
 	}
 }
 
+
+void conv2_transpose(const ct::Matf &C, const ct::Size &szA, int channels, int stride,
+					 const ct::Matf &B, const ct::Size &szB, const ct::Size &szOut, ct::Matf &A,
+					 TYPE_CONV type, bool transpose)
+{
+	_conv2_transpose<float>(C, szA, channels, stride, B, szB, szOut, A, type, transpose);
+}
+
 void conv2_transpose(const ct::Matd &C, const ct::Size &szA, int channels, int stride,
 					 const ct::Matd &B, const ct::Size &szB, const ct::Size &szOut, ct::Matd &A,
 					 TYPE_CONV type, bool transpose)
 {
-	if(C.empty() || B.empty())
-		return;
-
-	ct::Matd D;
-	ct::Matd& W = (ct::Matd&)B;
-	int rows = W.rows;
-	int cols = W.cols;
-	W.rows = szB.area();
-	W.cols = (rows * cols) / W.rows;
-
-	ct::matmulT2(C, W, D);
-
-	W.rows = rows;
-	W.cols = cols;
-
-	if(D.empty())
-		return;
-
-	if(type == SAME){
-		if(transpose){
-			cols2imT_same(D, szA, channels, szB, stride, A);
-		}else{
-			cols2im_same(D, szA, channels, szB, stride, A);
-		}
-
-	}else{
-		if(transpose){
-			cols2imT(D, szOut, szA, channels, szB, 1, A);
-		}else{
-			cols2im(D, szOut, szA, channels, szB, 1, A);
-		}
-	}
+	_conv2_transpose<double>(C, szA, channels, stride, B, szB, szOut, A, type, transpose);
 }
 
 ////////////////////////////////////////////////////
