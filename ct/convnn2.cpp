@@ -307,7 +307,7 @@ void conv2(const ct::Matd &A, const ct::Size &szA, int channels, int stride, con
 //////////////////////////////////////////
 
 template< typename T >
-void _cols2im(const ct::Mat_<T>& Delta, const ct::Size& szOut, const ct::Size& szA0,
+void _cols2im(const ct::Mat_<T>& Delta, const ct::Size& szDelta, const ct::Size& szA0,
 				int channels, const ct::Size& szW, int stride, ct::Mat_<T>& X)
 {
 	if(Delta.empty() || !channels)
@@ -323,11 +323,11 @@ void _cols2im(const ct::Mat_<T>& Delta, const ct::Size& szOut, const ct::Size& s
 	for(int c = 0; c < channels; ++c){
 		T *dXi = &dX[c * szA0.area()];
 #pragma omp parallel for
-		for(int y = 0; y < szOut.height; ++y){
+		for(int y = 0; y < szDelta.height; ++y){
 			int y0 = y * stride;
-			for(int x = 0; x < szOut.width; ++x){
+			for(int x = 0; x < szDelta.width; ++x){
 				int x0 = x * stride;
-				int row = y * szOut.width + x;
+				int row = y * szDelta.width + x;
 
 				for(int a = 0; a < szW.height; ++a){
 					if(y0 + a < szA0.height){
@@ -348,22 +348,22 @@ void _cols2im(const ct::Mat_<T>& Delta, const ct::Size& szOut, const ct::Size& s
 	}
 }
 
-void cols2im(const ct::Matf& Delta, const ct::Size& szOut, const ct::Size& szA0,
+void cols2im(const ct::Matf& Delta, const ct::Size& szDelta, const ct::Size& szA0,
 				int channels, const ct::Size& szW, int stride, ct::Matf& X)
 {
-	_cols2im(Delta, szOut, szA0, channels, szW, stride, X);
+	_cols2im(Delta, szDelta, szA0, channels, szW, stride, X);
 }
 
-void cols2im(const ct::Matd& Delta, const ct::Size& szOut, const ct::Size& szA0,
+void cols2im(const ct::Matd& Delta, const ct::Size& szDelta, const ct::Size& szA0,
 				int channels, const ct::Size& szW, int stride, ct::Matd& X)
 {
-	_cols2im(Delta, szOut, szA0, channels, szW, stride, X);
+	_cols2im(Delta, szDelta, szA0, channels, szW, stride, X);
 }
 
 ////////////// back_deriv_same //////////////
 
 template< typename T >
-void _cols2im_same(const ct::Mat_<T>& Delta, const ct::Size& szA0,
+void _cols2im_same(const ct::Mat_<T>& Delta, const ct::Size& szDelta, const ct::Size& szA0,
 				int channels, const ct::Size& szW, int stride, ct::Mat_<T>& X)
 {
 	if(Delta.empty() || !channels)
@@ -375,15 +375,15 @@ void _cols2im_same(const ct::Mat_<T>& Delta, const ct::Size& szA0,
 	T *dX = X.ptr();
 	T *dR = Delta.ptr();
 
-//#pragma omp parallel for
+#pragma omp parallel for
 	for(int c = 0; c < channels; ++c){
 		T *dXi = &dX[c * szA0.area()];
 //#pragma omp parallel for
-		for(int y = 0; y < szA0.height; ++y){
+		for(int y = 0; y < szDelta.height; ++y){
 			int y0 = y * stride;
-			for(int x = 0; x < szA0.width; ++x){
+			for(int x = 0; x < szDelta.width; ++x){
 				int x0 = x * stride;
-				int row = y * szA0.width + x;
+				int row = y * szDelta.width + x;
 
 #ifdef __GNUC__
 #pragma omp simd
@@ -394,7 +394,7 @@ void _cols2im_same(const ct::Mat_<T>& Delta, const ct::Size& szA0,
 						for(int _b = 0; _b < szW.width; ++_b){
 							int b = _b - szW.width/2;
 							int col = c * szW.area() + (_a * szW.width + _b);
-							if(x0 + b >= 0 && x0 + b < szA0.width){
+							if(x0 + b >= 0 && x0 + b < szA0.width && col < Delta.cols){
 								T val = dR[row * Delta.cols + col];
 								dXi[(y0 + a) * szA0.width + (x0 + b)] += val;
 							}
@@ -407,22 +407,22 @@ void _cols2im_same(const ct::Mat_<T>& Delta, const ct::Size& szA0,
 	}
 }
 
-void cols2im_same(const ct::Matf& Delta, const ct::Size& szA0,
+void cols2im_same(const ct::Matf& Delta, const ct::Size& szDelta, const ct::Size& szA0,
 				int channels, const ct::Size& szW, int stride, ct::Matf& X)
 {
-	_cols2im_same(Delta, szA0, channels, szW, stride, X);
+	_cols2im_same(Delta, szDelta, szA0, channels, szW, stride, X);
 }
 
-void cols2im_same(const ct::Matd& Delta, const ct::Size& szA0,
+void cols2im_same(const ct::Matd& Delta, const ct::Size& szDelta, const ct::Size& szA0,
 				int channels, const ct::Size& szW, int stride, ct::Matd& X)
 {
-	_cols2im_same(Delta, szA0, channels, szW, stride, X);
+	_cols2im_same(Delta, szDelta, szA0, channels, szW, stride, X);
 }
 
 /////////////////////////////////////////////
 
 template< typename T >
-void _col2imT(const ct::Mat_<T>& Delta, const ct::Size& szOut, const ct::Size& szA0,
+void _col2imT(const ct::Mat_<T>& Delta, const ct::Size& szDelta, const ct::Size& szA0,
 				int channels, const ct::Size& szW, int stride, ct::Mat_<T>& X)
 {
 	if(Delta.empty() || !channels)
@@ -436,11 +436,11 @@ void _col2imT(const ct::Mat_<T>& Delta, const ct::Size& szOut, const ct::Size& s
 	for(int c = 0; c < channels; ++c){
 		T *dXi = X.ptr() + c;
 //#pragma omp parallel for
-		for(int y = 0; y < szOut.height; ++y){
+		for(int y = 0; y < szDelta.height; ++y){
 			int y0 = y * stride;
-			for(int x = 0; x < szOut.width; ++x){
+			for(int x = 0; x < szDelta.width; ++x){
 				int x0 = x * stride;
-				int row = y * szOut.width + x;
+				int row = y * szDelta.width + x;
 
 				for(int a = 0; a < szW.height; ++a){
 					if(y0 + a < szA0.height){
@@ -461,16 +461,16 @@ void _col2imT(const ct::Mat_<T>& Delta, const ct::Size& szOut, const ct::Size& s
 	}
 }
 
-void cols2imT(const ct::Matf& Delta, const ct::Size& szOut, const ct::Size& szA0,
+void cols2imT(const ct::Matf& Delta, const ct::Size& szDelta, const ct::Size& szA0,
 				int channels, const ct::Size& szW, int stride, ct::Matf& X)
 {
-	_col2imT(Delta, szOut, szA0, channels, szW, stride, X);
+	_col2imT(Delta, szDelta, szA0, channels, szW, stride, X);
 }
 
-void cols2imT(const ct::Matd& Delta, const ct::Size& szOut, const ct::Size& szA0,
+void cols2imT(const ct::Matd& Delta, const ct::Size& szDelta, const ct::Size& szA0,
 				int channels, const ct::Size& szW, int stride, ct::Matd& X)
 {
-	_col2imT(Delta, szOut, szA0, channels, szW, stride, X);
+	_col2imT(Delta, szDelta, szA0, channels, szW, stride, X);
 }
 
 ///////////// back_derivT_same /////////////////////
@@ -478,7 +478,7 @@ void cols2imT(const ct::Matd& Delta, const ct::Size& szOut, const ct::Size& szA0
 /////////////////////////////////////////////
 
 template< typename T >
-void _col2imT_same(const ct::Mat_<T>& Delta, const ct::Size& szA0,
+void _col2imT_same(const ct::Mat_<T>& Delta, const ct::Size& szDelta, const ct::Size& szA0,
 				int channels, const ct::Size& szW, int stride, ct::Mat_<T>& X)
 {
 	if(Delta.empty() || !channels)
@@ -492,11 +492,11 @@ void _col2imT_same(const ct::Mat_<T>& Delta, const ct::Size& szA0,
 	for(int c = 0; c < channels; ++c){
 		T *dXi = X.ptr() + c;
 #pragma omp parallel for
-		for(int y = 0; y < szA0.height; ++y){
+		for(int y = 0; y < szDelta.height; ++y){
 			int y0 = y * stride;
-			for(int x = 0; x < szA0.width; ++x){
+			for(int x = 0; x < szDelta.width; ++x){
 				int x0 = x * stride;
-				int row = y * szA0.width + x;
+				int row = y * szDelta.width + x;
 
 				for(int _a = 0; _a < szW.height; ++_a){
 					int a = _a - szW.height/2;
@@ -507,8 +507,9 @@ void _col2imT_same(const ct::Mat_<T>& Delta, const ct::Size& szA0,
 						for(int _b = 0; _b < szW.width; ++_b){
 							int b = _b - szW.width/2;
 							int col = c * szW.area() + (_a * szW.width + _b);
-							if(x0 + b < szA0.width){
-								dXi[((y0 + a) * szA0.width + (x0 + b)) * channels] += dR[row * Delta.cols + col];
+							if(x0 + b >= 0 && x0 + b < szA0.width && col < Delta.cols){
+								T val = dR[row * Delta.cols + col];
+								dXi[((y0 + a) * szA0.width + (x0 + b)) * channels] += val;
 							}
 						}
 					}
@@ -519,16 +520,16 @@ void _col2imT_same(const ct::Mat_<T>& Delta, const ct::Size& szA0,
 	}
 }
 
-void cols2imT_same(const ct::Matf& Delta, const ct::Size& szA0,
+void cols2imT_same(const ct::Matf& Delta, const ct::Size& szDelta, const ct::Size& szA0,
 				int channels, const ct::Size& szW, int stride, ct::Matf& X)
 {
-	_col2imT_same(Delta, szA0, channels, szW, stride, X);
+	_col2imT_same(Delta, szDelta, szA0, channels, szW, stride, X);
 }
 
-void cols2imT_same(const ct::Matd& Delta, const ct::Size& szA0,
+void cols2imT_same(const ct::Matd& Delta, const ct::Size& szDelta, const ct::Size& szA0,
 				int channels, const ct::Size& szW, int stride, ct::Matd& X)
 {
-	_col2imT_same(Delta, szA0, channels, szW, stride, X);
+	_col2imT_same(Delta, szDelta, szA0, channels, szW, stride, X);
 }
 
 
@@ -536,7 +537,7 @@ void cols2imT_same(const ct::Matd& Delta, const ct::Size& szA0,
 
 template<typename T>
 void _conv2_transpose(const ct::Mat_<T> &C, const ct::Size &szA, int channels, int stride,
-					 const ct::Mat_<T> &B, const ct::Size &szB, const ct::Size &szOut, ct::Mat_<T> &A,
+					 const ct::Mat_<T> &B, const ct::Size &szB, const ct::Size &szC, ct::Mat_<T> &A,
 					 TYPE_CONV type, bool transpose)
 {
 	if(C.empty() || B.empty())
@@ -558,33 +559,33 @@ void _conv2_transpose(const ct::Mat_<T> &C, const ct::Size &szA, int channels, i
 
 	if(type == SAME){
 		if(transpose){
-			cols2imT_same(D, szA, channels, szB, stride, A);
+			cols2imT_same(D, szC, szA, channels, szB, stride, A);
 		}else{
-			cols2im_same(D, szA, channels, szB, stride, A);
+			cols2im_same(D, szC, szA, channels, szB, stride, A);
 		}
 
 	}else{
 		if(transpose){
-			cols2imT(D, szOut, szA, channels, szB, 1, A);
+			cols2imT(D, szC, szA, channels, szB, 1, A);
 		}else{
-			cols2im(D, szOut, szA, channels, szB, 1, A);
+			cols2im(D, szC, szA, channels, szB, 1, A);
 		}
 	}
 }
 
 
 void conv2_transpose(const ct::Matf &C, const ct::Size &szA, int channels, int stride,
-					 const ct::Matf &B, const ct::Size &szB, const ct::Size &szOut, ct::Matf &A,
+					 const ct::Matf &B, const ct::Size &szB, const ct::Size &szC, ct::Matf &A,
 					 TYPE_CONV type, bool transpose)
 {
-	_conv2_transpose<float>(C, szA, channels, stride, B, szB, szOut, A, type, transpose);
+	_conv2_transpose<float>(C, szA, channels, stride, B, szB, szC, A, type, transpose);
 }
 
 void conv2_transpose(const ct::Matd &C, const ct::Size &szA, int channels, int stride,
-					 const ct::Matd &B, const ct::Size &szB, const ct::Size &szOut, ct::Matd &A,
+					 const ct::Matd &B, const ct::Size &szB, const ct::Size &szC, ct::Matd &A,
 					 TYPE_CONV type, bool transpose)
 {
-	_conv2_transpose<double>(C, szA, channels, stride, B, szB, szOut, A, type, transpose);
+	_conv2_transpose<double>(C, szA, channels, stride, B, szB, szC, A, type, transpose);
 }
 
 ////////////////////////////////////////////////////

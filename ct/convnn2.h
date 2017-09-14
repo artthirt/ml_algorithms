@@ -91,7 +91,7 @@ void conv2(const ct::Matd& A, const ct::Size &szA, int channels, int stride, con
  * @param stride
  * @param X -> [channels, szA0.height * szA0.width]
  */
-void cols2im(const ct::Matf& Delta, const ct::Size& szOut, const ct::Size& szA0,
+void cols2im(const ct::Matf& Delta, const ct::Size& szDelta, const ct::Size& szA0,
 				int channels, const ct::Size& szW, int stride, ct::Matf& X);
 void cols2im(const ct::Matd& Delta, const ct::Size& szA0,
 				int channels, const ct::Size& szW, int stride, ct::Matd& X);
@@ -106,9 +106,9 @@ void cols2im(const ct::Matd& Delta, const ct::Size& szA0,
  * @param stride	- stride
  * @param X			- output matrix (channels, szA0.area())
  */
-void cols2im_same(const ct::Matf& Delta, const ct::Size& szA0,
+void cols2im_same(const ct::Matf& Delta, const ct::Size &szDelta, const ct::Size& szA0,
 				int channels, const ct::Size& szW, int stride, ct::Matf& X);
-void cols2im_same(const ct::Matd& Delta, const ct::Size& szA0,
+void cols2im_same(const ct::Matd& Delta, const ct::Size &szDelta, const ct::Size& szA0,
 				int channels, const ct::Size& szW, int stride, ct::Matd& X);
 
 /**
@@ -122,9 +122,9 @@ void cols2im_same(const ct::Matd& Delta, const ct::Size& szA0,
  * @param stride	- stride
  * @param X			- output matrix (szA0.area(), channels)
  */
-void cols2imT(const ct::Matf& Delta, const ct::Size& szOut, const ct::Size& szA0,
+void cols2imT(const ct::Matf& Delta, const ct::Size& szDelta, const ct::Size& szA0,
 				int channels, const ct::Size& szW, int stride, ct::Matf& X);
-void cols2imT(const ct::Matd& Delta, const ct::Size& szOut, const ct::Size& szA0,
+void cols2imT(const ct::Matd& Delta, const ct::Size& szDelta, const ct::Size& szA0,
 				int channels, const ct::Size& szW, int stride, ct::Matd& X);
 
 /**
@@ -137,9 +137,9 @@ void cols2imT(const ct::Matd& Delta, const ct::Size& szOut, const ct::Size& szA0
  * @param stride	- stride
  * @param X			- output matrix (szA0.area(), channels)
  */
-void cols2imT_same(const ct::Matf& Delta, const ct::Size& szA0,
+void cols2imT_same(const ct::Matf& Delta, const ct::Size &szDelta, const ct::Size& szA0,
 				int channels, const ct::Size& szW, int stride, ct::Matf& X);
-void cols2imT_same(const ct::Matd& Delta, const ct::Size& szA0,
+void cols2imT_same(const ct::Matd& Delta, const ct::Size &szDelta, const ct::Size& szA0,
 				int channels, const ct::Size& szW, int stride, ct::Matd& X);
 
 /**
@@ -156,9 +156,9 @@ void cols2imT_same(const ct::Matd& Delta, const ct::Size& szA0,
  * @param transpose
  */
 void conv2_transpose(const ct::Matf& C, const ct::Size &szA, int channels, int stride, const ct::Matf &B,
-		   const ct::Size &szB, const ct::Size &szOut, ct::Matf &A, TYPE_CONV type = VALID, bool transpose = false);
+		   const ct::Size &szB, const ct::Size &szC, ct::Matf &A, TYPE_CONV type = VALID, bool transpose = false);
 void conv2_transpose(const ct::Matd& C, const ct::Size &szA, int channels, int stride, const ct::Matd &B,
-		   const ct::Size &szB, const ct::Size &szOut, ct::Matd &A, TYPE_CONV type = VALID, bool transpose = false);
+		   const ct::Size &szB, const ct::Size &szC, ct::Matd &A, TYPE_CONV type = VALID, bool transpose = false);
 
 
 

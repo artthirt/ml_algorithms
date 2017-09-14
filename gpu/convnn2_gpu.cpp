@@ -783,6 +783,32 @@ void cuda_col2imT_vec(const std::vector< gpumat::GpuMat > &Delta,
 				int stride,
 				std::vector< gpumat::GpuMat > &X);
 
+///////////////////////////////////
+
+extern "C"
+void cuda_cols2im_same(const gpumat::GpuMat &Delta, const ct::Size &szDelta,
+					   const ct::Size &szA0, int channels, const ct::Size &szW,
+					   int stride, gpumat::GpuMat &X);
+
+extern "C"
+void cuda_cols2im_vec_same(const std::vector< gpumat::GpuMat > &Delta,
+						   ct::Size szDelta, const ct::Size &szA0,
+						   int channels, const ct::Size &szW, int stride,
+						   std::vector< gpumat::GpuMat > &X);
+
+extern "C"
+void cuda_cols2imT_same(const gpumat::GpuMat &Delta,
+						ct::Size szDelta, const ct::Size &szA0,
+						int channels, const ct::Size &szW, int stride, gpumat::GpuMat &X);
+
+extern "C"
+void cuda_col2imT_vec_same(const std::vector< gpumat::GpuMat > &Delta,
+						   ct::Size szDelta, const ct::Size &szA0,
+						   int channels, const ct::Size &szW, int stride,
+						   std::vector< gpumat::GpuMat > &X);
+
+///////////////////////////////////
+
 extern "C"
 void cuda_subsample2(const gpumat::GpuMat &X,
 					const ct::Size &szA,
@@ -898,7 +924,7 @@ void gpumat::im2colsT(const std::vector<gpumat::GpuMat> &X, const ct::Size &szA0
 //////////////////////
 
 void gpumat::cols2im(const gpumat::GpuMat &Delta,
-				const ct::Size &szOut,
+				const ct::Size &szDelta,
 				const ct::Size &szA0,
 				int channels,
 				const ct::Size &szW,
@@ -911,7 +937,7 @@ void gpumat::cols2im(const gpumat::GpuMat &Delta,
 	X.resize(channels, szA0.area(), Delta.type);
 	X.zeros();
 
-	cuda_cols2im(Delta, szOut, szA0, channels, szW, stride, X);
+	cuda_cols2im(Delta, szDelta, szA0, channels, szW, stride, X);
 }
 
 void gpumat::cols2im(const std::vector<gpumat::GpuMat> &Delta,
@@ -936,7 +962,7 @@ void gpumat::cols2im(const std::vector<gpumat::GpuMat> &Delta,
 }
 
 void gpumat::cols2imT(const gpumat::GpuMat &Delta,
-				const ct::Size &szOut,
+				const ct::Size &szDelta,
 				const ct::Size &szA0,
 				int channels,
 				const ct::Size &szW,
@@ -949,7 +975,7 @@ void gpumat::cols2imT(const gpumat::GpuMat &Delta,
 	X.resize(szA0.area(), channels, Delta.type);
 	X.zeros();
 
-	cuda_cols2imT(Delta, szOut, szA0, channels, szW, stride, X);
+	cuda_cols2imT(Delta, szDelta, szA0, channels, szW, stride, X);
 }
 
 void gpumat::cols2imT(const std::vector<gpumat::GpuMat> &Delta,
@@ -970,6 +996,75 @@ void gpumat::cols2imT(const std::vector<gpumat::GpuMat> &Delta,
 	}
 
 	cuda_col2imT_vec(Delta, szOut, szA0, channels, szW, stride, X);
+
+}
+
+///////// SAME /////////////
+
+void gpumat::cols2im_same(const gpumat::GpuMat &Delta,
+						  const ct::Size &szDelta, const ct::Size &szA0,
+						  int channels, const ct::Size &szW, int stride, gpumat::GpuMat &X)
+{
+	if(Delta.empty() || ! channels || !szA0.area() || !szW.area() || !stride)
+		throw new std::invalid_argument("back_deriv: empty parameters");
+
+	X.resize(channels, szA0.area(), Delta.type);
+	X.zeros();
+
+	cuda_cols2im_same(Delta, szDelta, szA0, channels, szW, stride, X);
+}
+
+void gpumat::cols2im_same(const std::vector<gpumat::GpuMat> &Delta, const ct::Size &szDelta,
+						  const ct::Size &szA0, int channels, const ct::Size &szW, int stride,
+						  std::vector<gpumat::GpuMat> &X)
+{
+	if(Delta.empty() || ! channels || !szA0.area() || !szW.area() || !stride)
+		throw new std::invalid_argument("back_deriv: empty parameters");
+
+	X.resize(Delta.size());
+
+	int type = Delta[0].type;
+
+	for(size_t i = 0; i < X.size(); ++i){
+		X[i].resize(channels, szA0.area(), type);
+		X[i].zeros();
+	}
+
+	cuda_cols2im_vec_same(Delta, szDelta, szA0, channels, szW, stride, X);
+
+}
+
+void gpumat::cols2imT_same(const gpumat::GpuMat &Delta,
+						   const ct::Size &szDelta, const ct::Size &szA0,
+						   int channels, const ct::Size &szW, int stride, gpumat::GpuMat &X)
+{
+	if(Delta.empty() || ! channels || !szA0.area() || !szW.area() || !stride)
+		throw new std::invalid_argument("back_derivT: empty parameters");
+
+	X.resize(szA0.area(), channels, Delta.type);
+	X.zeros();
+
+	cuda_cols2imT_same(Delta, szDelta, szA0, channels, szW, stride, X);
+}
+
+void gpumat::cols2imT_same(const std::vector<gpumat::GpuMat> &Delta,
+						   const ct::Size &szDelta, const ct::Size &szA0,
+						   int channels, const ct::Size &szW, int stride,
+						   std::vector<gpumat::GpuMat> &X)
+{
+	if(Delta.empty() || ! channels || !szA0.area() || !szW.area() || !stride)
+		throw new std::invalid_argument("back_derivT: empty parameters");
+
+	X.resize(Delta.size());
+
+	int type = Delta[0].type;
+
+	for(size_t i = 0; i < X.size(); ++i){
+		X[i].resize(szA0.area(), channels, type);
+		X[i].zeros();
+	}
+
+	cuda_col2imT_vec_same(Delta, szDelta, szA0, channels, szW, stride, X);
 
 }
 
@@ -1214,4 +1309,43 @@ void gpumat::conv2(const gpumat::GpuMat &A, const ct::Size &szA, int channels, i
 	W.rows = rows;
 	W.cols = cols;
 }
+
+
+void gpumat::conv2_transpose(const GpuMat &C, const ct::Size &szA, int channels, int stride,
+							 const GpuMat &B, const ct::Size &szB, const ct::Size &szC,
+							 GpuMat &A, TYPE_CONV type, bool transpose)
+{
+	if(C.empty() || B.empty())
+		return;
+
+	GpuMat D;
+	GpuMat& W = (GpuMat&)B;
+	int rows = W.rows;
+	int cols = W.cols;
+	W.rows = szB.area();
+	W.cols = (rows * cols) / W.rows;
+
+	gpumat::matmulT2(C, W, D);
+
+	W.rows = rows;
+	W.cols = cols;
+	if(D.empty())
+		return;
+
+	if(type == SAME){
+		if(transpose){
+			cols2imT_same(D, szC, szA, channels, szB, stride, A);
+		}else{
+			cols2im_same(D, szC, szA, channels, szB, stride, A);
+		}
+
+	}else{
+		if(transpose){
+			cols2imT(D, szC, szA, channels, szB, 1, A);
+		}else{
+			cols2im(D, szC, szA, channels, szB, 1, A);
+		}
+	}
+}
+
 

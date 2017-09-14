@@ -307,7 +307,7 @@ void cols2im(const std::vector< gpumat::GpuMat >& Delta,
  * @param stride
  * @param X
  */
-void cols2imT(const gpumat::GpuMat& Delta, const ct::Size& szOut, const ct::Size& szA0,
+void cols2imT(const gpumat::GpuMat& Delta, const ct::Size& szDelta, const ct::Size& szA0,
 				int channels, const ct::Size& szW, int stride, gpumat::GpuMat& X);
 
 /**
@@ -328,6 +328,65 @@ void cols2imT(const std::vector< gpumat::GpuMat >& Delta,
 				int stride,
 				std::vector< gpumat::GpuMat >& X);
 
+/////////////// transpose convolution SAME ///
+
+/**
+ * @brief cols2im
+ * @param Delta
+ * @param szDelta
+ * @param szA0
+ * @param channels
+ * @param szW
+ * @param stride
+ * @param X
+ */
+void cols2im_same(const gpumat::GpuMat& Delta,
+				  const ct::Size &szDelta, const ct::Size& szA0,
+				  int channels, const ct::Size& szW, int stride, gpumat::GpuMat& X);
+
+/**
+ * @brief cols2im
+ * @param Delta
+ * @param szDelta
+ * @param szA0
+ * @param channels
+ * @param szW
+ * @param stride
+ * @param X
+ */
+void cols2im_same(const std::vector< gpumat::GpuMat >& Delta,
+				const ct::Size &szDelta, const ct::Size& szA0,
+				int channels, const ct::Size& szW, int stride,
+				std::vector< gpumat::GpuMat >& X);
+
+/**
+ * @brief cols2imT
+ * @param Delta
+ * @param szDelta
+ * @param szA0
+ * @param channels
+ * @param szW
+ * @param stride
+ * @param X
+ */
+void cols2imT_same(const gpumat::GpuMat& Delta, const ct::Size &szDelta, const ct::Size& szA0,
+				int channels, const ct::Size& szW, int stride, gpumat::GpuMat& X);
+
+/**
+ * @brief cols2imT
+ * @param Delta
+ * @param szDelta
+ * @param szA0
+ * @param channels
+ * @param szW
+ * @param stride
+ * @param X
+ */
+void cols2imT_same(const std::vector< gpumat::GpuMat >& Delta,
+				   const ct::Size &szDelta, const ct::Size& szA0,
+				   int channels, const ct::Size& szW, int stride,
+				   std::vector< gpumat::GpuMat >& X);
+
 /////////////// conv2 ////////////////////////
 
 enum TYPE_CONV{
@@ -347,6 +406,23 @@ enum TYPE_CONV{
  */
 void conv2(const GpuMat& A, const ct::Size &szA, int channels, int stride, const GpuMat &B,
 		   const ct::Size &szB, GpuMat &C, ct::Size &szOut, TYPE_CONV type = VALID, bool transpose = false);
+
+/**
+ * @brief conv2_transpose
+ * @param C
+ * @param szA
+ * @param channels
+ * @param stride
+ * @param B
+ * @param szB
+ * @param szOut
+ * @param A
+ * @param type
+ * @param transpose
+ */
+void conv2_transpose(const GpuMat& C, const ct::Size &szA, int channels, int stride, const GpuMat &B,
+		   const ct::Size &szB, const ct::Size &szOut, GpuMat &A, TYPE_CONV type = VALID, bool transpose = false);
+
 
 /////////////// subsample 2x2 ////////////////
 

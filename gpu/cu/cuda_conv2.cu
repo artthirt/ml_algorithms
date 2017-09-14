@@ -166,9 +166,12 @@ __device__ void _im2colsSame(const Mtx& X, const ct::Size& szA0, int channels, c
 				for(int _b = 0; _b < szW.width; ++_b){
 					int b = _b - szW.width/2;
 					int col2 = c * szWarea + (_a * szW.width + _b);
+					T val = 0;
 					if(x0 + b >= 0 && x0 + b < szA0.width){
-						dR[row2 * Res.cols + col2] = dXi[(y0 + a) * szA0.width + (x0 + b)];
+						val = dXi[(y0 + a) * szA0.width + (x0 + b)];
 					}
+					if(col2 < Res.cols)
+						dR[row2 * Res.cols + col2] = val;
 				}
 			}
 		}
@@ -206,9 +209,12 @@ __device__ void _im2colsTSame(const Mtx& X, const ct::Size& szA0, int channels, 
 				for(int _b = 0; _b < szW.width; ++_b){
 					int b = _b - szW.width/2;
 					int col2 = c * szWarea + (_a * szW.width + _b);
+					T val = 0;
 					if(x0 + b >= 0 && x0 + b < szA0.width){
-						dR[row2 * Res.cols + col2] = dXi[((y0 + a) * szA0.width + (x0 + b)) * channels];
+						val = dXi[((y0 + a) * szA0.width + (x0 + b)) * channels];
 					}
+					if(col2 < Res.cols)
+						dR[row2 * Res.cols + col2] = val;
 				}
 			}
 		}
@@ -457,8 +463,185 @@ __global__ void cols2imT_vec(SmallMtxArray Delta,
 	}
 }
 
+//////////////// SAME ///////////
 
-////////////////
+template< typename T >
+__device__ void _cols2im_same(const Mtx& Delta,
+				 ct::Size szDelta, const ct::Size& szA0,
+				 int channels,
+				 const ct::Size& szW,
+				 int stride,
+				 Mtx X)
+{
+	int col = threadIdx.x + blockIdx.x * blockDim.x;
+
+	int szA0Area = szA0.width * szA0.height;
+	int all = szA0Area * channels;
+	if(col < all){
+		int c = col / szA0Area;
+		int offset = col - c * szA0Area;
+
+		int y = offset / szA0.width;
+		int x = offset - y * szA0.width;
+
+		int szWarea = szW.width * szW.height;
+
+		T *dX = (T*)X.data;
+		T *dR = (T*)Delta.data;
+		T *dXi = &dX[c * szA0Area];
+
+		T sum = 0;
+		for(int _a = 0; _a < szW.height; ++_a){
+			int a = _a - szW.height / 2;
+			if((y - a) % stride == 0){
+				int y0 = (y - a) / stride;
+				if(y0 >= 0 && y0 < szDelta.height){
+					for(int _b = 0; _b < szW.width; ++_b){
+
+						int b = _b - szW.width/2;
+						if((x - b) % stride == 0){
+
+							int x0 = (x - b) / stride;
+							T val = 0;
+							if(x0 >= 0 && x0 < szDelta.width){
+								int row2 = y0 * szDelta.width + x0;
+								int col2 = c * szWarea + (_a * szW.width + _b);
+								if(row2 < Delta.rows && col2 < Delta.cols)
+									val = dR[row2 * Delta.cols + col2];
+								sum += val;
+							}
+						}
+					}
+				}
+			}
+		}
+		dXi[y * szA0.width + x] = sum;
+
+	}
+}
+
+template< typename T >
+__device__ void _cols2imT_same(const Mtx& Delta,
+				 ct::Size szDelta, const ct::Size& szA0,
+				 int channels,
+				 const ct::Size& szW,
+				 int stride,
+				 Mtx X)
+{
+	int col = threadIdx.x + blockIdx.x * blockDim.x;
+
+	int szA0Area = szA0.width * szA0.height;
+	int all = szA0Area * channels;
+
+	if(col < all){
+		int c = col / szA0Area;
+		int offset = col - c * szA0Area;
+
+		int y = offset / szA0.width;
+		int x = offset - y * szA0.width;
+
+//		int x0 = x * stride;
+//		int y0 = y * stride;
+//		int row2 = y * szOut.width + x;
+
+//		int szA0area = szA0.width * szA0.height;
+		int szWarea = szW.width * szW.height;
+
+		T *dR = (T*)Delta.data;
+		T *dXi = (T*)X.data + c;
+
+//		for(int a = 0; a < szW.height; ++a){
+//			for(int b = 0; b < szW.width; ++b){
+//				int col2 = c * szWarea + (a * szW.width + b);
+//				if(y0 + a < szA0.height && x0 + b < szA0.width){
+//					dXi[((y0 + a) * szA0.width + (x0 + b)) * channels] += dR[row2 * Delta.cols + col2];
+//				}
+//			}
+//		}
+		T sum = 0;
+		for(int _a = 0; _a < szW.height; ++_a){
+			int a = _a - szW.height/2;
+			if((y - a) % stride == 0){
+				int y0 = (y - a) / stride;
+				if(y0 >= 0 && y0 < szDelta.height){
+					for(int _b = 0; _b < szW.width; ++_b){
+
+						int b = _b - szW.width/2;
+						if((x - b) % stride == 0){
+
+							int x0 = (x - b) / stride;
+							T val = 0;
+							if(x0 >= 0 && x0 < szDelta.width){
+								int row2 = y0 * szDelta.width + x0;
+								int col2 = c * szWarea + (_a * szW.width + _b);
+								if(row2 < Delta.rows && col2 < Delta.cols)
+									val = dR[row2 * Delta.cols + col2];
+								sum += val;
+							}
+						}
+					}
+				}
+			}
+		}
+		dXi[(y * szA0.width + x) * channels] = sum;
+	}
+}
+
+template< typename T >
+__global__ void cols2im_same(Mtx Delta,
+						   ct::Size szDelta, ct::Size szA0,
+						   int channels,
+						   ct::Size szW,
+						   int stride,
+						   Mtx X)
+{
+	_cols2im_same<T>(Delta, szDelta, szA0, channels, szW, stride, X);
+}
+
+template< typename T >
+__global__ void cols2im_vec_same(SmallMtxArray Delta,
+						   ct::Size szDelta, ct::Size szA0,
+						   int channels,
+						   ct::Size szW,
+						   int stride,
+						   SmallMtxArray X)
+{
+	int row = threadIdx.y + blockDim.y * blockIdx.y;
+
+	if(row < X.count){
+		_cols2im_same<T>(Delta.mtx[row], szDelta, szA0, channels, szW, stride, X.mtx[row]);
+	}
+}
+
+//////
+
+template< typename T >
+__global__ void cols2imT_same(Mtx Delta,
+						   ct::Size szDelta, ct::Size szA0,
+						   int channels,
+						   ct::Size szW,
+						   int stride,
+						   Mtx X)
+{
+	_cols2imT_same<T>(Delta, szDelta, szA0, channels, szW, stride, X);
+}
+
+template< typename T >
+__global__ void cols2imT_vec_same(SmallMtxArray Delta,
+						   ct::Size szDelta, ct::Size szA0,
+						   int channels,
+						   ct::Size szW,
+						   int stride,
+						   SmallMtxArray X)
+{
+	int row = threadIdx.y + blockDim.y * blockIdx.y;
+
+	if(row < X.count){
+		_cols2imT_same<T>(Delta.mtx[row], szDelta, szA0, channels, szW, stride, X.mtx[row]);
+	}
+}
+
+/////////////////////////////////
 
 template< typename T >
 __device__ void _subsample(const Mtx &X,
@@ -1102,7 +1285,98 @@ void cuda_col2imT_vec(const std::vector< gpumat::GpuMat > &Delta,
 	}
 }
 
+/////////// SAME //////////
+
+extern "C"
+void cuda_cols2im_same(const gpumat::GpuMat &Delta, const ct::Size &szDelta,
+					   const ct::Size &szA0, int channels, const ct::Size &szW,
+					   int stride, gpumat::GpuMat &X)
+{
+	int x1 = szA0.area() * channels / BLOCKSIZE + 1;
+	int x2 = 1;
+
+	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, 1);
+
+	switch (X.type) {
+		case GPU_DOUBLE:
+			internal::cols2im_same<double> <<<dimGrid, dimBlock>>>(Delta, szDelta, szA0, channels, szW, stride, X);
+			break;
+		case GPU_FLOAT:
+			internal::cols2im_same<float> <<<dimGrid, dimBlock>>>(Delta, szDelta, szA0, channels, szW, stride, X);
+			break;
+	}
+}
+
+extern "C"
+void cuda_cols2im_vec_same(const std::vector< gpumat::GpuMat > &Delta,
+						   const ct::Size &szDelta, const ct::Size &szA0,
+						   int channels, const ct::Size &szW, int stride,
+						   std::vector< gpumat::GpuMat > &X)
+{
+	int x1 = szA0.area() * channels / BLOCKSIZE + 1;
+	int x2 = (int)X.size() / BLOCKSIZE + 1;
+
+	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+
+	switch (Delta[0].type) {
+		case GPU_DOUBLE:
+			internal::cols2im_vec_same<double> <<<dimGrid, dimBlock>>>(Delta, szDelta, szA0, channels, szW, stride, X);
+			break;
+		case GPU_FLOAT:
+			internal::cols2im_vec_same<float> <<<dimGrid, dimBlock>>>(Delta, szDelta, szA0, channels, szW, stride, X);
+			break;
+	}
+}
+
 //////////////////
+
+extern "C"
+void cuda_cols2imT_same(const gpumat::GpuMat &Delta,
+						const ct::Size &szDelta, const ct::Size &szA0,
+						int channels,
+						const ct::Size &szW,
+						int stride,
+						gpumat::GpuMat &X)
+{
+	int x1 = szA0.area() * channels / BLOCKSIZE + 1;
+	int x2 = 1;
+
+	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, 1);
+
+	switch (X.type) {
+		case GPU_DOUBLE:
+			internal::cols2imT_same<double> <<<dimGrid, dimBlock>>>(Delta, szDelta, szA0, channels, szW, stride, X);
+			break;
+		case GPU_FLOAT:
+			internal::cols2imT_same<float> <<<dimGrid, dimBlock>>>(Delta, szDelta, szA0, channels, szW, stride, X);
+			break;
+	}
+}
+
+extern "C"
+void cuda_col2imT_vec_same(const std::vector< gpumat::GpuMat > &Delta,
+						   const ct::Size &szDelta, const ct::Size &szA0,
+						   int channels,
+						   const ct::Size &szW,
+						   int stride,
+						   std::vector< gpumat::GpuMat > &X)
+{
+	int x1 = szA0.area() * channels / BLOCKSIZE + 1;
+	int x2 = (int)X.size() / BLOCKSIZE + 1;
+
+	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+
+	switch (Delta[0].type) {
+		case GPU_DOUBLE:
+			internal::cols2imT_vec_same<double> <<<dimGrid, dimBlock>>>(Delta, szDelta, szA0, channels, szW, stride, X);
+			break;
+		case GPU_FLOAT:
+			internal::cols2imT_vec_same<float> <<<dimGrid, dimBlock>>>(Delta, szDelta, szA0, channels, szW, stride, X);
+			break;
+	}
+}
+
+///////////////////////////
 
 extern "C"
 void cuda_subsample2(const gpumat::GpuMat &X,
