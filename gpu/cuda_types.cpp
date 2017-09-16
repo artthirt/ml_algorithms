@@ -25,7 +25,7 @@ SmallMtxArray::~SmallMtxArray()
 	}
 }
 
-SmallMtxArray::SmallMtxArray(const std::vector<gpumat::GpuMat> &gmat)
+SmallMtxArray::SmallMtxArray(const std::vector<gpumat::GpuMat> &gmat) : SmallMtxArray()
 {
 	//				if(maxcount < gmat.size())
 	//					throw new std::invalid_argument("not enough size of array for store matrices");
