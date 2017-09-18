@@ -1288,6 +1288,15 @@ struct BN{
 		betha.fill(0);
 	}
 
+	void write(std::fstream& fs){
+		ct::write_fs2(fs, gamma);
+		ct::write_fs2(fs, betha);
+	}
+	void read(std::fstream& fs){
+		ct::read_fs2(fs, gamma);
+		ct::read_fs2(fs, betha);
+	}
+
 };
 
 }

@@ -65,6 +65,8 @@ public:
 
 	bool use_pool() const;
 
+	bool use_bn() const;
+
 	int outputFeatures() const;
 
 	ct::Size szOut() const;

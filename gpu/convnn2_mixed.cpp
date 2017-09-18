@@ -55,6 +55,11 @@ bool convnn2_mixed::use_pool() const
 	return m_use_pool;
 }
 
+bool convnn2_mixed::use_bn() const
+{
+	return m_use_bn;
+}
+
 int convnn2_mixed::outputFeatures() const
 {
 	if(m_use_pool){
@@ -106,7 +111,8 @@ void convnn2_mixed::init(const ct::Size &_szA0, int _channels, int stride,
 	B.setSize(1, convnn_abstract<float>::kernels);
 	B.randn(0, n);
 
-	printf("Out=[%dx%dx%d]\n", szOut().width, szOut().height, convnn_abstract<float>::kernels);
+	printf("Out=[%dx%dx%d], W[%d, %d]\n", szOut().width, szOut().height, convnn_abstract<float>::kernels, W.rows, W.cols);
+//	printf("Out=[%dx%dx%d]\n", szOut().width, szOut().height, convnn_abstract<float>::kernels);
 }
 
 void convnn2_mixed::forward(const std::vector<ct::Matf> *_pX)
