@@ -98,6 +98,8 @@ void convnn2_mixed::init(const ct::Size &_szA0, int _channels, int stride,
 	this->stride = stride;
 	this->m_func = func;
 
+	bn.channels = _K;
+
 	int rows = szW.area() * convnn_abstract<float>::channels;
 	int cols = convnn_abstract<float>::kernels;
 
