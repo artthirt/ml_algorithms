@@ -360,9 +360,16 @@ void elemwiseSqr(const GpuMat& A, GpuMat& C);
 /**
  * @brief sumRows
  * @param A
- * @param C - out C[i] = val * sum(A[i, j]) (j = [1, cols])
+ * @param C - out C[j] = val * sum(A[i, j]) (i = [1..rows])
  */
 void sumRows(const GpuMat& A, GpuMat& C, double val = 1.);
+
+/**
+ * @brief sumCols
+ * @param A
+ * @param C - out C[i] = val * sum(A[i, j]) (j = [1..cols])
+ */
+void sumCols(const GpuMat& A, GpuMat& C, double val = 1.);
 
 /**
  * @brief add2sumRows

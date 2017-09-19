@@ -2535,7 +2535,7 @@ void cuda_elemwiseSqr(const GpuMat& A, GpuMat& C)
 /**
  * @brief cuda_sumrows
  * @param A
- * @param C - out C[i] = sum(A[i, j])(j = [1..cols])
+ * @param C - out C[j] = sum(A[i, j])(i = [1..rows])
  */
 extern "C"
 void cuda_sumrows(const GpuMat& A, GpuMat& sums, double val)
@@ -2549,6 +2549,27 @@ void cuda_sumrows(const GpuMat& A, GpuMat& sums, double val)
 		break;
 	case GPU_FLOAT:
 			internal::sum_rows<float> <<<dim3(x1, 1), dim3(BLOCKSIZE, 1)>>>(A, sums, (float)val);
+		break;
+	}
+}
+
+/**
+ * @brief cuda_sumcols
+ * @param A
+ * @param C - out C[i] = sum(A[i, j])(j = [1..cols])
+ */
+extern "C"
+void cuda_sumcols(const GpuMat& A, GpuMat& sums, double val)
+{
+//	int x1 = A.cols / BLOCKSIZE + 1;
+	int x2 = A.rows / BLOCKSIZE + 1;
+
+	switch (A.type) {
+	case GPU_DOUBLE:
+			internal::sum_cols<double> <<<dim3(1, x2), dim3(1, BLOCKSIZE)>>>(A, sums, (double)val);
+		break;
+	case GPU_FLOAT:
+			internal::sum_cols<float> <<<dim3(1, x2), dim3(1, BLOCKSIZE)>>>(A, sums, (float)val);
 		break;
 	}
 }

@@ -303,6 +303,14 @@ extern "C"
 void cuda_sumrows(const GpuMat& A, GpuMat& C, double val);
 
 /**
+ * @brief cuda_sumcols
+ * @param A
+ * @param C - out C[i] = sum(A[i, j])(j = [1..cols])
+ */
+extern "C"
+void cuda_sumcols(const GpuMat& A, GpuMat& sums, double val);
+
+/**
  * @brief cuda_add2sumrows
  * @param A
  * @param C - out C[i] += sum(A[i, j])(j = [1..cols])
@@ -1459,6 +1467,19 @@ void sumRows(const GpuMat &A, GpuMat &C, double val)
 	}
 
 	cuda_sumrows(A, C, val);
+}
+
+void sumCols(const GpuMat &A, GpuMat &C, double val)
+{
+	if(A.empty()){
+		throw new std::invalid_argument("sumRows");
+	}
+
+	if(C.cols != 1 || C.rows != A.rows || A.type != C.type){
+		C.resize(A.rows, 1, A.type);
+	}
+
+	cuda_sumcols(A, C, val);
 }
 
 void add2sumRows(const GpuMat &A, GpuMat &C, double val)
