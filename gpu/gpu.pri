@@ -49,7 +49,7 @@ win32{
 }
 
 SYSTEM_TYPE = 64            # '32' or '64', depending on your system
-CUDA_ARCH = sm_21           # Type of CUDA architecture, for example 'compute_10', 'compute_11', 'sm_10'
+CUDA_ARCH = sm_30           # Type of CUDA architecture, for example 'compute_10', 'compute_11', 'sm_10'
 NVCC_OPTIONS = --use_fast_math
 
 # Add the necessary libraries
@@ -81,7 +81,7 @@ CONFIG(debug, debug|release) {
                     -Xcompiler "/wd4819,/EHsc,/W3,/nologo,/Od,/Zi,/RTC1" \
                     -Xcompiler $$MSVCRT_LINK_FLAG_DEBUG
     }else{
-        cuda_d.commands += -ccbin gcc-5\
+        cuda_d.commands += -ccbin gcc-5 -g -G \
     }
 
     cuda_d.dependency_type = TYPE_C
@@ -100,7 +100,7 @@ else {
                     -Xcompiler "/wd4819,/EHsc,/W3,/nologo,/O2,/Zi" \
                     -Xcompiler $$MSVCRT_LINK_FLAG_RELEASE
     }else{
-        cuda.commands += -ccbin gcc-5\
+        cuda.commands += -ccbin gcc-5 \
     }
 
     cuda.dependency_type = TYPE_C

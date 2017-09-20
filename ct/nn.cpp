@@ -21,7 +21,7 @@ void get_cnv_size_same(const Size szA0, int stride, Size &szA1)
 	szA1.height		= (szA0.height)/stride + (szA0.height % 2) * (stride > 1);
 }
 
-void get_cnv_size_same(const Size szA0, int stride, Size &szA1, Size szA2)
+void get_cnv_size_same(const Size szA0, int stride, Size &szA1, Size& szA2)
 {
 	get_cnv_size_same(szA0, stride, szA1);
 
