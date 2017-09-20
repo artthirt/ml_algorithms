@@ -209,11 +209,11 @@ void _im2colsT_same(const ct::Mat_<T>& X, const ct::Size& szA0, int channels, co
 
 	T *dR = Res.ptr();
 
-#pragma omp parallel for
+//#pragma omp parallel for
 	for(int c = 0; c < channels; ++c){
 		T *dXi = X.ptr() + c;
 
-#pragma omp parallel for
+//#pragma omp parallel for
 		for(int y = 0; y < szOut.height; ++y){
 			int y0 = y * stride;
 			for(int x = 0; x < szOut.width; ++x){
@@ -281,15 +281,15 @@ void _conv2(const ct::Mat_<T> &A, const ct::Size &szA, int channels, int stride,
 		return;
 
 	ct::Mat_<T>& W = (ct::Mat_<T>&)B;
-	int rows = W.rows;
-	int cols = W.cols;
-	W.rows = szB.area();
-	W.cols = (rows * cols) / W.rows;
+//	int rows = W.rows;
+//	int cols = W.cols;
+//	W.rows = szB.area() * channels;
+//	W.cols = (rows * cols) / W.rows;
 
 	ct::matmul(X, W, C);
 
-	W.rows = rows;
-	W.cols = cols;
+//	W.rows = rows;
+//	W.cols = cols;
 }
 
 void conv2(const ct::Matf &A, const ct::Size &szA, int channels, int stride, const ct::Matf &B,
@@ -545,15 +545,15 @@ void _conv2_transpose(const ct::Mat_<T> &C, const ct::Size &szA, int channels, i
 
 	ct::Mat_<T> D;
 	ct::Mat_<T>& W = (ct::Mat_<T>&)B;
-	int rows = W.rows;
-	int cols = W.cols;
-	W.rows = szB.area();
-	W.cols = (rows * cols) / W.rows;
+//	int rows = W.rows;
+//	int cols = W.cols;
+//	W.rows = szB.area();
+//	W.cols = (rows * cols) / W.rows;
 
 	ct::matmulT2(C, W, D);
 
-	W.rows = rows;
-	W.cols = cols;
+//	W.rows = rows;
+//	W.cols = cols;
 	if(D.empty())
 		return;
 

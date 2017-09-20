@@ -200,6 +200,20 @@ void convnn2_mixed::forward(const std::vector<ct::Matf> *_pX)
 			bn.normalize();
 		}
 	}
+
+#if 1
+	if(szW.width == 1){
+		ct::save_mat((*pX)[0], "testPx26.txt");
+		ct::save_mat(Xc[0], "testXc26.txt");
+		ct::save_mat(A1[0], "testA126.txt");
+		if(!A3.empty())ct::save_mat(A3[0], "testA326.txt");
+		if(!A2.empty())ct::save_mat(A2[0], "testA226.txt");
+		ct::save_mat(W, "testW.txt");
+		ct::save_mat(B, "testB.txt");
+		if(!Mask.empty())ct::save_mat(Mask[0], "testMask.txt");
+		throw new std::string("ee");
+	}
+#endif
 }
 
 void convnn2_mixed::forward(const convnn2_mixed &conv)

@@ -1239,8 +1239,7 @@ void gpumat::im2colsT_same(const gpumat::GpuMat &X, const ct::Size &szA0,
 	if(X.empty() || ! channels || !szA0.area() || !szW.area() || !stride)
 		throw new std::invalid_argument("im2cols: empty parameters");
 
-	szOut.width = (szA0.width)/stride;
-	szOut.height = (szA0.height)/stride;
+	ct::get_cnv_size_same(szA0, stride, szOut);
 
 	int rows = szOut.area();
 	int cols = szW.area() * channels;
@@ -1320,15 +1319,15 @@ void gpumat::conv2(const gpumat::GpuMat &A, const ct::Size &szA, int channels, i
 		return;
 
 	gpumat::GpuMat& W = (gpumat::GpuMat &)B;
-	int rows = W.rows;
-	int cols = W.cols;
-	W.rows = szB.area();
-	W.cols = (rows * cols) / W.rows;
+//	int rows = W.rows;
+//	int cols = W.cols;
+//	W.rows = szB.area() * channels;
+//	W.cols = (rows * cols) / W.rows;
 
 	gpumat::matmul(X, W, C);
 
-	W.rows = rows;
-	W.cols = cols;
+//	W.rows = rows;
+//	W.cols = cols;
 }
 
 
@@ -1341,15 +1340,15 @@ void gpumat::conv2_transpose(const GpuMat &C, const ct::Size &szA, int channels,
 
 	GpuMat D;
 	GpuMat& W = (GpuMat&)B;
-	int rows = W.rows;
-	int cols = W.cols;
-	W.rows = szB.area();
-	W.cols = (rows * cols) / W.rows;
+//	int rows = W.rows;
+//	int cols = W.cols;
+//	W.rows = szB.area() * channels;
+//	W.cols = (rows * cols) / W.rows;
 
 	gpumat::matmulT2(C, W, D);
 
-	W.rows = rows;
-	W.cols = cols;
+//	W.rows = rows;
+//	W.cols = cols;
 	if(D.empty())
 		return;
 
