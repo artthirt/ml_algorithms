@@ -151,6 +151,8 @@ class CnvMomentumOptimizer: public MomentumOptimizer
 public:
 	CnvMomentumOptimizer();
 
+	int stop_layer;
+
 	std::vector< GpuMat > mG, mB;
 
 	bool init(std::vector<convnn_gpu> &cnv);
