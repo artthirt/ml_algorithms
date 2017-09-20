@@ -46,7 +46,9 @@ __device__ void _im2cols(const Mtx& X, const ct::Size& szA0, int channels, const
 		T *dXi = &dX[c * szA0area];
 
 		for(int a = 0; a < szW.height; ++a){
+
 			for(int b = 0; b < szW.width; ++b){
+
 				int col2 = c * szWarea + (a * szW.width + b);
 				T val = 0;
 				if(y0 + a < szA0.height && x0 + b < szA0.width){
@@ -85,7 +87,9 @@ __device__ void _im2colsT(const Mtx& X, const ct::Size& szA0, int channels, cons
 		T *dXi = (T*)X.data + c;
 
 		for(int a = 0; a < szW.height; ++a){
+			
 			for(int b = 0; b < szW.width; ++b){
+				
 				int col2 = c * szWarea + (a * szW.width + b);
 				T val = 0;
 				if(y0 + a < szA0.height && x0 + b < szA0.width){
@@ -162,17 +166,15 @@ __device__ void _im2colsSame(const Mtx& X, const ct::Size& szA0, int channels, c
 
 		for(int _a = 0; _a < szW.height; ++_a){
 			int a = _a - szW.height/2;
-			if(y0 + a >= 0 && y0 + a < szA0.height){
-				for(int _b = 0; _b < szW.width; ++_b){
-					int b = _b - szW.width/2;
-					int col2 = c * szWarea + (_a * szW.width + _b);
-					T val = 0;
-					if(x0 + b >= 0 && x0 + b < szA0.width){
-						val = dXi[(y0 + a) * szA0.width + (x0 + b)];
-					}
-					if(col2 < Res.cols)
-						dR[row2 * Res.cols + col2] = val;
+			for(int _b = 0; _b < szW.width; ++_b){
+				int b = _b - szW.width/2;
+				int col2 = c * szWarea + (_a * szW.width + _b);
+				T val = 0;
+				if(y0 + a >= 0 && y0 + a < szA0.height && x0 + b >= 0 && x0 + b < szA0.width){
+					val = dXi[(y0 + a) * szA0.width + (x0 + b)];
 				}
+				if(col2 < Res.cols)
+					dR[row2 * Res.cols + col2] = val;
 			}
 		}
 	}
@@ -205,17 +207,15 @@ __device__ void _im2colsTSame(const Mtx& X, const ct::Size& szA0, int channels, 
 
 		for(int _a = 0; _a < szW.height; ++_a){
 			int a = _a - szW.height/2;
-			if(y0 + a >= 0 && y0 + a < szA0.height){
-				for(int _b = 0; _b < szW.width; ++_b){
-					int b = _b - szW.width/2;
-					int col2 = c * szWarea + (_a * szW.width + _b);
-					T val = 0;
-					if(x0 + b >= 0 && x0 + b < szA0.width){
-						val = dXi[((y0 + a) * szA0.width + (x0 + b)) * channels];
-					}
-					if(col2 < Res.cols)
-						dR[row2 * Res.cols + col2] = val;
+			for(int _b = 0; _b < szW.width; ++_b){
+				int b = _b - szW.width/2;
+				int col2 = c * szWarea + (_a * szW.width + _b);
+				T val = 0;
+				if(y0 + a >= 0 && y0 + a < szA0.height && x0 + b >= 0 && x0 + b < szA0.width){
+					val = dXi[((y0 + a) * szA0.width + (x0 + b)) * channels];
 				}
+				if(col2 < Res.cols)
+					dR[row2 * Res.cols + col2] = val;
 			}
 		}
 	}
