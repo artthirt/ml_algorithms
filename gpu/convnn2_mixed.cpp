@@ -201,8 +201,8 @@ void convnn2_mixed::forward(const std::vector<ct::Matf> *_pX)
 		}
 	}
 
-#if 1
-	if(szW.width == 1){
+#if 0
+	if(m_use_same){
 		ct::save_mat((*pX)[0], "testPx26.txt");
 		ct::save_mat(Xc[0], "testXc26.txt");
 		ct::save_mat(A1[0], "testA126.txt");
