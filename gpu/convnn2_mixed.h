@@ -74,7 +74,7 @@ public:
 	void setLambda(float val);
 
 	void init(const ct::Size& _szA0, int _channels, int stride, int _K, const ct::Size& _szW, ct::etypefunction func,
-			  bool use_pool, bool use_bn, bool use_transpose);
+			  bool use_pool, bool use_bn, bool use_transpose, bool use_same = false);
 
 	void forward(const std::vector< ct::Matf>* _pX);
 
@@ -94,6 +94,7 @@ public:
 private:
 	bool m_use_pool;
 	bool m_use_bn;
+	bool m_use_same;
 	ct::etypefunction m_func;
 	bool m_use_transpose;
 	float m_Lambda;

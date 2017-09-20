@@ -11,6 +11,8 @@ convnn2_mixed::convnn2_mixed()
 	pX = nullptr;
 	stride = 1;
 	m_use_transpose = true;
+	m_use_bn = false;
+	m_use_same = false;
 	m_Lambda = 0;
 	m_params[ct::LEAKYRELU] = 0.1;
 }
@@ -86,11 +88,12 @@ void convnn2_mixed::setLambda(float val)
 
 void convnn2_mixed::init(const ct::Size &_szA0, int _channels, int stride,
 						 int _K, const ct::Size &_szW, ct::etypefunction func,
-						 bool use_pool, bool use_bn, bool use_transpose)
+						 bool use_pool, bool use_bn, bool use_transpose, bool use_same)
 {
 	szW = _szW;
 	m_use_pool = use_pool;
 	m_use_bn = use_bn;
+	m_use_same = use_same;
 	m_use_transpose = use_transpose;
 	convnn_abstract<float>::kernels = _K;
 	convnn_abstract<float>::channels = _channels;
@@ -103,8 +106,12 @@ void convnn2_mixed::init(const ct::Size &_szA0, int _channels, int stride,
 	int rows = szW.area() * convnn_abstract<float>::channels;
 	int cols = convnn_abstract<float>::kernels;
 
-	ct::get_cnv_sizes(convnn_abstract<float>::szA0, szW, stride,
-					  convnn_abstract<float>::szA1, convnn_abstract<float>::szA2);
+	if(use_same)
+		ct::get_cnv_size_same(convnn_abstract<float>::szA0, stride,
+						  convnn_abstract<float>::szA1, convnn_abstract<float>::szA2);
+	else
+		ct::get_cnv_sizes(convnn_abstract<float>::szA0, szW, stride,
+						  convnn_abstract<float>::szA1, convnn_abstract<float>::szA2);
 
 	float n = 0.05;//(float)1./sqrt(kernels);
 
@@ -141,13 +148,23 @@ void convnn2_mixed::forward(const std::vector<ct::Matf> *_pX)
 		gpumat::convert_to_gpu(Xi, g_Xi);
 
 		if(m_use_transpose){
-			gpumat::im2colsT(g_Xi, convnn_abstract<float>::szA0,
-								   convnn_abstract<float>::channels,
-								   szW, stride, g_Xci, szOut);
+			if(m_use_same)
+				gpumat::im2colsT_same(g_Xi, convnn_abstract<float>::szA0,
+									   convnn_abstract<float>::channels,
+									   szW, stride, g_Xci, szOut);
+			else
+				gpumat::im2colsT(g_Xi, convnn_abstract<float>::szA0,
+									   convnn_abstract<float>::channels,
+									   szW, stride, g_Xci, szOut);
 		}else{
-			gpumat::im2cols(g_Xi, convnn_abstract<float>::szA0,
-								   convnn_abstract<float>::channels,
-								   szW, stride, g_Xci, szOut);
+			if(m_use_same)
+				gpumat::im2cols_same(g_Xi, convnn_abstract<float>::szA0,
+									   convnn_abstract<float>::channels,
+									   szW, stride, g_Xci, szOut);
+			else
+				gpumat::im2cols(g_Xi, convnn_abstract<float>::szA0,
+									   convnn_abstract<float>::channels,
+									   szW, stride, g_Xci, szOut);
 		}
 		gpumat::convert_to_mat(g_Xci, Xc[i]);
 
@@ -287,14 +304,25 @@ void convnn2_mixed::backward(const std::vector<ct::Matf> &D, bool last_level){
 			gpumat::convert_to_gpu(W, g_W);
 			gpumat::matmulT2(g_dSubi, g_W, g_Dci);
 
-			if(m_use_transpose)
-				gpumat::cols2imT(g_Dci, convnn_abstract<float>::szA1,
-									convnn_abstract<float>::szA0, convnn_abstract<float>::channels,
-									szW, stride, g_Dlti);
-			else
-				gpumat::cols2im(g_Dci, convnn_abstract<float>::szA1,
-									convnn_abstract<float>::szA0, convnn_abstract<float>::channels,
-									szW, stride, g_Dlti);
+			if(m_use_transpose){
+				if(m_use_same)
+					gpumat::cols2imT_same(g_Dci, convnn_abstract<float>::szA1,
+										convnn_abstract<float>::szA0, convnn_abstract<float>::channels,
+										szW, stride, g_Dlti);
+				else
+					gpumat::cols2imT(g_Dci, convnn_abstract<float>::szA1,
+										convnn_abstract<float>::szA0, convnn_abstract<float>::channels,
+										szW, stride, g_Dlti);
+			}else{
+				if(m_use_same)
+					gpumat::cols2im_same(g_Dci, convnn_abstract<float>::szA1,
+										convnn_abstract<float>::szA0, convnn_abstract<float>::channels,
+										szW, stride, g_Dlti);
+				else
+					gpumat::cols2im(g_Dci, convnn_abstract<float>::szA1,
+										convnn_abstract<float>::szA0, convnn_abstract<float>::channels,
+										szW, stride, g_Dlti);
+			}
 			gpumat::convert_to_mat(g_Dlti, Dlt[i]);
 			//ct::Size sz = (*pX)[i].size();
 			//Dlt[i].set_dims(sz);

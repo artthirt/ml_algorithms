@@ -397,6 +397,15 @@ void get_cnv_sizes(const ct::Size sizeIn, const ct::Size szW, int stride, ct::Si
  */
 void get_cnv_size_same(const ct::Size szA0, int stride, ct::Size& szA1);
 
+/**
+ * @brief get_cnv_size_same
+ * @param sizeIn
+ * @param stride
+ * @param szA1
+ * @param szA2
+ */
+void get_cnv_size_same(const ct::Size szA0, int stride, ct::Size& szA1, ct::Size szA2);
+
 template<typename T>
 inline T linear_func(T val)
 {

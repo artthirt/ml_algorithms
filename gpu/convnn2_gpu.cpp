@@ -63,6 +63,7 @@ convnn_gpu::convnn_gpu()
 {
 	m_use_pool = false;
 	m_use_bn = false;
+	m_use_same = false;
 	pX = nullptr;
 	stride = 1;
 	m_use_transpose = true;
@@ -152,13 +153,14 @@ ct::Size convnn_gpu::szOut() const
 }
 
 void convnn_gpu::init(const ct::Size &_szA0, int _channels, int stride, int _K,
-					  const ct::Size &_szW, etypefunction func, bool use_pool, bool use_bn, bool use_transpose)
+					  const ct::Size &_szW, etypefunction func, bool use_pool, bool use_bn, bool use_transpose, bool use_same)
 {
 	szW = _szW;
 	kernels = _K;
 	channels = _channels;
 	m_use_pool = use_pool;
 	m_use_bn = use_bn;
+	m_use_same = use_same;
 	m_use_transpose = use_transpose;
 	szA0 = _szA0;
 	this->stride = stride;
@@ -169,8 +171,11 @@ void convnn_gpu::init(const ct::Size &_szA0, int _channels, int stride, int _K,
 	int rows = szW.area() * channels;
 	int cols = kernels;
 
-	ct::get_cnv_sizes(szA0, szW, stride, szA1, szA2);
-
+	if(m_use_same){
+		ct::get_cnv_size_same(szA0, stride, szA1, szA2);
+	}else{
+		ct::get_cnv_sizes(szA0, szW, stride, szA1, szA2);
+	}
 	float n = (float)1/(sqrt(szW.area() * channels));
 
 	{
@@ -238,9 +243,15 @@ void convnn_gpu::forward(const std::vector<gpumat::GpuMat> *_pX)
 	ct::Size szOut;
 
 	if(m_use_transpose){
-		gpumat::im2colsT(*pX, szA0, channels, szW, stride, Xc, szOut);
+		if(m_use_same)
+			gpumat::im2colsT_same(*pX, szA0, channels, szW, stride, Xc, szOut);
+		else
+			gpumat::im2colsT(*pX, szA0, channels, szW, stride, Xc, szOut);
 	}else{
-		gpumat::im2cols(*pX, szA0, channels, szW, stride, Xc, szOut);
+		if(m_use_same)
+			gpumat::im2cols_same(*pX, szA0, channels, szW, stride, Xc, szOut);
+		else
+			gpumat::im2cols(*pX, szA0, channels, szW, stride, Xc, szOut);
 	}
 
 	for(int i = 0; i < (int)Xc.size(); ++i){
@@ -410,10 +421,17 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 			gpumat::matmulT2(dSub2[i], W, Dci);
 		}
 
-		if(m_use_transpose)
-			cols2imT(Dc, szA1, szA0, channels, szW, stride, Dlt);
-		else
-			cols2im(Dc, szA1, szA0, channels, szW, stride, Dlt);
+		if(m_use_transpose){
+			if(m_use_same)
+				cols2imT_same(Dc, szA1, szA0, channels, szW, stride, Dlt);
+			else
+				cols2imT(Dc, szA1, szA0, channels, szW, stride, Dlt);
+		}else{
+			if(m_use_same)
+				cols2im_same(Dc, szA1, szA0, channels, szW, stride, Dlt);
+			else
+				cols2im(Dc, szA1, szA0, channels, szW, stride, Dlt);
+		}
 #if 0
 		check_deriv(Dc, szA1, szA0, channels, szW, stride, Dlt);
 #endif

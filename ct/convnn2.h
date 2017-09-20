@@ -62,6 +62,13 @@ void im2colsT(const ct::Matf& X, const ct::Size& szA0, int channels, const ct::S
 void im2colsT(const ct::Matd& X, const ct::Size& szA0, int channels, const ct::Size& szW,
 			int stride, ct::Matd& Res, ct::Size& szOut);
 
+
+void im2colsT_same(const ct::Matf& X, const ct::Size& szA0, int channels, const ct::Size& szW,
+			int stride, ct::Matf& Res, ct::Size& szOut);
+void im2colsT_same(const ct::Matd& X, const ct::Size& szA0, int channels, const ct::Size& szW,
+			int stride, ct::Matd& Res, ct::Size& szOut);
+
+
 /**
  * @brief conv2
  * convolution for A
@@ -260,6 +267,7 @@ public:
 		m_Lambda = 0;
 		m_params[ct::LEAKYRELU] = 0.1;
 		m_use_bn = false;
+		m_use_same = false;
 	}
 
 	void setParams(ct::etypefunction type, T param){
@@ -359,10 +367,11 @@ public:
 	 * @param use_bn
 	 */
 	void init(const ct::Size& _szA0, int _channels, int stride, int _K, const ct::Size& _szW, ct::etypefunction func,
-			  bool use_pool, bool use_bn, bool use_transpose){
+			  bool use_pool, bool use_bn, bool use_transpose, bool use_same = false){
 		szW = _szW;
 		m_use_pool = use_pool;
 		m_use_bn = use_bn;
+		m_use_same = use_same;
 		m_use_transpose = use_transpose;
 		m_func = func;
 		convnn_abstract<T>::kernels = _K;
@@ -375,7 +384,10 @@ public:
 		int rows = szW.area() * convnn_abstract<T>::channels;
 		int cols = convnn_abstract<T>::kernels;
 
-		ct::get_cnv_sizes(convnn_abstract<T>::szA0, szW, stride, convnn_abstract<T>::szA1, convnn_abstract<T>::szA2);
+		if(m_use_same)
+			ct::get_cnv_size_same(convnn_abstract<T>::szA0, stride, convnn_abstract<T>::szA1, convnn_abstract<T>::szA2);
+		else
+			ct::get_cnv_sizes(convnn_abstract<T>::szA0, szW, stride, convnn_abstract<T>::szA1, convnn_abstract<T>::szA2);
 
 		T n = (T)1/sqrt(szW.area() * convnn_abstract<T>::channels);
 
@@ -400,14 +412,20 @@ public:
 				ct::Mat_<T>& Xi = (*pX)[i];
 				ct::Size szOut;
 
-				im2colsT(Xi, convnn_abstract<T>::szA0, convnn_abstract<T>::channels, szW, stride, Xc[i], szOut);
+				if(m_use_same)
+					im2colsT_same(Xi, convnn_abstract<T>::szA0, convnn_abstract<T>::channels, szW, stride, Xc[i], szOut);
+				else
+					im2colsT(Xi, convnn_abstract<T>::szA0, convnn_abstract<T>::channels, szW, stride, Xc[i], szOut);
 			}
 		}else{
 			for(int i = 0; i < (int)Xc.size(); ++i){
 				ct::Mat_<T>& Xi = (*pX)[i];
 				ct::Size szOut;
 
-				im2cols(Xi, convnn_abstract<T>::szA0, convnn_abstract<T>::channels, szW, stride, Xc[i], szOut);
+				if(m_use_same)
+					im2cols_same(Xi, convnn_abstract<T>::szA0, convnn_abstract<T>::channels, szW, stride, Xc[i], szOut);
+				else
+					im2cols(Xi, convnn_abstract<T>::szA0, convnn_abstract<T>::channels, szW, stride, Xc[i], szOut);
 			}
 		}
 
@@ -525,10 +543,17 @@ public:
 			Dc.resize(D.size());
 			for(int i = 0; i < (int)D.size(); ++i){
 				ct::matmulT2(dSub[i], W, Dc[i]);
-				if(m_use_transpose)
-					cols2imT(Dc[i], convnn_abstract<T>::szA1, convnn_abstract<T>::szA0, convnn_abstract<T>::channels, szW, stride, Dlt[i]);
-				else
-					cols2im(Dc[i], convnn_abstract<T>::szA1, convnn_abstract<T>::szA0, convnn_abstract<T>::channels, szW, stride, Dlt[i]);
+				if(m_use_transpose){
+					if(m_use_same)
+						cols2imT_same(Dc[i], convnn_abstract<T>::szA1, convnn_abstract<T>::szA0, convnn_abstract<T>::channels, szW, stride, Dlt[i]);
+					else
+						cols2imT(Dc[i], convnn_abstract<T>::szA1, convnn_abstract<T>::szA0, convnn_abstract<T>::channels, szW, stride, Dlt[i]);
+				}else{
+					if(m_use_same)
+						cols2im_same(Dc[i], convnn_abstract<T>::szA1, convnn_abstract<T>::szA0, convnn_abstract<T>::channels, szW, stride, Dlt[i]);
+					else
+						cols2im(Dc[i], convnn_abstract<T>::szA1, convnn_abstract<T>::szA0, convnn_abstract<T>::channels, szW, stride, Dlt[i]);
+				}
 				//ct::Size sz = (*pX)[i].size();
 				//Dlt[i].set_dims(sz);
 			}
@@ -571,6 +596,7 @@ public:
 private:
 	bool m_use_pool;
 	bool m_use_bn;
+	bool m_use_same;
 	ct::etypefunction m_func;
 	bool m_use_transpose;
 	std::map< ct::etypefunction, T > m_params;
