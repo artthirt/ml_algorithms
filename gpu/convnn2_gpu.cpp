@@ -824,7 +824,7 @@ void cuda_cols2imT_same(const gpumat::GpuMat &Delta,
 
 extern "C"
 void cuda_col2imT_vec_same(const std::vector< gpumat::GpuMat > &Delta,
-						   ct::Size szDelta, const ct::Size &szA0,
+						   const ct::Size &szDelta, const ct::Size &szA0,
 						   int channels, const ct::Size &szW, int stride,
 						   std::vector< gpumat::GpuMat > &X);
 
