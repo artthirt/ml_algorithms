@@ -484,7 +484,7 @@ void convnn_gpu::read2(std::fstream &fs)
 
 CnvAdamOptimizer::CnvAdamOptimizer() : AdamOptimizer()
 {
-
+	stop_layer = 0;
 }
 
 bool CnvAdamOptimizer::init(std::vector<convnn_gpu> &cnv)
@@ -515,18 +515,21 @@ bool CnvAdamOptimizer::pass(std::vector<convnn_gpu> &cnv)
 	int index = 0;
 	next_iteration();
 	for(convnn_gpu& item: cnv){
-		if(item.use_bn()){
-			if(mG[index].empty()){
-				mG[index].resize(item.bn.dgamma); mG[index].zeros();
-				mB[index].resize(item.bn.dbetha); mB[index].zeros();
-				vG[index].resize(item.bn.dgamma); vG[index].zeros();
-				vB[index].resize(item.bn.dbetha); vB[index].zeros();
+		if(index >= stop_layer){
+			if(item.use_bn()){
+				if(mG[index].empty()){
+					mG[index].resize(item.bn.dgamma); mG[index].zeros();
+					mB[index].resize(item.bn.dbetha); mB[index].zeros();
+					vG[index].resize(item.bn.dgamma); vG[index].zeros();
+					vB[index].resize(item.bn.dbetha); vB[index].zeros();
+				}
+				sub_adamGrad(item.bn.gamma, item.bn.dgamma, mG[index], vG[index], m_alpha, m_sb1, m_sb2, m_betha1, m_betha2);
+				sub_adamGrad(item.bn.betha, item.bn.dbetha, mB[index], vB[index], m_alpha, m_sb1, m_sb2, m_betha1, m_betha2);
 			}
-			sub_adamGrad(item.bn.gamma, item.bn.dgamma, mG[index], vG[index], m_alpha, m_sb1, m_sb2, m_betha1, m_betha2);
-			sub_adamGrad(item.bn.betha, item.bn.dbetha, mB[index], vB[index], m_alpha, m_sb1, m_sb2, m_betha1, m_betha2);
-		}
 
-		passI(item.gW, item.gB, item.W, item.B, index++);
+			passI(item.gW, item.gB, item.W, item.B, index);
+		}
+		index++;
 	}
 	return true;
 }

@@ -141,6 +141,8 @@ class CnvAdamOptimizer: public AdamOptimizer
 public:
 	CnvAdamOptimizer();
 
+	int stop_layer;
+
 	std::vector< GpuMat > mG, mB, vG, vB;
 
 	bool init(std::vector<convnn_gpu> &cnv);
