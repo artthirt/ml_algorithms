@@ -157,6 +157,9 @@ __device__ void _im2colsSame(const Mtx& X, const ct::Size& szA0, int channels, c
 		int y0 = y * stride;
 		int row2 = y * szOut.width + x;
 
+		if(row2 >= Res.rows)
+			return;
+
 		int szA0area = szA0.width * szA0.height;
 		int szWarea = szW.width * szW.height;
 
@@ -198,6 +201,9 @@ __device__ void _im2colsTSame(const Mtx& X, const ct::Size& szA0, int channels, 
 		int x0 = x * stride;
 		int y0 = y * stride;
 		int row2 = y * szOut.width + x;
+
+		if(row2 >= Res.rows)
+			return;
 
 //		int szA0area = szA0.width * szA0.height;
 		int szWarea = szW.width * szW.height;

@@ -1231,6 +1231,7 @@ void gpumat::im2cols_same(const gpumat::GpuMat &X, const ct::Size &szA0,
 	int cols = szW.area() * channels;
 
 	Res.resize(rows, cols, X.type);
+	Res.zeros();
 
 	cuda_im2colsSame(X, szA0, channels, szW, stride, Res, szOut);
 }
@@ -1248,6 +1249,7 @@ void gpumat::im2colsT_same(const gpumat::GpuMat &X, const ct::Size &szA0,
 	int cols = szW.area() * channels;
 
 	Res.resize(rows, cols, X.type);
+	Res.zeros();
 
 	cuda_im2colsTSame(X, szA0, channels, szW, stride, Res, szOut);
 }
@@ -1270,6 +1272,7 @@ void gpumat::im2cols_same(const std::vector<gpumat::GpuMat> &X, const ct::Size &
 
 	for(size_t i = 0; i < Res.size(); ++i){
 		Res[i].resize(rows, cols, type);
+		Res[i].zeros();
 	}
 
 	cuda_im2cols_vecSame(X, szA0, channels, szW, stride, Res, szOut);
@@ -1292,6 +1295,7 @@ void gpumat::im2colsT_same(const std::vector<gpumat::GpuMat> &X, const ct::Size 
 
 	for(size_t i = 0; i < Res.size(); ++i){
 		Res[i].resize(rows, cols, type);
+		Res[i].zeros();
 	}
 
 	cuda_im2colsT_vecSame(X, szA0, channels, szW, stride, Res, szOut);
