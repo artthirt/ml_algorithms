@@ -346,7 +346,7 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 
 		if(m_func != gpumat::LINEAR && m_func != gpumat::SOFTMAX)
 			backcnv(dSub2, dSub2);
-
+        _D = dSub2;
 	}else{
 		if(m_use_bn){
 			bn.D = (std::vector< GpuMat >*)&D;
@@ -354,15 +354,16 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 			_D = bn.Dout;
 		}
 
-		if(m_func != gpumat::LINEAR && m_func != gpumat::SOFTMAX)
+        if(m_func != gpumat::LINEAR && m_func != gpumat::SOFTMAX){
 			backcnv(_D, dSub2);
+            _D = dSub2;
+        }
 	}
-	_D = dSub2;
 
 //	gpumat::save_gmat(dSub2[0], "gW.txt");
 
 	if(m_pool_dropout){
-		set_dropout(dSub2, m_Dropout);
+        set_dropout(_D, m_Dropout);
 	}
 #if 0
 	if(channels == 3){
@@ -422,7 +423,7 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 		Dc.resize(D.size());
 		for(int i = 0; i < (int)D.size(); ++i){
 			gpumat::GpuMat& Dci = Dc[i];
-			gpumat::matmulT2(dSub2[i], W, Dci);
+            gpumat::matmulT2(_D[i], W, Dci);
 		}
 
 		if(m_use_transpose){
