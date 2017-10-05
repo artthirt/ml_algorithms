@@ -263,9 +263,14 @@ void convnn2_mixed::backward(const std::vector<ct::Matf> &D, bool last_level){
 			gpumat::convert_to_gpu(Mask[i], g_Maski);
 			gpumat::upsample(g_Di, convnn_abstract<float>::kernels, g_Maski,
 							 convnn_abstract<float>::szA2, convnn_abstract<float>::szA1, g_dSubi);
-			backcnv(g_dSubi, g_A1i, g_dSubi);
+
+			if(m_func != ct::LINEAR && m_func != ct::SOFTMAX)
+				backcnv(g_dSubi, g_A1i, g_dSubi);
 		}else{
-			backcnv(g_Di, g_A1i, g_dSubi);
+			if(m_func != ct::LINEAR && m_func != ct::SOFTMAX)
+				backcnv(g_Di, g_A1i, g_dSubi);
+			else
+				g_Di.copyTo(g_dSubi);
 		}
 
 		ct::Mat_<float>& Xci = Xc[i];

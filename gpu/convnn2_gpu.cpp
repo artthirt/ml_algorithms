@@ -344,7 +344,9 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 
 		gpumat::upsample(_D, kernels, Mask, szA2, szA1, dSub2);
 
-		backcnv(dSub2, dSub2);
+		if(m_func != gpumat::LINEAR && m_func != gpumat::SOFTMAX)
+			backcnv(dSub2, dSub2);
+
 	}else{
 		if(m_use_bn){
 			bn.D = (std::vector< GpuMat >*)&D;
@@ -352,8 +354,10 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 			_D = bn.Dout;
 		}
 
-		backcnv(_D, dSub2);
+		if(m_func != gpumat::LINEAR && m_func != gpumat::SOFTMAX)
+			backcnv(_D, dSub2);
 	}
+	_D = dSub2;
 
 //	gpumat::save_gmat(dSub2[0], "gW.txt");
 
@@ -373,7 +377,7 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 	gB.zeros();
 	for(int i = 0; i < (int)D.size(); ++i){
 		gpumat::GpuMat& Xci		= Xc[i];
-		gpumat::GpuMat& dSubi	= dSub2[i];
+		gpumat::GpuMat& dSubi	= _D[i];
 		gpumat::add2matmulT1(Xci, dSubi, gW);
 
 //		vgB.swap_dims();
