@@ -344,9 +344,10 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 
 		gpumat::upsample(_D, kernels, Mask, szA2, szA1, dSub2);
 
-		if(m_func != gpumat::LINEAR && m_func != gpumat::SOFTMAX)
+		if(m_func != gpumat::LINEAR && m_func != gpumat::SOFTMAX){
 			backcnv(dSub2, dSub2);
-        _D = dSub2;
+			_D = dSub2;
+		}
 	}else{
 		if(m_use_bn){
 			bn.D = (std::vector< GpuMat >*)&D;
