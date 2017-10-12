@@ -221,59 +221,45 @@ void mlp::backward(const GpuMat &Delta, bool last_layer)
 	}
 }
 
-void mlp::forward(const std::vector<GpuMat> *mat, etypefunction func, bool save_A0)
+void mlp::forward(const std::vector<GpuMat> *mat, bool save_A0)
 {
-	if(!m_init || !mat)
+	if(!m_init || !mat || mat->empty())
 		throw new std::invalid_argument("mlp::forward: not initialized. wrong parameters");
 	pVecA0 = (std::vector<GpuMat>*)mat;
-	m_func = func;
 
-	vecA1.resize(pVecA0->size());
-	if(m_is_dropout && std::abs(m_prob - 1) > 1e-6){
-		vecXDropout.resize(pVecA0->size());
-		for(size_t i = 0; i < mat->size(); ++i){
-			gpumat::GpuMat& A0i = (*pVecA0)[i];
+	if(m_is_dropout){
+		vecXDropout.resize(mat->size());
+	}
+	vecA1.resize(mat->size());
 
-			int rows = A0i.rows;
-			int cols = A0i.cols;
-			A0i.rows = 1;
-			A0i.cols = rows * cols;
-
-			apply_dropout(A0i, m_prob, vecXDropout[i], Dropout);
-			matmul(vecXDropout[i], W, vecA1[i]);
-			biasPlus(vecA1[i], B);
-
-			if(func != LINEAR)
-				apply_func(vecA1[i], vecA1[i], func);
-
-			A0i.rows = rows;
-			A0i.cols = cols;
-		}
-	}else{
-		for(size_t i = 0; i < mat->size(); ++i){
-			gpumat::GpuMat& A0i = (*pVecA0)[i];
-
-			int rows = A0i.rows;
-			int cols = A0i.cols;
-			A0i.rows = 1;
-			A0i.cols = rows * cols;
-
-			matmul(A0i, W, vecA1[i]);
-			biasPlus(vecA1[i], B);
-
-			A0i.rows = rows;
-			A0i.cols = cols;
-
-			if(func != LINEAR)
-				apply_func(vecA1[i], vecA1[i], func);
+	for(size_t i = 0; i < mat->size(); ++i){
+		if(m_is_dropout && std::abs(m_prob - 1) > 1e-6){
+			gpumat::GpuMat& XD = vecXDropout[i];
+			apply_dropout((*pVecA0)[i], m_prob, XD, Dropout);
+	//		matmul(XDropout, W, A1);
+			if(m_func == SOFTMAX){
+				m2mpbaf(XD, W, B, LINEAR, vecA1[i], m_params[LEAKYRELU]);
+				softmax(A1, 1, PartZ);
+			}else{
+				m2mpbaf(XD, W, B, m_func, vecA1[i], m_params[LEAKYRELU]);
+			}
+		}else{
+	//		matmul(*pA0, W, A1);
+			if(m_func == SOFTMAX){
+				m2mpbaf((*pVecA0)[i], W, B, LINEAR, vecA1[i], m_params[LEAKYRELU]);
+				softmax(vecA1[i], 1, PartZ);
+			}else{
+				m2mpbaf((*pVecA0)[i], W, B, m_func, vecA1[i], m_params[LEAKYRELU]);
+			}
 		}
 	}
+
 
 	if(!save_A0)
 		pA0 = nullptr;
 }
 
-void mlp::backward(const std::vector<GpuMat> &Delta, bool last_layer)
+void mlp::backward(std::vector<GpuMat> &Delta, bool last_layer)
 {
 	if(!pVecA0 || !m_init)
 		throw new std::invalid_argument("mlp::backward: not initialized. wrong parameters");
@@ -302,17 +288,14 @@ void mlp::backward(const std::vector<GpuMat> &Delta, bool last_layer)
 		}
 
 		if(m_is_dropout && std::abs(m_prob - 1) > 1e-6){
-			matmulT1(vecXDropout[i], (*pDA1)[i], gWi);
+			add2matmulT1(vecXDropout[i], (*pDA1)[i], gW);
 		}else{
-			matmulT1((*pVecA0)[i], (*pDA1)[i], gWi);
+			add2matmulT1((*pVecA0)[i], (*pDA1)[i], gW);
 		}
-		add(gW, gWi);
 
 //		gBi.swap_dims();
-		sumRows((*pDA1)[i], gBi);
+		add2sumRows((*pDA1)[i], gB, 1);
 //		gBi.swap_dims();
-
-		add(gB, gBi);
 	}
 
 //	gWi.release();

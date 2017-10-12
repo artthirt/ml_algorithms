@@ -63,6 +63,8 @@ public:
 	void resize(const ct::Size& sz, int type);
 	void resize(const GpuMat& mat);
 
+	void reshape(int new_rows, int new_cols);
+
 	void copyTo(GpuMat& mat) const;
 
 	void setData(void* data);

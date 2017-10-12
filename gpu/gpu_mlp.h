@@ -30,8 +30,6 @@ public:
 	std::vector< GpuMat > vecA1;
 //	std::vector< GpuMat > vecDA1;
 	std::vector< GpuMat > vecDltA0;
-	GpuMat gWi;
-	GpuMat gBi;
 
 	mlp();
 
@@ -110,13 +108,13 @@ public:
 	 * @param func
 	 * @param save_A0
 	 */
-	void forward(const std::vector< GpuMat > *mat, etypefunction func = RELU, bool save_A0 = true);
+	void forward(const std::vector< GpuMat > *mat, bool save_A0 = true);
 	/**
 	 * @brief backward
 	 * @param Delta
 	 * @param last_layer
 	 */
-	void backward(const std::vector< GpuMat > &Delta, bool last_layer = false);
+	void backward(std::vector<GpuMat> &Delta, bool last_layer = false);
 
 	//////////
 

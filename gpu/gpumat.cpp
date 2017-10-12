@@ -742,6 +742,14 @@ void GpuMat::resize(const GpuMat &mat)
 	resize(mat.rows, mat.cols, mat.type);
 }
 
+void GpuMat::reshape(int new_rows, int new_cols)
+{
+	assert(new_rows * new_cols == rows * cols);
+
+	rows = new_rows;
+	cols = new_cols;
+}
+
 void GpuMat::copyTo(GpuMat &mat) const
 {
 	if(empty())
