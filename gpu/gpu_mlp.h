@@ -108,7 +108,7 @@ public:
 	 * @param func
 	 * @param save_A0
 	 */
-	void forward(const std::vector< GpuMat > *mat, bool save_A0 = true);
+    void forward(const std::vector<GpuMat> *mat, bool save_A0 = true);
 	/**
 	 * @brief backward
 	 * @param Delta

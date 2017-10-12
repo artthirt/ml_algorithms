@@ -256,7 +256,7 @@ void mlp::forward(const std::vector<GpuMat> *mat, bool save_A0)
 
 
 	if(!save_A0)
-		pA0 = nullptr;
+        pVecA0 = nullptr;
 }
 
 void mlp::backward(std::vector<GpuMat> &Delta, bool last_layer)
