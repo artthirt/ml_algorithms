@@ -156,23 +156,17 @@ void mlp::forward(const GpuMat *mat, bool save_A0)
 		throw new std::invalid_argument("mlp::forward: not initialized. wrong parameters");
 	pA0 = (GpuMat*)mat;
 
-	if(m_is_dropout && std::abs(m_prob - 1) > 1e-6){
-		apply_dropout(*pA0, m_prob, XDropout, Dropout);
-//		matmul(XDropout, W, A1);
-		if(m_func == SOFTMAX){
-			m2mpbaf(XDropout, W, B, LINEAR, A1, m_params[LEAKYRELU]);
-			softmax(A1, 1, PartZ);
-		}else{
-			m2mpbaf(XDropout, W, B, m_func, A1, m_params[LEAKYRELU]);
-		}
+	GpuMat& _W = W;
+	if(m_is_dropout && m_prob < 1){
+		apply_dropout(W, m_prob, WDropout, Dropout);
+		_W = WDropout;
+	}
+
+	if(m_func == SOFTMAX){
+		m2mpbaf(*pA0, _W, B, LINEAR, A1, m_params[LEAKYRELU]);
+		softmax(A1, 1, PartZ);
 	}else{
-//		matmul(*pA0, W, A1);
-		if(m_func == SOFTMAX){
-			m2mpbaf(*pA0, W, B, LINEAR, A1, m_params[LEAKYRELU]);
-			softmax(A1, 1, PartZ);
-		}else{
-			m2mpbaf(*pA0, W, B, m_func, A1, m_params[LEAKYRELU]);
-		}
+		m2mpbaf(*pA0, _W, B, m_func, A1, m_params[LEAKYRELU]);
 	}
 
 //	biasPlus(A1, B);
@@ -200,12 +194,11 @@ void mlp::backward(const GpuMat &Delta, bool last_layer)
 		pDA1 = (GpuMat*)&Delta;
 	}
 
-	if(m_is_dropout && std::abs(m_prob - 1) > 1e-6){
-		matmulT1(XDropout, *pDA1, gW, 1. / m);
-	}else{
-		matmulT1(*pA0, *pDA1, gW, 1. / m);
-	}
+	matmulT1(*pA0, *pDA1, gW, 1. / m);
 //	mulval(gW, 1. / m);
+	if(m_is_dropout & m_prob < 1){
+		elemwiseMult(gW, Dropout);
+	}
 
 
 	if(m_lambda > 0){
@@ -227,33 +220,32 @@ void mlp::forward(const std::vector<GpuMat> *mat, bool save_A0)
 		throw new std::invalid_argument("mlp::forward: not initialized. wrong parameters");
 	pVecA0 = (std::vector<GpuMat>*)mat;
 
-	if(m_is_dropout){
-		vecXDropout.resize(mat->size());
-	}
 	vecA1.resize(mat->size());
+
+	GpuMat& _W = W;
+	if(m_is_dropout && m_prob < 1){
+		apply_dropout(W, m_prob, WDropout, Dropout);
+		_W = WDropout;
+	}
 
 	for(size_t i = 0; i < mat->size(); ++i){
 		if(m_is_dropout && std::abs(m_prob - 1) > 1e-6){
-			gpumat::GpuMat& XD = vecXDropout[i];
-			apply_dropout((*pVecA0)[i], m_prob, XD, Dropout);
-	//		matmul(XDropout, W, A1);
 			if(m_func == SOFTMAX){
-				m2mpbaf(XD, W, B, LINEAR, vecA1[i], m_params[LEAKYRELU]);
+				m2mpbaf((*pVecA0)[i], _W, B, LINEAR, vecA1[i], m_params[LEAKYRELU]);
 				softmax(A1, 1, PartZ);
 			}else{
-				m2mpbaf(XD, W, B, m_func, vecA1[i], m_params[LEAKYRELU]);
+				m2mpbaf((*pVecA0)[i], _W, B, m_func, vecA1[i], m_params[LEAKYRELU]);
 			}
 		}else{
 	//		matmul(*pA0, W, A1);
 			if(m_func == SOFTMAX){
-				m2mpbaf((*pVecA0)[i], W, B, LINEAR, vecA1[i], m_params[LEAKYRELU]);
+				m2mpbaf((*pVecA0)[i], _W, B, LINEAR, vecA1[i], m_params[LEAKYRELU]);
 				softmax(vecA1[i], 1, PartZ);
 			}else{
-				m2mpbaf((*pVecA0)[i], W, B, m_func, vecA1[i], m_params[LEAKYRELU]);
+				m2mpbaf((*pVecA0)[i], _W, B, m_func, vecA1[i], m_params[LEAKYRELU]);
 			}
 		}
 	}
-
 
 	if(!save_A0)
         pVecA0 = nullptr;
@@ -288,9 +280,13 @@ void mlp::backward(std::vector<GpuMat> &Delta, bool last_layer)
 		}
 
 		if(m_is_dropout && std::abs(m_prob - 1) > 1e-6){
-			add2matmulT1(vecXDropout[i], (*pDA1)[i], gW);
+			add2matmulT1((*pVecA0)[i], (*pDA1)[i], gW);
 		}else{
 			add2matmulT1((*pVecA0)[i], (*pDA1)[i], gW);
+		}
+
+		if(m_is_dropout & m_prob < 1){
+			elemwiseMult(gW, Dropout);
 		}
 
 //		gBi.swap_dims();
