@@ -21,13 +21,13 @@ public:
 	Matf D1;
 	Matf DltA0;
 	Matf Dropout;
-	Matf WDropout;
+	Matf XDropout;
 	Matf gW;
 	Matf gB;
 
 	std::vector< Matf > *pVecA0;
 	std::vector< Matf > vecA1;
-//	std::vector< GpuMat > vecDA1;
+	std::vector< Matf > vecXDropout;
 	std::vector< Matf > vecDltA0;
 
 /////////////////////

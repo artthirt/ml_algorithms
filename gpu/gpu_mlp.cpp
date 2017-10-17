@@ -156,7 +156,7 @@ void mlp::forward(const GpuMat *mat, bool save_A0)
 		throw new std::invalid_argument("mlp::forward: not initialized. wrong parameters");
 	pA0 = (GpuMat*)mat;
 
-	if(m_is_dropout && std::abs(m_prob - 1) > 1e-6){
+	if(m_is_dropout && m_prob < 1){
 		apply_dropout(*pA0, m_prob, XDropout, Dropout);
 //		matmul(XDropout, W, A1);
 		if(m_func == SOFTMAX){
@@ -200,7 +200,7 @@ void mlp::backward(const GpuMat &Delta, bool last_layer)
 		pDA1 = (GpuMat*)&Delta;
 	}
 
-	if(m_is_dropout && std::abs(m_prob - 1) > 1e-6){
+	if(m_is_dropout && m_prob < 1){
 		matmulT1(XDropout, *pDA1, gW, 1. / m);
 	}else{
 		matmulT1(*pA0, *pDA1, gW, 1. / m);

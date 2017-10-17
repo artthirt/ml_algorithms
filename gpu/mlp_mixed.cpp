@@ -98,9 +98,10 @@ inline void apply_dropout(const Matf& X, double prob, Matf& XDropout, Matf& Drop
 	elemwiseMult(X, Dropout, XDropout);
 }
 
-void mlp_mixed::forward(const Matf *mat, bool save_A0){
+void mlp_mixed::forward(const Matf *mat, bool save_A0)
+{
 	if(!m_init || !mat)
-		throw new std::invalid_argument("mlp::forward: not initialized. wrong parameters");
+			throw new std::invalid_argument("mlp::forward: not initialized. wrong parameters");
 	pA0 = (Matf*)mat;
 
 	gpumat::GpuMat g_XDropout, g_Z, g_B;
@@ -109,28 +110,23 @@ void mlp_mixed::forward(const Matf *mat, bool save_A0){
 		gpumat::GpuMat g_A0, g_W;
 		gpumat::GpuMat partZ;
 
-		Matf &_W = W;
-
-		if(m_is_dropout && m_prob < 1){
-			apply_dropout(W, m_prob, WDropout, Dropout);
-			_W = WDropout;
-		}
-
 		gpumat::convert_to_gpu(*pA0, g_A0);
-		gpumat::convert_to_gpu(_W, g_W);
+		gpumat::convert_to_gpu(W, g_W);
 		gpumat::convert_to_gpu(B, g_B);
 
 		if(m_is_dropout && std::abs(m_prob - 1) > 1e-6){
 			gpumat::GpuMat g_Dropout;
 
+			ct::dropout(pA0->rows, pA0->cols, m_prob, Dropout);
 			gpumat::convert_to_gpu(Dropout, g_Dropout);
 
 			gpumat::elemwiseMult(g_A0, g_Dropout, g_XDropout);
 			if(m_func == SOFTMAX){
-				gpumat::m2mpbaf(g_A0, g_W, g_B, gpumat::LINEAR, g_Z, m_params[LEAKYRELU]);
+				gpumat::m2mpbaf(g_XDropout, g_W, g_B, gpumat::LINEAR, g_Z, m_params[LEAKYRELU]);
 				gpumat::softmax(g_Z, 1, partZ);
 			}else
-				gpumat::m2mpbaf(g_A0, g_W, g_B, (gpumat::etypefunction)m_func, g_Z, m_params[LEAKYRELU]);
+				gpumat::m2mpbaf(g_XDropout, g_W, g_B, (gpumat::etypefunction)m_func, g_Z, m_params[LEAKYRELU]);
+			gpumat::convert_to_mat(g_XDropout, XDropout);
 		}else{
 			//gpumat::matmul(g_A0, g_W, g_Z);
 			if(m_func == SOFTMAX){
@@ -153,7 +149,8 @@ void mlp_mixed::forward(const Matf *mat, bool save_A0){
 		pA0 = nullptr;
 }
 
-void mlp_mixed::backward(const Matf &Delta, bool last_layer){
+void mlp_mixed::backward(const Matf &Delta, bool last_layer)
+{
 	if(!pA0 || !m_init)
 		throw new std::invalid_argument("mlp::backward: not initialized. wrong parameters");
 
@@ -173,17 +170,10 @@ void mlp_mixed::backward(const Matf &Delta, bool last_layer){
 
 		{
 			gpumat::GpuMat g_gW;
-			if(m_is_dropout && std::abs(m_prob - 1) > 1e-6){
-				{
-					gpumat::GpuMat g_A0;
-					gpumat::convert_to_gpu(*pA0, g_A0);
-					gpumat::matmulT1(g_A0, g_DA1, g_gW, 1. / m);
-				}
-				{
-					gpumat::GpuMat g_Dropout;
-					gpumat::convert_to_gpu(Dropout, g_Dropout);
-					gpumat::elemwiseMult(g_gW, g_Dropout);
-				}
+			if(m_is_dropout && m_prob < 1){
+				gpumat::GpuMat g_XDropout;
+				gpumat::convert_to_gpu(XDropout, g_XDropout);
+				gpumat::matmulT1(g_XDropout, g_DA1, g_gW, 1. / m);
 			}else{
 				gpumat::GpuMat g_A0;
 				gpumat::convert_to_gpu(*pA0, g_A0);
@@ -220,29 +210,36 @@ void mlp_mixed::forward(const std::vector<Matf> *mat, bool save_A0)
 	pVecA0 = (std::vector< Matf >*)mat;
 
 	vecA1.resize(mat->size());
-
-	Matf& _W = W;
 	if(m_is_dropout && m_prob < 1){
-		apply_dropout(W, m_prob, WDropout, Dropout);
-		_W = WDropout;
+		vecXDropout.resize(mat->size());
 	}
 
 	gpumat::GpuMat g_W, g_B;
-	gpumat::convert_to_gpu(_W, g_W);
+	gpumat::convert_to_gpu(W, g_W);
 	gpumat::convert_to_gpu(B, g_B);
 
 	for(size_t i = 0; i < mat->size(); ++i){
-		if(m_func == SOFTMAX){
-			gpumat::GpuMat PartZ, g_A0, g_vecA1;
-			gpumat::convert_to_gpu((*pVecA0)[i], g_A0);
+		gpumat::GpuMat g_A0, g_vecA1;
+		gpumat::convert_to_gpu((*pVecA0)[i], g_A0);
 
+		if(m_is_dropout && m_prob < 1){
+			gpumat::GpuMat g_Dropout;
+
+			ct::dropout((*pVecA0)[i].rows, (*pVecA0)[i].cols, m_prob, Dropout);
+			gpumat::convert_to_gpu(Dropout, g_Dropout);
+
+			gpumat::elemwiseMult(g_A0, g_Dropout);
+			gpumat::convert_to_mat(g_A0, vecXDropout[i]);
+		}
+
+		if(m_func == SOFTMAX){
+			gpumat::GpuMat PartZ;
 			gpumat::m2mpbaf(g_A0, g_W, g_B, gpumat::LINEAR, g_vecA1, m_params[ct::LEAKYRELU]);
 			gpumat::softmax(g_vecA1, 1, PartZ);
 
 			gpumat::convert_to_mat(g_vecA1, vecA1[i]);
 		}else{
-			gpumat::GpuMat g_A0, g_vecA1;
-			gpumat::convert_to_gpu((*pVecA0)[i], g_A0);
+			gpumat::GpuMat g_vecA1;
 
 			gpumat::m2mpbaf(g_A0, g_W, g_B, (gpumat::etypefunction)m_func, g_vecA1, m_params[ct::LEAKYRELU]);
 
@@ -276,10 +273,6 @@ void mlp_mixed::backward(std::vector<Matf> &Delta, bool last_layer)
 		g_gW.zeros();
 		g_gB.zeros();
 
-		if(m_is_dropout && m_prob < 1){
-			gpumat::convert_to_gpu(Dropout, g_Dropout);
-		}
-
 		for(size_t i = 0; i < Delta.size(); ++i){
 			gpumat::GpuMat g_DA1;
 			gpumat::convert_to_gpu((*pDA1)[i], g_DA1);
@@ -288,12 +281,13 @@ void mlp_mixed::backward(std::vector<Matf> &Delta, bool last_layer)
 			}
 
 			gpumat::GpuMat g_vecA0;
-			gpumat::convert_to_gpu((*pVecA0)[i], g_vecA0);
 
-			gpumat::add2matmulT1(g_vecA0, g_DA1, g_gW);
-
-			if(m_is_dropout & m_prob < 1){
-				gpumat::elemwiseMult(g_gW, g_Dropout);
+			if(m_is_dropout && m_prob < 1){
+				gpumat::convert_to_gpu(vecXDropout[i], g_vecA0);
+				gpumat::add2matmulT1(g_vecA0, g_DA1, g_gW);
+			}else{
+				gpumat::convert_to_gpu((*pVecA0)[i], g_vecA0);
+				gpumat::add2matmulT1(g_vecA0, g_DA1, g_gW);
 			}
 
 	//		gBi.swap_dims();
