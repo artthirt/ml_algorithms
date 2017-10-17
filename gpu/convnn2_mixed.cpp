@@ -22,7 +22,10 @@ void convnn2_mixed::setParams(ct::etypefunction type, float param)
 	m_params[type] = param;
 }
 
-std::vector<ct::Matf> &convnn2_mixed::XOut(){
+std::vector<ct::Matf> &convnn2_mixed::XOut()
+{
+	if(m_use_bn)
+		return A3;
 	if(m_use_pool)
 		return A2;
 	return A1;
@@ -432,6 +435,7 @@ bool CnvAdamOptimizerMixed::pass(std::vector<convnn2_mixed> &cnv)
 CnvMomentumOptimizerMixed::CnvMomentumOptimizerMixed(): MomentumOptimizerMixed()
 {
 	m_iteration = 0;
+	stop_layer = 0;
 }
 
 bool CnvMomentumOptimizerMixed::init(const std::vector<convnn2_mixed> &cnv)
@@ -444,7 +448,10 @@ bool CnvMomentumOptimizerMixed::init(const std::vector<convnn2_mixed> &cnv)
 
 	int index = 0;
 	for(const convnn2_mixed &item: cnv){
-		initI(item.W, item.B, index++);
+		if(index >= stop_layer){
+			initI(item.W, item.B, index);
+		}
+		index++;
 	}
 	return true;
 }
@@ -458,7 +465,9 @@ bool CnvMomentumOptimizerMixed::pass(std::vector<convnn2_mixed> &cnv)
 
 	int index = 0;
 	for(convnn2_mixed &item: cnv){
-		passI(item.gW, item.gB, item.W, item.B, index++);
+		if(index >= stop_layer){
+			passI(item.gW, item.gB, item.W, item.B, index);
+		}
 	}
 	return true;
 }

@@ -21,9 +21,16 @@ public:
 	Matf D1;
 	Matf DltA0;
 	Matf Dropout;
-	Matf XDropout;
+	Matf WDropout;
 	Matf gW;
 	Matf gB;
+
+	std::vector< Matf > *pVecA0;
+	std::vector< Matf > vecA1;
+//	std::vector< GpuMat > vecDA1;
+	std::vector< Matf > vecDltA0;
+
+/////////////////////
 
 	mlp_mixed();
 
@@ -40,12 +47,36 @@ public:
 	void init(int input, int output, etypefunction func);
 
 	inline void apply_func(gpumat::GpuMat &Z, etypefunction func);
-	inline void apply_back_func(gpumat::GpuMat& D1, etypefunction func);
+	inline void apply_back_func(gpumat::GpuMat& D1, const Matf& A1, etypefunction func);
 
 	etypefunction funcType() const;
 
+	/**
+	 * @brief forward
+	 * @param mat
+	 * @param save_A0
+	 */
 	void forward(const ct::Matf *mat, bool save_A0 = true);
+	/**
+	 * @brief backward
+	 * @param Delta
+	 * @param last_layer
+	 */
 	void backward(const ct::Matf &Delta, bool last_layer = false);
+
+	/**
+	 * @brief forward
+	 * @param mat
+	 * @param func
+	 * @param save_A0
+	 */
+	void forward(const std::vector<Matf> *mat, bool save_A0 = true);
+	/**
+	 * @brief backward
+	 * @param Delta
+	 * @param last_layer
+	 */
+	void backward(std::vector<Matf> &Delta, bool last_layer = false);
 
 	void write(std::fstream& fs);
 

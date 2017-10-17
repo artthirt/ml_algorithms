@@ -279,11 +279,7 @@ void mlp::backward(std::vector<GpuMat> &Delta, bool last_layer)
 			apply_back_func(Delta[i], vecA1[i], vecA1[i], m_func);
 		}
 
-		if(m_is_dropout && std::abs(m_prob - 1) > 1e-6){
-			add2matmulT1((*pVecA0)[i], (*pDA1)[i], gW);
-		}else{
-			add2matmulT1((*pVecA0)[i], (*pDA1)[i], gW);
-		}
+		add2matmulT1((*pVecA0)[i], (*pDA1)[i], gW);
 
 		if(m_is_dropout & m_prob < 1){
 			elemwiseMult(gW, Dropout);

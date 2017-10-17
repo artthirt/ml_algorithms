@@ -598,6 +598,13 @@ public:
 		}
 	}
 
+	void reshape(int new_rows, int new_cols){
+		assert(rows * cols == new_rows * new_cols);
+
+		rows = new_rows;
+		cols = new_cols;
+	}
+
 	void clear(){
 		if(empty()){
 			return;

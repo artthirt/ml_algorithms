@@ -121,6 +121,8 @@ class CnvMomentumOptimizerMixed: public ct::MomentumOptimizerMixed
 public:
 	CnvMomentumOptimizerMixed();
 
+	int stop_layer;
+
 	bool init(const std::vector<convnn2_mixed>& cnv);
 	bool pass(std::vector<convnn2_mixed>& cnv);
 };
