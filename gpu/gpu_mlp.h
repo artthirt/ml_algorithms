@@ -21,13 +21,13 @@ public:
 	GpuMat PartZ;
 	GpuMat DltA0;
 	GpuMat Dropout;
-	GpuMat WDropout;
+	GpuMat XDropout;
 	GpuMat gW;
 	GpuMat gB;
 
 	std::vector< GpuMat > *pVecA0;
 	std::vector< GpuMat > vecA1;
-//	std::vector< GpuMat > vecDA1;
+	std::vector< GpuMat > vecXDropout;
 	std::vector< GpuMat > vecDltA0;
 
 	mlp();
