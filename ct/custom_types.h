@@ -1207,7 +1207,10 @@ public:
 		T* val = &(*res.val)[0];
 #pragma omp parallel for
 		for(int i = 0; i < rows; i++){
-			for(int j = 0; j < cols; j++){
+#ifdef __GNUC__
+#pragma omp simd
+#endif
+            for(int j = 0; j < cols; j++){
 				int offset = i * cols + j;
 				val[offset] = 0;
 			}
@@ -1220,7 +1223,10 @@ public:
 		T* val = &(*res.val)[0];
 #pragma omp parallel for
 		for(int i = 0; i < rows; i++){
-			for(int j = 0; j < cols; j++){
+#ifdef __GNUC__
+#pragma omp simd
+#endif
+            for(int j = 0; j < cols; j++){
 				int offset = i * cols + j;
 				val[offset] = 1.;
 			}

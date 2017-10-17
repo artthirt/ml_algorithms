@@ -1824,19 +1824,21 @@ void dropout(int rows, int cols, T p, Mat_<T>& D, int seed = 0)
 	if(seed > 0)
 		generator.seed(seed);
 
-	D.setSize(rows, cols);// = Mat_<T>::ones(rows, cols);
+    D = Mat_<T>::zeros(rows, cols);
 
 	T* val1 = &(*D.val)[0];
 
-//#pragma omp parallel for
+#pragma omp parallel for
 	for(int i = 0; i < rows; i++){
-//#ifdef __GNUC__
-//#pragma omp simd
-//#endif
-		for(int j = 0; j < cols; j++){
-			int pi = bi(generator);
-			val1[i * D.cols + j] = T(pi);
-		}
+        int pi = bi(generator);
+        if(pi){
+#ifdef __GNUC__
+#pragma omp simd
+#endif
+            for(int j = 0; j < cols; j++){
+                val1[i * D.cols + j] = 1.;
+            }
+        }
 	}
 }
 
