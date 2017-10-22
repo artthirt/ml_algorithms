@@ -124,7 +124,7 @@ private:
 	bool m_use_pool;
 	bool m_use_same;
 	gpumat::etypefunction m_func;
-	gpumat::GpuMat m_Dropout;
+	std::vector< gpumat::GpuMat > m_Dropout;
 	double m_lambda;
 	std::map< etypefunction, double > m_params;
 

@@ -200,33 +200,34 @@ void dropout_to_gpu(gpumat::GpuMat& Dropout, const ct::Size& sz, double prob)
 	gpumat::convert_to_gpu(d, Dropout);
 }
 
-void get_dropout(double prob, std::vector<gpumat::GpuMat>& X, gpumat::GpuMat& Dropout)
+void get_dropout(double prob, std::vector<gpumat::GpuMat>& X, std::vector< gpumat::GpuMat >& Dropout)
 {
 	if(X.empty() || std::abs(prob - 1.) < 1e-6)
 		return;
 
-	switch (X[0].type) {
-		case gpumat::GPU_DOUBLE:
-			dropout_to_gpu<double>(Dropout, X[0].sz(), prob);
-			break;
-		default:
-		case gpumat::GPU_FLOAT:
-			dropout_to_gpu<float>(Dropout, X[0].sz(), prob);
-			break;
-	}
+	Dropout.resize(X.size());
 	for(size_t i = 0; i < X.size(); ++i){
-		gpumat::elemwiseMult(X[i], Dropout);
+		switch (X[i].type) {
+			case gpumat::GPU_DOUBLE:
+				dropout_to_gpu<double>(Dropout[i], X[i].sz(), prob);
+				break;
+			default:
+			case gpumat::GPU_FLOAT:
+				dropout_to_gpu<float>(Dropout[i], X[i].sz(), prob);
+				break;
+		}
+		gpumat::elemwiseMult(X[i], Dropout[i]);
 	}
 //	qDebug("get_dropout: pool dropout generated and applied. prob=%f", prob);
 }
 
-void set_dropout(std::vector<gpumat::GpuMat>& X, const gpumat::GpuMat& Dropout)
+void set_dropout(std::vector<gpumat::GpuMat>& X, const std::vector< gpumat::GpuMat >& Dropout)
 {
 	if(X.empty() || Dropout.empty())
 		return;
 
 	for(size_t i = 0; i < X.size(); ++i){
-		gpumat::elemwiseMult(X[i], Dropout);
+		gpumat::elemwiseMult(X[i], Dropout[i]);
 	}
 //	qDebug("set_dropout: pool dropout applied");
 }
