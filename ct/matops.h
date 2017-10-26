@@ -1828,27 +1828,13 @@ void dropout(int rows, int cols, T p, Mat_<T>& D, int seed = 0)
 
     D = Mat_<T>::zeros(rows, cols);
 
-	T* val1 = &(*D.val)[0];
+	T* dD = D.ptr();
 
-	if(rows > 1){
 #pragma omp parallel for
-		for(int j = 0; j < cols; j++){
-			int pi = bi(generator);
-			if(pi){
-#ifdef __GNUC__
-#pragma omp simd
-#endif
-				for(int i = 0; i < rows; i++){
-					val1[i * D.cols + j] = 1.;
-				}
-			}
-		}
-	}else{
-		for(int j = 0; j < cols; j++){
-			int pi = bi(generator);
-			val1[0 * D.cols + j] = (T)pi;
-		}
+	for(int i = 0; i < D.total(); ++i){
+		dD[i] = bi(generator);
 	}
+
 }
 
 /**
