@@ -176,7 +176,7 @@ void convnn_gpu::init(const ct::Size &_szA0, int _channels, int stride, int _K,
 	}else{
 		ct::get_cnv_sizes(szA0, szW, stride, szA1, szA2);
 	}
-	float n = (float)1/(sqrt(szW.area() * channels));
+	float n = (float)1/(sqrt(kernels));
 
 	{
 		ct::Matf Wi(rows, cols), Bi(1, kernels);
@@ -390,8 +390,8 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 		//gpumat::add(gW[0], vgW);
 		//gpumat::add(gB[0], vgB);
 	}
-	gpumat::mulval(gW, (double)1./(D.size() * channels));
-	gpumat::mulval(gB, (double)1./(D.size() * channels));
+	gpumat::mulval(gW, (double)1./(D.size() * kernels));
+	gpumat::mulval(gB, (double)1./(D.size() * kernels));
 
 #if 0
 #if 0
