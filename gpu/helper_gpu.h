@@ -226,8 +226,21 @@ void save_gmat(const GpuMat &mat, const std::string &fn);
  */
 void save_gmat10(const GpuMat& mat, const std::string& fn);
 
+/**
+ * @brief cnv2gpu
+ * @param M
+ * @param G
+ */
 void cnv2gpu(const std::vector<ct::Matf> &M, std::vector< gpumat::GpuMat > &G);
 void cnv2gpu(const std::vector<ct::Matd> &M, std::vector< gpumat::GpuMat > &G);
+
+/**
+ * @brief cnv2mat
+ * @param G
+ * @param M
+ */
+void cnv2mat(const std::vector< gpumat::GpuMat > &G, std::vector<ct::Matf> &M);
+void cnv2mat(const std::vector< gpumat::GpuMat > &G, std::vector<ct::Matd> &M);
 
 }
 

@@ -580,7 +580,32 @@ void cnv2gpu(const std::vector<ct::Matf> &M, std::vector<GpuMat> &G)
 
 void cnv2gpu(const std::vector<ct::Matd> &M, std::vector<GpuMat> &G)
 {
-	_cnv2gpu<double>(M, G);
+    _cnv2gpu<double>(M, G);
+}
+
+template< typename T >
+void _cnv2mat(const std::vector<GpuMat> &G, std::vector<ct::Mat_<T>> &M)
+{
+    if(G.empty())
+        return;
+
+    M.resize(G.size());
+
+    for(size_t i = 0; i < M.size(); ++i){
+        const gpumat::GpuMat& Gi = G[i];
+        ct::Mat_<T>& Mi = M[i];
+        gpumat::convert_to_mat(Gi, Mi);
+    }
+}
+
+void cnv2mat(const std::vector<GpuMat> &G, std::vector<ct::Matf> &M)
+{
+    _cnv2mat<float>(G, M);
+}
+
+void cnv2mat(const std::vector<GpuMat> &G, std::vector<ct::Matd> &M)
+{
+    _cnv2mat<double>(G, M);
 }
 
 }

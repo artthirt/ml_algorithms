@@ -1548,9 +1548,9 @@ __global__ void subIndOne(SmallMtxArray vecA, Mtx Ind, SmallMtxArray vecB)
 		T *dB = (T*)B.data;
 
 		if((int)dI[row * Ind.cols] == col)
-			dB[1 * A.cols + col] = dA[1 * A.cols + col] - 1.;
+            dB[0 * A.cols + col] = dA[0 * A.cols + col] - 1.;
 		else
-			dB[1 * A.cols + col] = dA[1 * A.cols + col];
+            dB[0 * A.cols + col] = dA[0 * A.cols + col];
 	}
 }
 
