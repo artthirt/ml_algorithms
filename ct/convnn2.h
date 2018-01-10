@@ -457,6 +457,21 @@ public:
 				m_bn.normalize();
 			}
 		}
+
+#if 0
+	{
+		std::string pref = std::to_string(channels) + "_" + std::to_string(kernels);
+		ct::save_mat((*pX)[0], "Px_cpu_" + pref + ".txt");
+		ct::save_mat(Xc[0], "Xc_cpu_" + pref + ".txt");
+		ct::save_mat(A1[0], "A1_cpu_" + pref + ".txt");
+		if(!A2.empty()){
+			ct::save_mat(Mask[0], "M_cpu_" + pref + ".txt");
+			ct::save_mat(A2[0], "A2_cpu_" + pref + ".txt");
+		}
+		ct::save_mat(W, "W_cpu_" + pref + ".txt");
+		ct::save_mat(B, "B_cpu_" + pref + ".txt");
+	}
+#endif
 	}
 
 	void forward(const convnn<T> & conv){

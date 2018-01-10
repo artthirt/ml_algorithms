@@ -303,16 +303,16 @@ void convnn_gpu::forward(const std::vector<gpumat::GpuMat> *_pX)
 
 #if 0
 	{
-		QString pref = QString::number(channels) + "_" + QString::number(K);
-		qt_work_mat::q_save_mat((*pX)[0], "Px_" + pref + ".txt");
-		qt_work_mat::q_save_mat(Xc[0], "Xc_" + pref + ".txt");
-		qt_work_mat::q_save_mat(A1[0], "A1_" + pref + ".txt");
+		std::string pref = std::to_string(channels) + "_" + std::to_string(kernels);
+		gpumat::save_gmat((*pX)[0], "Px_gpu_" + pref + ".txt");
+		gpumat::save_gmat(Xc[0], "Xc_gpu_" + pref + ".txt");
+		gpumat::save_gmat(A1[0], "A1_gpu_" + pref + ".txt");
 		if(!A2.empty()){
-			qt_work_mat::q_save_mat(Mask[0], "M_" + pref + ".txt");
-			qt_work_mat::q_save_mat(A2[0], "A2_" + pref + ".txt");
+			gpumat::save_gmat(Mask[0], "M_gpu_" + pref + ".txt");
+			gpumat::save_gmat(A2[0], "A2_gpu_" + pref + ".txt");
 		}
-		qt_work_mat::q_save_mat(W[0], "W_" + pref + ".txt");
-		qt_work_mat::q_save_mat(B[0], "B_" + pref + ".txt");
+		gpumat::save_gmat(W, "W_gpu_" + pref + ".txt");
+		gpumat::save_gmat(B, "B_gpu_" + pref + ".txt");
 	}
 #endif
 }
