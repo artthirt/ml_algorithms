@@ -788,14 +788,14 @@ public:
 		ct::AdamOptimizer<T>::m_vW.resize(cnv.size());
 		ct::AdamOptimizer<T>::m_vb.resize(cnv.size());
 		for(const convnn<T>& item: cnv){
-			initI(item.W, item.B, index++);
+            ct::AdamOptimizer<T>::initI(item.W, item.B, index++);
 		}
 	}
 	void pass(std::vector< convnn<T> >& cnv){
 		ct::AdamOptimizer<T>::pass_iteration();
 		int index = 0;
 		for(convnn<T>& item: cnv){
-			passI(item.gW, item.gB, item.W, item.B, index++);
+            ct::AdamOptimizer<T>::passI(item.gW, item.gB, item.W, item.B, index++);
 		}
 	}
 };
