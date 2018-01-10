@@ -12,9 +12,9 @@ template< typename T >
 class mlp;
 
 template< typename T >
-class MlpOptimAdam: public AdamOptimizer<T>{
+class MlpAdamOptimizer: public AdamOptimizer<T>{
 public:
-	MlpOptimAdam(): AdamOptimizer<T>(){
+	MlpAdamOptimizer(): AdamOptimizer<T>(){
 
 	}
 
