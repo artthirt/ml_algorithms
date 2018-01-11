@@ -311,6 +311,9 @@ void convnn_gpu::forward(const std::vector<gpumat::GpuMat> *_pX)
 			gpumat::save_gmat(Mask[0], "M_gpu_" + pref + ".txt");
 			gpumat::save_gmat(A2[0], "A2_gpu_" + pref + ".txt");
 		}
+        if(!A3.empty()){
+            gpumat::save_gmat(A3[0], "A3_gpu_" + pref + ".txt");
+        }
 		gpumat::save_gmat(W, "W_gpu_" + pref + ".txt");
 		gpumat::save_gmat(B, "B_gpu_" + pref + ".txt");
 	}

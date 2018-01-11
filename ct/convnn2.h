@@ -468,7 +468,10 @@ public:
 			ct::save_mat(Mask[0], "M_cpu_" + pref + ".txt");
 			ct::save_mat(A2[0], "A2_cpu_" + pref + ".txt");
 		}
-		ct::save_mat(W, "W_cpu_" + pref + ".txt");
+        if(!A3.empty()){
+            ct::save_mat(A3[0], "A3_cpu_" + pref + ".txt");
+        }
+        ct::save_mat(W, "W_cpu_" + pref + ".txt");
 		ct::save_mat(B, "B_cpu_" + pref + ".txt");
 	}
 #endif
