@@ -301,7 +301,7 @@ void convnn_gpu::forward(const std::vector<gpumat::GpuMat> *_pX)
 	}
 #endif
 
-#if 0
+#if DEBUG_MODE
 	{
 		std::string pref = std::to_string(channels) + "_" + std::to_string(kernels);
 		gpumat::save_gmat((*pX)[0], "Px_gpu_" + pref + ".txt");

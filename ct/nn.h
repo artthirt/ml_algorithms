@@ -1134,7 +1134,7 @@ struct BN{
 #pragma omp parallel for
 		for(int c = 0; c < channels; ++c){
 			T val = 0;
-			for(int i = 0; i < _X.size(); ++i){
+            for(int i = 0; i < (int)_X.size(); ++i){
 				T *dX = _X[i].ptr();
 				for(int s = 0; s < spatial; ++s){
 					val += dX[c + s * channels];
@@ -1144,7 +1144,7 @@ struct BN{
 			dM[c] = val;
 
 			val = 0;
-			for(int i = 0; i < _X.size(); ++i){
+            for(int i = 0; i < (int)_X.size(); ++i){
 				T *dX = _X[i].ptr();
 				T *dXu = Xu[i].ptr();
 				for(int s = 0; s < spatial; ++s){
@@ -1156,7 +1156,7 @@ struct BN{
 			val /= (N - 1);
 			dV[c] = ::sqrt(val + eps);
 
-			for(int i = 0; i < _X.size(); ++i){
+            for(int i = 0; i < (int)_X.size(); ++i){
 				T *dY = _Y[i].ptr();
 				T *dXu = Xu[i].ptr();
 				for(int s = 0; s < spatial; ++s){
@@ -1236,7 +1236,7 @@ struct BN{
 #pragma omp parallel for
 		for(int c = 0; c < channels; ++c){
 			T val = 0;
-			for(int x = 0; x < _D.size(); ++x){
+            for(int x = 0; x < (int)_D.size(); ++x){
 				T *dD = _D[x].ptr();
 				T *dDout = Dout[x].ptr();
 				for(int s = 0; s < spatial; ++s){
@@ -1247,7 +1247,7 @@ struct BN{
 			ddB[c] = val;
 
 			val = 0;
-			for(int x = 0; x < _D.size(); ++x){
+            for(int x = 0; x < (int)_D.size(); ++x){
 				T *dXu = Xu[x].ptr();
 				T *dD = _D[x].ptr();
 				for(int s = 0; s < spatial; ++s){
@@ -1257,7 +1257,7 @@ struct BN{
 			ddG[c] = val;
 
 			val = 0;
-			for(int x = 0; x < _D.size(); ++x){
+            for(int x = 0; x < (int)_D.size(); ++x){
 				T *dDout = Dout[x].ptr();
 				T *dXu = Xu[x].ptr();
 				for(int s = 0; s < spatial; ++s){
@@ -1270,7 +1270,7 @@ struct BN{
 			_s /= (N - 1);
 
 			val = 0;
-			for(int x = 0; x < _D.size(); ++x){
+            for(int x = 0; x < (int)_D.size(); ++x){
 				T *dDout = Dout[x].ptr();
 				T *dXu = Xu[x].ptr();
 				for(int s = 0; s < spatial; ++s){
@@ -1281,7 +1281,7 @@ struct BN{
 			}
 			val /= N;
 
-			for(int x = 0; x < _D.size(); ++x){
+            for(int x = 0; x < (int)_D.size(); ++x){
 				T *dDout = Dout[x].ptr();
 				for(int s = 0; s < spatial; ++s){
 					dDout[c + s * channels] += val;

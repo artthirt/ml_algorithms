@@ -79,7 +79,7 @@ public:
 	 * @param D2
 	 * @param func
 	 */
-	inline void apply_back_func(const GpuMat& D1, const GpuMat &A1, GpuMat& D2, etypefunction func);
+    inline void apply_back_func(const GpuMat& D1, const GpuMat &A1, GpuMat& D2);
 	/**
 	 * @brief funcType
 	 * @return

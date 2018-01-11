@@ -95,7 +95,7 @@ void mlp::apply_func(const GpuMat &Z, GpuMat &A, etypefunction func){
 	}
 }
 
-void mlp::apply_back_func(const GpuMat &D1, const GpuMat& A1, GpuMat &D2, etypefunction func)
+void mlp::apply_back_func(const GpuMat &D1, const GpuMat& A1, GpuMat &D2)
 {
 	if(m_func == LINEAR || m_func == SOFTMAX){
 		if(D1.data != D2.data)
@@ -195,7 +195,7 @@ void mlp::backward(const GpuMat &Delta, bool last_layer)
 	gpumat::GpuMat* pDA1 = &A1;
 
 	if(m_func != gpumat::SOFTMAX && m_func != gpumat::LINEAR){
-		apply_back_func(Delta, A1, A1, m_func);
+        apply_back_func(Delta, A1, A1);
 	}else{
 		pDA1 = (GpuMat*)&Delta;
 	}
@@ -284,7 +284,7 @@ void mlp::backward(std::vector<GpuMat> &Delta, bool last_layer)
 
 	for(size_t i = 0; i < Delta.size(); ++i){
 		if(m_func != gpumat::SOFTMAX && m_func != gpumat::LINEAR){
-			apply_back_func(Delta[i], vecA1[i], vecA1[i], m_func);
+            apply_back_func(Delta[i], vecA1[i], vecA1[i]);
 		}
 
 		if(m_is_dropout && std::abs(m_prob - 1) > 1e-6){

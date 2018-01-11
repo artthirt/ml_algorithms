@@ -458,9 +458,9 @@ public:
 			}
 		}
 
-#if 0
+#if DEBUG_MODE
 	{
-		std::string pref = std::to_string(channels) + "_" + std::to_string(kernels);
+        std::string pref = std::to_string(convnn_abstract<T>::channels) + "_" + std::to_string(convnn_abstract<T>::kernels);
 		ct::save_mat((*pX)[0], "Px_cpu_" + pref + ".txt");
 		ct::save_mat(Xc[0], "Xc_cpu_" + pref + ".txt");
 		ct::save_mat(A1[0], "A1_cpu_" + pref + ".txt");
@@ -479,7 +479,7 @@ public:
 	}
 
 	inline void backcnv(const std::vector< ct::Mat_<T> >& D, std::vector< ct::Mat_<T> >& DS){
-		for(int i = 0; i < D.size(); ++i){
+        for(int i = 0; i < (int)D.size(); ++i){
 			ct::mul2deriv(D[i], A1[i], m_func, DS[i], m_params[ct::LEAKYRELU]);
 		}
 	}
