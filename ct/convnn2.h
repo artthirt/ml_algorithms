@@ -461,18 +461,22 @@ public:
 #if DEBUG_MODE
 	{
         std::string pref = std::to_string(convnn_abstract<T>::channels) + "_" + std::to_string(convnn_abstract<T>::kernels);
-		ct::save_mat((*pX)[0], "Px_cpu_" + pref + ".txt");
-		ct::save_mat(Xc[0], "Xc_cpu_" + pref + ".txt");
-		ct::save_mat(A1[0], "A1_cpu_" + pref + ".txt");
+        ct::save_mat((*pX)[0], "data/Px_cpu_" + pref + ".txt");
+        ct::save_mat(Xc[0], "data/Xc_cpu_" + pref + ".txt");
+        ct::save_mat(A1[0], "data/A1_cpu_" + pref + ".txt");
 		if(!A2.empty()){
-			ct::save_mat(Mask[0], "M_cpu_" + pref + ".txt");
-			ct::save_mat(A2[0], "A2_cpu_" + pref + ".txt");
+            ct::save_mat(Mask[0], "data/M_cpu_" + pref + ".txt");
+            ct::save_mat(A2[0], "data/A2_cpu_" + pref + ".txt");
 		}
         if(!A3.empty()){
-            ct::save_mat(A3[0], "A3_cpu_" + pref + ".txt");
+            ct::save_mat(A3[0], "data/A3_cpu_" + pref + ".txt");
+            ct::save_mat(bn().Mean, "data/Mean_cpu_" + pref + ".txt");
+            ct::save_mat(bn().Var, "data/Var_cpu_" + pref + ".txt");
+            ct::save_mat(bn().gamma, "data/gamma_cpu_" + pref + ".txt");
+            ct::save_mat(bn().betha, "data/betha_cpu_" + pref + ".txt");
         }
-        ct::save_mat(W, "W_cpu_" + pref + ".txt");
-		ct::save_mat(B, "B_cpu_" + pref + ".txt");
+        ct::save_mat(W, "data/W_cpu_" + pref + ".txt");
+        ct::save_mat(B, "data/B_cpu_" + pref + ".txt");
 	}
 #endif
 	}

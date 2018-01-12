@@ -303,20 +303,24 @@ void convnn_gpu::forward(const std::vector<gpumat::GpuMat> *_pX)
 
 #if DEBUG_MODE
 	{
-		std::string pref = std::to_string(channels) + "_" + std::to_string(kernels);
-		gpumat::save_gmat((*pX)[0], "Px_gpu_" + pref + ".txt");
-		gpumat::save_gmat(Xc[0], "Xc_gpu_" + pref + ".txt");
-		gpumat::save_gmat(A1[0], "A1_gpu_" + pref + ".txt");
-		if(!A2.empty()){
-			gpumat::save_gmat(Mask[0], "M_gpu_" + pref + ".txt");
-			gpumat::save_gmat(A2[0], "A2_gpu_" + pref + ".txt");
-		}
-        if(!A3.empty()){
-            gpumat::save_gmat(A3[0], "A3_gpu_" + pref + ".txt");
+        std::string pref = std::to_string(channels) + "_" + std::to_string(kernels);
+        gpumat::save_gmat((*pX)[0], "data/Px_gpu_" + pref + ".txt");
+        gpumat::save_gmat(Xc[0], "data/Xc_gpu_" + pref + ".txt");
+        gpumat::save_gmat(A1[0], "data/A1_gpu_" + pref + ".txt");
+        if(!A2.empty()){
+            gpumat::save_gmat(Mask[0], "data/M_gpu_" + pref + ".txt");
+            gpumat::save_gmat(A2[0], "data/A2_gpu_" + pref + ".txt");
         }
-		gpumat::save_gmat(W, "W_gpu_" + pref + ".txt");
-		gpumat::save_gmat(B, "B_gpu_" + pref + ".txt");
-	}
+        if(!A3.empty()){
+            gpumat::save_gmat(A3[0], "data/A3_gpu_" + pref + ".txt");
+            gpumat::save_gmat(bn.Mean, "data/Mean_gpu_" + pref + ".txt");
+            gpumat::save_gmat(bn.Var, "data/Var_gpu_" + pref + ".txt");
+            gpumat::save_gmat(bn.gamma, "data/gamma_gpu_" + pref + ".txt");
+            gpumat::save_gmat(bn.betha, "data/betha_gpu_" + pref + ".txt");
+        }
+        gpumat::save_gmat(W, "data/W_gpu_" + pref + ".txt");
+        gpumat::save_gmat(B, "data/B_gpu_" + pref + ".txt");
+    }
 #endif
 }
 
