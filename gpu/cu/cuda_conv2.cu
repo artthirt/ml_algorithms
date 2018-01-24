@@ -849,9 +849,9 @@ __global__ void addvec(Mtx mat,  SmallMtxArray vec, T alpha)
 
 __device__ void get_offset_and_cnt(int& off, int& cnt, int count, int rowi)
 {
-	off = rowi * BLOCKSIZE;
+    off = rowi * BLOCKSIZE_CNV;
 	cnt = count - off;
-	cnt = max(0, min(BLOCKSIZE, cnt));
+    cnt = max(0, min(BLOCKSIZE_CNV, cnt));
 }
 
 template< typename T >
@@ -871,7 +871,7 @@ __global__ void get_mean(const SmallMtxArray X,  Mtx Mean, int spatial, int chan
 	int coli = threadIdx.x; int rowi = threadIdx.y;
 	get_offset_and_cnt(offr, cntr, X.count, rowi);
 
-	__shared__ T data[BLOCKSIZE][BLOCKSIZE];
+    __shared__ T data[BLOCKSIZE_CNV][BLOCKSIZE_CNV];
 
 	if(col < channels){
 
@@ -906,7 +906,7 @@ __global__ void get_var(const SmallMtxArray X, const Mtx Mean, SmallMtxArray Xmu
 	int coli = threadIdx.x; int rowi = threadIdx.y;
 	get_offset_and_cnt(offr, cntr, X.count, rowi);
 
-	__shared__ T data[BLOCKSIZE][BLOCKSIZE];
+    __shared__ T data[BLOCKSIZE_CNV][BLOCKSIZE_CNV];
 
 	if(col < channels){
 
@@ -994,10 +994,10 @@ void cuda_im2cols(const gpumat::GpuMat &X,
 				  gpumat::GpuMat &Res,
 				  ct::Size &szOut)
 {
-	int x1 = szOut.area() * channels / BLOCKSIZE + 1;
+    int x1 = szOut.area() * channels / BLOCKSIZE_CNV + 1;
 	int x2 = 1;
 
-	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, 1);
+    dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE_CNV, 1);
 
 	switch (X.type) {
 		case GPU_DOUBLE:
@@ -1018,10 +1018,10 @@ void cuda_im2cols_vec(const std::vector< gpumat::GpuMat > &X,
 				  std::vector< gpumat::GpuMat > &Res,
 				  ct::Size &szOut)
 {
-	int x1 = szOut.area() * channels / BLOCKSIZE + 1;
-	int x2 = (int)X.size() / BLOCKSIZE + 1;
+    int x1 = szOut.area() * channels / BLOCKSIZE_CNV + 1;
+    int x2 = (int)X.size() / BLOCKSIZE_CNV + 1;
 
-	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+    dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE_CNV, BLOCKSIZE_CNV);
 
 	internal::SmallMtxArray sX(X), sRes(Res);
 
@@ -1046,10 +1046,10 @@ void cuda_im2colsT(const gpumat::GpuMat &X,
 				  gpumat::GpuMat &Res,
 				  ct::Size &szOut)
 {
-	int x1 = szOut.area() * channels / BLOCKSIZE + 1;
+    int x1 = szOut.area() * channels / BLOCKSIZE_CNV + 1;
 	int x2 = 1;
 
-	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, 1);
+    dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE_CNV, 1);
 
 	switch (X.type) {
 		case GPU_DOUBLE:
@@ -1070,10 +1070,10 @@ void cuda_im2colsT_vec(const std::vector< gpumat::GpuMat > &X,
 				  std::vector< gpumat::GpuMat > &Res,
 				  ct::Size &szOut)
 {
-	int x1 = szOut.area() * channels / BLOCKSIZE + 1;
-	int x2 = (int)X.size() / BLOCKSIZE + 1;
+    int x1 = szOut.area() * channels / BLOCKSIZE_CNV + 1;
+    int x2 = (int)X.size() / BLOCKSIZE_CNV + 1;
 
-	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+    dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE_CNV, BLOCKSIZE_CNV);
 
 	internal::SmallMtxArray sX(X), sRes(Res);
 
@@ -1098,10 +1098,10 @@ void cuda_im2colsSame(const gpumat::GpuMat &X,
 				  gpumat::GpuMat &Res,
 				  ct::Size &szOut)
 {
-	int x1 = szOut.area() * channels / BLOCKSIZE + 1;
+    int x1 = szOut.area() * channels / BLOCKSIZE_CNV + 1;
 	int x2 = 1;
 
-	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, 1);
+    dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE_CNV, 1);
 
 	switch (X.type) {
 		case GPU_DOUBLE:
@@ -1122,10 +1122,10 @@ void cuda_im2cols_vecSame(const std::vector< gpumat::GpuMat > &X,
 				  std::vector< gpumat::GpuMat > &Res,
 				  ct::Size &szOut)
 {
-	int x1 = szOut.area() * channels / BLOCKSIZE + 1;
-	int x2 = (int)X.size() / BLOCKSIZE + 1;
+    int x1 = szOut.area() * channels / BLOCKSIZE_CNV + 1;
+    int x2 = (int)X.size() / BLOCKSIZE_CNV + 1;
 
-	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+    dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE_CNV, BLOCKSIZE_CNV);
 
 	internal::SmallMtxArray sX(X), sRes(Res);
 
@@ -1150,10 +1150,10 @@ void cuda_im2colsTSame(const gpumat::GpuMat &X,
 				  gpumat::GpuMat &Res,
 				  ct::Size &szOut)
 {
-	int x1 = szOut.area() * channels / BLOCKSIZE + 1;
+    int x1 = szOut.area() * channels / BLOCKSIZE_CNV + 1;
 	int x2 = 1;
 
-	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, 1);
+    dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE_CNV, 1);
 
 	switch (X.type) {
 		case GPU_DOUBLE:
@@ -1174,10 +1174,10 @@ void cuda_im2colsT_vecSame(const std::vector< gpumat::GpuMat > &X,
 				  std::vector< gpumat::GpuMat > &Res,
 				  ct::Size &szOut)
 {
-	int x1 = szOut.area() * channels / BLOCKSIZE + 1;
-	int x2 = (int)X.size() / BLOCKSIZE + 1;
+    int x1 = szOut.area() * channels / BLOCKSIZE_CNV + 1;
+    int x2 = (int)X.size() / BLOCKSIZE_CNV + 1;
 
-	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+    dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE_CNV, BLOCKSIZE_CNV);
 
 	internal::SmallMtxArray sX(X), sRes(Res);
 
@@ -1202,10 +1202,10 @@ void cuda_cols2im(const gpumat::GpuMat &Delta,
 				int stride,
 				gpumat::GpuMat &X)
 {
-	int x1 = szA0.area() * channels / BLOCKSIZE + 1;
+    int x1 = szA0.area() * channels / BLOCKSIZE_CNV + 1;
 	int x2 = 1;
 
-	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, 1);
+    dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE_CNV, 1);
 
 	switch (X.type) {
 		case GPU_DOUBLE:
@@ -1226,10 +1226,10 @@ void cuda_cols2im_vec(const std::vector< gpumat::GpuMat > &Delta,
 				int stride,
 				std::vector< gpumat::GpuMat > &X)
 {
-	int x1 = szA0.area() * channels / BLOCKSIZE + 1;
-	int x2 = (int)X.size() / BLOCKSIZE + 1;
+    int x1 = szA0.area() * channels / BLOCKSIZE_CNV + 1;
+    int x2 = (int)X.size() / BLOCKSIZE_CNV + 1;
 
-	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+    dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE_CNV, BLOCKSIZE_CNV);
 
 	switch (Delta[0].type) {
 		case GPU_DOUBLE:
@@ -1252,10 +1252,10 @@ void cuda_cols2imT(const gpumat::GpuMat &Delta,
 				int stride,
 				gpumat::GpuMat &X)
 {
-	int x1 = szA0.area() * channels / BLOCKSIZE + 1;
+    int x1 = szA0.area() * channels / BLOCKSIZE_CNV + 1;
 	int x2 = 1;
 
-	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, 1);
+    dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE_CNV, 1);
 
 	switch (X.type) {
 		case GPU_DOUBLE:
@@ -1276,10 +1276,10 @@ void cuda_col2imT_vec(const std::vector< gpumat::GpuMat > &Delta,
 				int stride,
 				std::vector< gpumat::GpuMat > &X)
 {
-	int x1 = szA0.area() * channels / BLOCKSIZE + 1;
-	int x2 = (int)X.size() / BLOCKSIZE + 1;
+    int x1 = szA0.area() * channels / BLOCKSIZE_CNV + 1;
+    int x2 = (int)X.size() / BLOCKSIZE_CNV + 1;
 
-	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+    dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE_CNV, BLOCKSIZE_CNV);
 
 	switch (Delta[0].type) {
 		case GPU_DOUBLE:
@@ -1298,10 +1298,10 @@ void cuda_cols2im_same(const gpumat::GpuMat &Delta, const ct::Size &szDelta,
 					   const ct::Size &szA0, int channels, const ct::Size &szW,
 					   int stride, gpumat::GpuMat &X)
 {
-	int x1 = szA0.area() * channels / BLOCKSIZE + 1;
+    int x1 = szA0.area() * channels / BLOCKSIZE_CNV + 1;
 	int x2 = 1;
 
-	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, 1);
+    dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE_CNV, 1);
 
 	switch (X.type) {
 		case GPU_DOUBLE:
@@ -1319,10 +1319,10 @@ void cuda_cols2im_vec_same(const std::vector< gpumat::GpuMat > &Delta,
 						   int channels, const ct::Size &szW, int stride,
 						   std::vector< gpumat::GpuMat > &X)
 {
-	int x1 = szA0.area() * channels / BLOCKSIZE + 1;
-	int x2 = (int)X.size() / BLOCKSIZE + 1;
+    int x1 = szA0.area() * channels / BLOCKSIZE_CNV + 1;
+    int x2 = (int)X.size() / BLOCKSIZE_CNV + 1;
 
-	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+    dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE_CNV, BLOCKSIZE_CNV);
 
 	switch (Delta[0].type) {
 		case GPU_DOUBLE:
@@ -1344,10 +1344,10 @@ void cuda_cols2imT_same(const gpumat::GpuMat &Delta,
 						int stride,
 						gpumat::GpuMat &X)
 {
-	int x1 = szA0.area() * channels / BLOCKSIZE + 1;
+    int x1 = szA0.area() * channels / BLOCKSIZE_CNV + 1;
 	int x2 = 1;
 
-	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, 1);
+    dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE_CNV, 1);
 
 	switch (X.type) {
 		case GPU_DOUBLE:
@@ -1367,10 +1367,10 @@ void cuda_col2imT_vec_same(const std::vector< gpumat::GpuMat > &Delta,
 						   int stride,
 						   std::vector< gpumat::GpuMat > &X)
 {
-	int x1 = szA0.area() * channels / BLOCKSIZE + 1;
-	int x2 = (int)X.size() / BLOCKSIZE + 1;
+    int x1 = szA0.area() * channels / BLOCKSIZE_CNV + 1;
+    int x2 = (int)X.size() / BLOCKSIZE_CNV + 1;
 
-	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+    dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE_CNV, BLOCKSIZE_CNV);
 
 	switch (Delta[0].type) {
 		case GPU_DOUBLE:
@@ -1392,10 +1392,10 @@ void cuda_subsample2(const gpumat::GpuMat &X,
 							  ct::Size &szO)
 {
 	int K = X.cols;
-	int x1 = szO.area() * K / BLOCKSIZE + 1;
+    int x1 = szO.area() * K / BLOCKSIZE_CNV + 1;
 	int x2 = 1;
 
-	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, 1);
+    dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE_CNV, 1);
 
 	switch (X.type) {
 		case GPU_DOUBLE:
@@ -1415,10 +1415,10 @@ void cuda_subsample2_vec(const std::vector< gpumat::GpuMat > &X,
 					ct::Size &szO)
 {
 	int K = X[0].cols;
-	int x1 = szO.area() * K / BLOCKSIZE + 1;
-	int x2 = (int)X.size() / BLOCKSIZE + 1;
+    int x1 = szO.area() * K / BLOCKSIZE_CNV + 1;
+    int x2 = (int)X.size() / BLOCKSIZE_CNV + 1;
 
-	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+    dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE_CNV, BLOCKSIZE_CNV);
 
 	switch (X[0].type) {
 		case GPU_DOUBLE:
@@ -1435,10 +1435,10 @@ void cuda_upsample2(const gpumat::GpuMat &Y, const gpumat::GpuMat &Mask, const c
 			  const ct::Size &szA, gpumat::GpuMat &X)
 {
 	int K = X.cols;
-	int x1 = szO.area() * K / BLOCKSIZE + 1;
+    int x1 = szO.area() * K / BLOCKSIZE_CNV + 1;
 	int x2 = 1;
 
-	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, 1);
+    dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE_CNV, 1);
 
 	switch (X.type) {
 		case GPU_DOUBLE:
@@ -1455,10 +1455,10 @@ void cuda_upsample2vec(const std::vector<gpumat::GpuMat> &Y, const std::vector<g
 			  const ct::Size &szO, const ct::Size &szA, std::vector<gpumat::GpuMat> &X)
 {
 	int K = X[0].cols;
-	int x1 = szO.area() * K / BLOCKSIZE + 1;
-	int x2 = (int)X.size() / BLOCKSIZE + 1;
+    int x1 = szO.area() * K / BLOCKSIZE_CNV + 1;
+    int x2 = (int)X.size() / BLOCKSIZE_CNV + 1;
 
-	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+    dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE_CNV, BLOCKSIZE_CNV);
 
 	switch (X[0].type) {
 		case GPU_DOUBLE:
@@ -1477,10 +1477,10 @@ void cuda_vec2mat(const std::vector< GpuMat >& vec, GpuMat& mat)
 	int rows = mat.rows;
 	int cols = mat.cols;
 
-	int x1 = cols / BLOCKSIZE + 1;
-	int x2 = rows / BLOCKSIZE + 1;
+    int x1 = cols / BLOCKSIZE_CNV + 1;
+    int x2 = rows / BLOCKSIZE_CNV + 1;
 
-	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+    dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE_CNV, BLOCKSIZE_CNV);
 
 	switch (vec[0].type) {
 		case GPU_DOUBLE:
@@ -1498,10 +1498,10 @@ void cuda_mat2vec(const GpuMat& mat, const ct::Size& sz, std::vector< GpuMat >& 
 	int rows = mat.rows;
 	int cols = mat.cols;
 
-	int x1 = cols / BLOCKSIZE + 1;
-	int x2 = rows / BLOCKSIZE + 1;
+    int x1 = cols / BLOCKSIZE_CNV + 1;
+    int x2 = rows / BLOCKSIZE_CNV + 1;
 
-	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+    dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE_CNV, BLOCKSIZE_CNV);
 
 	switch (vec[0].type) {
 		case GPU_DOUBLE:
@@ -1519,10 +1519,10 @@ void cuda_addvec(gpumat::GpuMat &W, const std::vector<gpumat::GpuMat> &vW, doubl
 	int rows = W.rows;
 	int cols = W.cols;
 
-	int x1 = cols / BLOCKSIZE + 1;
-	int x2 = rows / BLOCKSIZE + 1;
+    int x1 = cols / BLOCKSIZE_CNV + 1;
+    int x2 = rows / BLOCKSIZE_CNV + 1;
 
-	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+    dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE_CNV, BLOCKSIZE_CNV);
 
 	switch (W.type) {
 		case GPU_DOUBLE:
@@ -1542,10 +1542,10 @@ void cuda_batch_normalize(_BN &bn)
 	int rows = bn.X->size();
 	int cols = bn.X->front().total();
 
-	int x1 = cols / BLOCKSIZE + 1;
-	int x2 = rows / BLOCKSIZE + 1;
+    int x1 = cols / BLOCKSIZE_CNV + 1;
+    int x2 = rows / BLOCKSIZE_CNV + 1;
 
-	dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE), dimGridC(bn.channels / BLOCKSIZE + 1, x2);
+    dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE_CNV, BLOCKSIZE_CNV), dimGridC(bn.channels / BLOCKSIZE_CNV + 1, x2);
 
 	switch (bn.X->front().type) {
 		case GPU_DOUBLE:
@@ -1574,7 +1574,7 @@ __global__ void get_dbetha(const SmallMtxArray D, const Mtx gamma, Mtx dbetha, S
 {
 	int col = threadIdx.x + blockDim.x * blockIdx.x;
 
-	__shared__ T data[BLOCKSIZE][BLOCKSIZE];
+    __shared__ T data[BLOCKSIZE_CNV][BLOCKSIZE_CNV];
 
 	T val;
 	int offr, cntr;
@@ -1617,7 +1617,7 @@ __global__ void get_dgamma(const SmallMtxArray D, const SmallMtxArray Xu, const 
 	int offr, cntr;
 	int coli = threadIdx.x; int rowi = threadIdx.y;
 	get_offset_and_cnt(offr, cntr, D.count, rowi);
-	__shared__ T data[BLOCKSIZE][BLOCKSIZE];
+    __shared__ T data[BLOCKSIZE_CNV][BLOCKSIZE_CNV];
 
 	if(col < channels){
 		T *dG	= (T*)dgamma.data;
@@ -1671,7 +1671,7 @@ __global__ void get_dsigma(const SmallMtxArray D, const SmallMtxArray Xmu, const
 	int offr, cntr;
 	int coli = threadIdx.x; int rowi = threadIdx.y;
 	get_offset_and_cnt(offr, cntr, D.count, rowi);
-	__shared__ T data[BLOCKSIZE][BLOCKSIZE];
+    __shared__ T data[BLOCKSIZE_CNV][BLOCKSIZE_CNV];
 
 	if(col < channels){
 		T *dV	= (T*)Var.data;
@@ -1712,7 +1712,7 @@ __global__ void get_dmean(const SmallMtxArray D, const SmallMtxArray Xmu, const 
 	int offr, cntr;
 	int coli = threadIdx.x; int rowi = threadIdx.y;
 	get_offset_and_cnt(offr, cntr, Dout.count, rowi);
-	__shared__ T data[BLOCKSIZE][BLOCKSIZE];
+    __shared__ T data[BLOCKSIZE_CNV][BLOCKSIZE_CNV];
 
 	if(col < channels){
 		T *dA	= (T*)dMean.data;
@@ -1791,10 +1791,10 @@ void cuda_batch_denormalize(_BN &bn)
 	int rows = bn.X->size();
 	int cols = bn.X->front().total();
 
-//	int x1 = cols / BLOCKSIZE + 1;
-	int x2 = rows / BLOCKSIZE + 1;
+//	int x1 = cols / BLOCKSIZE_CNV + 1;
+    int x2 = rows / BLOCKSIZE_CNV + 1;
 
-	dim3 dimBlock(BLOCKSIZE, BLOCKSIZE), dimGridC(bn.channels / BLOCKSIZE + 1, x2);
+    dim3 dimBlock(BLOCKSIZE_CNV, BLOCKSIZE_CNV), dimGridC(bn.channels / BLOCKSIZE_CNV + 1, x2);
 
 	bn.dgamma.resize(bn.gamma);
 	bn.dbetha.resize(bn.betha);
@@ -1833,10 +1833,10 @@ void cuda_scale_and_shift_bn(_BN &bn)
 	int rows = bn.X->size();
 	int cols = bn.X->front().total();
 
-//	int x1 = cols / BLOCKSIZE + 1;
-	int x2 = rows / BLOCKSIZE + 1;
+//	int x1 = cols / BLOCKSIZE_CNV + 1;
+    int x2 = rows / BLOCKSIZE_CNV + 1;
 
-	dim3 dimBlock(BLOCKSIZE, BLOCKSIZE), dimGridC(bn.channels / BLOCKSIZE + 1, x2);
+    dim3 dimBlock(BLOCKSIZE_CNV, BLOCKSIZE_CNV), dimGridC(bn.channels / BLOCKSIZE_CNV + 1, x2);
 
 	switch (bn.D->front().type) {
 		case GPU_DOUBLE:
