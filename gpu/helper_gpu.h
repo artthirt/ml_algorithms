@@ -86,7 +86,8 @@ public:
 
 	uint32_t iteration() const;
 
-	virtual bool init(const std::vector<GpuMat> &gradW, const std::vector<GpuMat> &gradB) = 0;
+    virtual void initSize(int size);
+    virtual bool init(const std::vector<GpuMat> &gradW, const std::vector<GpuMat> &gradB) = 0;
 	virtual bool pass(const std::vector< gpumat::GpuMat >& gradW, const std::vector< gpumat::GpuMat >& gradB,
 			  std::vector< gpumat::GpuMat >& W, std::vector< gpumat::GpuMat >& b) = 0;
 	virtual void initI(const GpuMat &W, const GpuMat &B, int index) = 0;
@@ -105,7 +106,8 @@ class StohasticGradientOptimizer: public Optimizer{
 public:
 	StohasticGradientOptimizer();
 
-	virtual bool init(const std::vector<GpuMat> &gradW, const std::vector<GpuMat> &gradB);
+    void initSize(int size);
+    virtual bool init(const std::vector<GpuMat> &gradW, const std::vector<GpuMat> &gradB);
 	virtual bool pass(const std::vector< gpumat::GpuMat >& gradW, const std::vector< gpumat::GpuMat >& gradB,
 			  std::vector< gpumat::GpuMat >& W, std::vector< gpumat::GpuMat >& b);
 	void initI(const GpuMat &W, const GpuMat &B, int index);
@@ -128,7 +130,8 @@ public:
 	virtual bool pass(const std::vector< gpumat::GpuMat >& gradW, const std::vector< gpumat::GpuMat >& gradB,
 			  std::vector< gpumat::GpuMat >& W, std::vector< gpumat::GpuMat >& B);
 
-	void initI(const GpuMat &W, const GpuMat &B, int index);
+    void initSize(int size);
+    void initI(const GpuMat &W, const GpuMat &B, int index);
 	void passI(const GpuMat &gW, const GpuMat &gB, gpumat::GpuMat& W, gpumat::GpuMat& B, int index);
 
 protected:
@@ -164,6 +167,7 @@ public:
 	virtual bool pass(const std::vector< gpumat::GpuMat >& gradW, const std::vector< gpumat::GpuMat >& gradB,
 			  std::vector< gpumat::GpuMat >& W, std::vector< gpumat::GpuMat >& b);
 
+    void initSize(int size);
 	void initI(const GpuMat &W, const GpuMat &B, int index);
 	void passI(const GpuMat &gW, const GpuMat &gB, gpumat::GpuMat& W, gpumat::GpuMat& B, int index);
 

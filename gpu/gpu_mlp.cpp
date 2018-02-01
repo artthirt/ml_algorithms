@@ -380,6 +380,7 @@ bool MlpOptimAdam::pass(std::vector<mlp> &_mlp)
 
 	next_iteration();
 
+#pragma omp parallel for
 	for(size_t i = 0; i < _mlp.size(); ++i){
 		mlp& mlpi = _mlp[i];
 

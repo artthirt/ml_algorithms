@@ -8,8 +8,8 @@
 /**
   size of block for cuda gpu
 */
-#define BLOCKSIZE       32
-#define BLOCKSIZE_CNV   16
+#define BLOCKSIZE       8
+#define BLOCKSIZE_CNV   8
 
 namespace gpumat{
 

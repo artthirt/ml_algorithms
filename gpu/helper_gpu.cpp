@@ -175,12 +175,22 @@ void Optimizer::setAlpha(double v)
 
 uint32_t Optimizer::iteration() const
 {
-	return m_iteration;
+    return m_iteration;
+}
+
+void Optimizer::initSize(int size)
+{
+
 }
 
 ///////////////////////////////
 
 StohasticGradientOptimizer::StohasticGradientOptimizer(): Optimizer()
+{
+
+}
+
+void StohasticGradientOptimizer::initSize(int size)
 {
 
 }
@@ -262,6 +272,12 @@ bool MomentumOptimizer::pass(const std::vector<GpuMat> &gradW, const std::vector
 	}
 	return true;
 
+}
+
+void MomentumOptimizer::initSize(int size)
+{
+    m_mW.resize(size);
+    m_mb.resize(size);
 }
 
 void MomentumOptimizer::initI(const GpuMat &W, const GpuMat &B, int index)
@@ -374,7 +390,16 @@ bool AdamOptimizer::pass(const std::vector<GpuMat> &gradW, const std::vector<Gpu
 	for(size_t i = 0; i < gradW.size(); ++i){
 		passI(gradW[i], gradB[i], W[i], b[i], i);
 	}
-	return true;
+    return true;
+}
+
+void AdamOptimizer::initSize(int size)
+{
+    m_mW.resize(size);
+    m_mb.resize(size);
+    m_vW.resize(size);
+    m_vb.resize(size);
+
 }
 
 void AdamOptimizer::initI(const GpuMat &W, const GpuMat &B, int index)

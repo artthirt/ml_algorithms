@@ -255,6 +255,7 @@ void convnn_gpu::forward(const std::vector<gpumat::GpuMat> *_pX)
 			gpumat::im2cols(*pX, szA0, channels, szW, stride, Xc, szOut);
 	}
 
+#pragma omp parallel for
 	for(int i = 0; i < (int)Xc.size(); ++i){
 		gpumat::GpuMat& Xi = Xc[i];
 		gpumat::GpuMat& A1i = A1[i];
@@ -430,6 +431,7 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 		Dlt.resize(D.size());
 
 		Dc.resize(D.size());
+#pragma omp parallel for
 		for(int i = 0; i < (int)D.size(); ++i){
 			gpumat::GpuMat& Dci = Dc[i];
             gpumat::matmulT2(_D[i], W, Dci);
@@ -504,10 +506,8 @@ CnvAdamOptimizer::CnvAdamOptimizer() : AdamOptimizer()
 bool CnvAdamOptimizer::init(std::vector<convnn_gpu> &cnv)
 {
 	int index = 0;
-	m_mW.resize(cnv.size());
-	m_mb.resize(cnv.size());
-	m_vW.resize(cnv.size());
-	m_vb.resize(cnv.size());
+
+    initSize(cnv.size());
 
 	mG.resize(cnv.size());
 	mB.resize(cnv.size());
@@ -527,23 +527,34 @@ bool CnvAdamOptimizer::pass(std::vector<convnn_gpu> &cnv)
 	if(cnv.empty() || cnv.back().gW.empty() || cnv.back().gB.empty())
 		return false;
 	int index = 0;
-	next_iteration();
-	for(convnn_gpu& item: cnv){
-		if(index >= stop_layer){
-			if(item.use_bn()){
-				if(mG[index].empty()){
-					mG[index].resize(item.bn.dgamma); mG[index].zeros();
-					mB[index].resize(item.bn.dbetha); mB[index].zeros();
-					vG[index].resize(item.bn.dgamma); vG[index].zeros();
-					vB[index].resize(item.bn.dbetha); vB[index].zeros();
-				}
-				sub_adamGrad(item.bn.gamma, item.bn.dgamma, mG[index], vG[index], m_alpha, m_sb1, m_sb2, m_betha1, m_betha2);
-				sub_adamGrad(item.bn.betha, item.bn.dbetha, mB[index], vB[index], m_alpha, m_sb1, m_sb2, m_betha1, m_betha2);
-			}
+    next_iteration();
 
+    for(int i = 0; i < cnv.size(); ++i){
+        index = i;
+        convnn_gpu& item = cnv[index];
+        if(index >= stop_layer){
+            if(item.use_bn()){
+                if(mG[index].empty()){
+                    mG[index].resize(item.bn.dgamma); mG[index].zeros();
+                    mB[index].resize(item.bn.dbetha); mB[index].zeros();
+                    vG[index].resize(item.bn.dgamma); vG[index].zeros();
+                    vB[index].resize(item.bn.dbetha); vB[index].zeros();
+                    sub_adamGrad(item.bn.gamma, item.bn.dgamma, mG[index], vG[index], m_alpha, m_sb1, m_sb2, m_betha1, m_betha2);
+                    sub_adamGrad(item.bn.betha, item.bn.dbetha, mB[index], vB[index], m_alpha, m_sb1, m_sb2, m_betha1, m_betha2);
+                }
+            }
+        }
+    }
+
+    /*for(convnn_gpu& item: cnv)*/
+#pragma omp parallel for
+    for(int i = 0; i < cnv.size(); ++i){
+        index = i;
+        convnn_gpu& item = cnv[index];
+        if(index >= stop_layer){
 			passI(item.gW, item.gB, item.W, item.B, index);
 		}
-		index++;
+//		index++;
 	}
 	return true;
 }
@@ -561,8 +572,8 @@ bool CnvMomentumOptimizer::init(std::vector<convnn_gpu> &cnv)
 	if(cnv.empty())
 		return false;
 	int index = 0;
-	m_mW.resize(cnv.size());
-	m_mb.resize(cnv.size());
+
+    initSize(cnv.size());
 
 	mG.resize(cnv.size());
 	mB.resize(cnv.size());
