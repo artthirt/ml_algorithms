@@ -238,7 +238,7 @@ void mlp::forward(const std::vector<GpuMat> *mat, bool save_A0)
 			apply_dropout((*pVecA0)[i], m_prob, XD, Dropout);
 	//		matmul(XDropout, W, A1);
 			if(m_func == SOFTMAX){
-				m2mpbaf(XD, W, B, LINEAR, vecA1[i], m_params[LEAKYRELU]);
+                m2mpbaf(XD, W, B, LINEAR, vecA1[i]);
 				softmax(A1, 1, PartZ);
 			}else{
 				m2mpbaf(XD, W, B, m_func, vecA1[i], m_params[LEAKYRELU]);
@@ -246,7 +246,7 @@ void mlp::forward(const std::vector<GpuMat> *mat, bool save_A0)
 		}else{
 	//		matmul(*pA0, W, A1);
 			if(m_func == SOFTMAX){
-				m2mpbaf((*pVecA0)[i], W, B, LINEAR, vecA1[i], m_params[LEAKYRELU]);
+                m2mpbaf((*pVecA0)[i], W, B, LINEAR, vecA1[i]);
 				softmax(vecA1[i], 1, PartZ);
 			}else{
 				m2mpbaf((*pVecA0)[i], W, B, m_func, vecA1[i], m_params[LEAKYRELU]);
@@ -310,6 +310,7 @@ void mlp::backward(std::vector<GpuMat> &Delta, bool last_layer)
 
 	if(!last_layer){
 		vecDltA0.resize(Delta.size());
+#pragma omp parallel for
 		for(size_t i = 0; i < Delta.size(); ++i){
 			matmulT2((*pDA1)[i], W, vecDltA0[i]);
 		}
@@ -492,6 +493,8 @@ bool MlpOptimMoment::pass(std::vector<mlp> &_mlp)
 		return false;
 
 	m_iteration++;
+
+#pragma omp parallel for
 	for(size_t i = 0; i < _mlp.size(); ++i){
 		mlp& mlpi = _mlp[i];
 

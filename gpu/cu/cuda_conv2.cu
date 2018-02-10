@@ -212,17 +212,20 @@ __device__ void _im2colsTSame(const Mtx& X, const ct::Size& szA0, int channels, 
 		T *dXi = (T*)X.data + c;
 
 		for(int _a = 0; _a < szW.height; ++_a){
-			int a = _a - szW.height/2;
-			for(int _b = 0; _b < szW.width; ++_b){
-				int b = _b - szW.width/2;
-				int col2 = c * szWarea + (_a * szW.width + _b);
-				T val = 0;
-				if(y0 + a >= 0 && y0 + a < szA0.height && x0 + b >= 0 && x0 + b < szA0.width){
-					val = dXi[((y0 + a) * szA0.width + (x0 + b)) * channels];
-				}
-				if(col2 < Res.cols)
-					dR[row2 * Res.cols + col2] = val;
-			}
+            int ya = y0 + _a - szW.height/2;
+            if(ya >= 0 && ya < szA0.height){
+                int yaw = (ya) * szA0.width;
+                for(int _b = 0; _b < szW.width; ++_b){
+                    int xb = x0 + _b - szW.width/2;
+                    int col2 = c * szWarea + (_a * szW.width + _b);
+                    T val = 0;
+                    if(xb >= 0 && xb < szA0.width){
+                        val = dXi[(yaw + xb) * channels];
+                    }
+                    if(col2 < Res.cols)
+                        dR[row2 * Res.cols + col2] = val;
+                }
+            }
 		}
 	}
 }
@@ -649,6 +652,12 @@ __global__ void cols2imT_vec_same(SmallMtxArray Delta,
 
 /////////////////////////////////
 
+template< typename T>
+__device__ T min(T a, T b)
+{
+    return a < b? a : b;
+}
+
 template< typename T >
 __device__ void _subsample(const Mtx &X,
 						   int K,
@@ -681,19 +690,18 @@ __device__ void _subsample(const Mtx &X,
 		T mmax = dX[(y0 * szA.width + x0) * X.cols];
 		int xm = x0, ym = y0;
 
-		for(int a = 0; a < stride; ++a){
-			if(y0 + a < szA.height){
-				for(int b = 0; b < stride; ++b){
-					if(x0 + b < szA.width){
-						T val = dX[((y0 + a) * szA.width + (x0 + b)) * X.cols];
-						if(val > mmax){
-							mmax = val;
-							xm = x0 + b;
-							ym = y0 + a;
-						}
-					}
-				}
-			}
+        int yr = min(y0 + stride, szA.height);
+        int xr = min(x0 + stride, szA.width);
+        for(int ya = y0; ya < yr; ++ya){
+            int y0a = (ya) * szA.width;
+            for(int xb = x0; xb < xr; ++xb){
+                T val = dX[(y0a + xb) * X.cols];
+                if(val > mmax){
+                    mmax = val;
+                    xm = xb;
+                    ym = ya;
+                }
+            }
 		}
 
 		dY[(y * szO.width + x) * Y.cols] = mmax;
@@ -758,15 +766,14 @@ __device__ void _upsample(const Mtx &Y,
 
 		T val = dY[(y * szO.width + x) * K];
 
-		for(int a = 0; a < stride; ++a){
-			if(y0 + a < szA.height){
-				for(int b = 0; b < stride; ++b){
-					if(x0 + b < szA.width){
-						T m = dM[((y0 + a) * szA.width + (x0 + b)) * Mask.cols];
-						dX[((y0 + a) * szA.width + (x0 + b)) * X.cols] = val * m;
-					}
-				}
-			}
+        int yr = min(y0 + stride, szA.height);
+        int xr = min(x0 + stride, szA.width);
+        for(int ya = y0; ya < yr; ++ya){
+            int y0a = (ya) * szA.width;
+            for(int xb = x0; xb < xr; ++xb){
+                T m = dM[(y0a + (xb)) * Mask.cols];
+                dX[(y0a + (xb)) * X.cols] = val * m;
+            }
 		}
 	}
 }

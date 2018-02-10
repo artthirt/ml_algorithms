@@ -591,20 +591,30 @@ bool CnvMomentumOptimizer::pass(std::vector<convnn_gpu> &cnv)
 		return false;
 
 	m_iteration++;
-	int index = 0;
-	for(convnn_gpu& item: cnv){
-		if(index >= stop_layer){
-			if(item.use_bn()){
-				if(mG[index].empty()){
-					mG[index].resize(item.bn.dgamma);
-					mB[index].resize(item.bn.dbetha);
-					mG[index].zeros();
-					mB[index].zeros();
-				}
-				momentum_optimizer(item.bn.gamma, mG[index], item.bn.dgamma, m_alpha, m_betha);
-				momentum_optimizer(item.bn.betha, mB[index], item.bn.dbetha, m_alpha, m_betha);
-			}
+    int index;
 
+    for(int i = 0; i < cnv.size(); ++i){
+        index = i;
+        convnn_gpu& item = cnv[index];
+        if(index >= stop_layer){
+            if(item.use_bn()){
+                if(mG[index].empty()){
+                    mG[index].resize(item.bn.dgamma);
+                    mB[index].resize(item.bn.dbetha);
+                    mG[index].zeros();
+                    mB[index].zeros();
+                }
+                momentum_optimizer(item.bn.gamma, mG[index], item.bn.dgamma, m_alpha, m_betha);
+                momentum_optimizer(item.bn.betha, mB[index], item.bn.dbetha, m_alpha, m_betha);
+            }
+       }
+    }
+
+#pragma omp parallel for
+    for(int i = 0; i < cnv.size(); ++i){
+        index = i;
+        convnn_gpu& item = cnv[index];
+		if(index >= stop_layer){
 			passI(item.gW, item.gB, item.W, item.B, index);
 		}
 		index++;
