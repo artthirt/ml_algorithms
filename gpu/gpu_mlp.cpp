@@ -503,3 +503,46 @@ bool MlpOptimMoment::pass(std::vector<mlp> &_mlp)
 	return true;
 
 }
+
+//////////////////////////
+
+MlpOptimAdaGrad::MlpOptimAdaGrad() : AdaGradOptimizer()
+{
+
+}
+
+bool MlpOptimAdaGrad::init(const std::vector<mlp> &_mlp)
+{
+    if(_mlp.empty())
+        return false;
+
+    m_iteration = 0;
+
+    initSize(_mlp.size());
+
+    for(size_t i = 0; i < _mlp.size(); i++){
+        const gpumat::mlp& _mlpi = _mlp[i];
+
+        initI(_mlpi.W, _mlpi.B, i);
+    }
+
+    return true;
+
+}
+
+bool MlpOptimAdaGrad::pass(std::vector<mlp> &_mlp)
+{
+    if(_mlp.empty())
+        return false;
+
+    m_iteration++;
+
+#pragma omp parallel for
+    for(size_t i = 0; i < _mlp.size(); ++i){
+        mlp& mlpi = _mlp[i];
+
+        passI(mlpi.gW, mlpi.gB, mlpi.W, mlpi.B, i);
+    }
+    return true;
+
+}

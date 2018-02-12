@@ -1304,6 +1304,27 @@ __global__ void adamgrad(Mtx A, Mtx gA, const Mtx mA, const Mtx vA, T alpha, T s
 	}
 }
 
+template< typename T >
+__global__ void adagrad(Mtx A, Mtx hist_gA, const Mtx gA, T alpha, T betha)
+{
+    int row = threadIdx.y + blockIdx.y * blockDim.y;
+    int col = threadIdx.x + blockIdx.x * blockDim.x;
+
+    const T eps = 10e-6;
+
+    T* dA = (T*)A.data;
+    T* dgA = (T*)gA.data;
+    T* dhgA = (T*)hist_gA.data;
+    if(row < A.rows && col < A.cols){
+        T g = dgA[row * A.cols + col];
+        T g2 = g * g;
+        T hA = dhgA[row * A.cols + col];
+        hA = betha * hA + (1 - betha) * g2;
+        dhgA[row * A.cols + col] = hA;
+        dA[row * A.cols + col] -= alpha * g / (eps + ::sqrt(hA));
+    }
+}
+
 ///*******************
 
 /**
@@ -3161,6 +3182,32 @@ void cuda_adamgrad(GpuMat& A, const GpuMat &gA, GpuMat& mA, GpuMat& vA,
 		internal::adamgrad<float> <<<dimGrid, dimBlock>>>(A, gA, mA, vA, (float)alpha, (float)sb1, (float)sb2, betha1, betha2);
 		break;
 	}
+}
+
+/**
+ * @brief cuda_adagrad
+ * @param A
+ * @param gA
+ * @param hist_gA
+ * @param alpha
+ * @param betha
+ */
+extern "C"
+void cuda_adagrad(GpuMat& A, GpuMat& hist_gA, const GpuMat& gA, double alpha, double betha)
+{
+    int x1 = A.cols / BLOCKSIZE + 1;
+    int x2 = A.rows / BLOCKSIZE + 1;
+
+    dim3 dimGrid(x1, x2), dimBlock(BLOCKSIZE, BLOCKSIZE);
+
+    switch (A.type) {
+    case GPU_DOUBLE:
+        internal::adagrad<double> <<<dimGrid, dimBlock>>>(A, hist_gA, gA, alpha, betha);
+        break;
+    case GPU_FLOAT:
+        internal::adagrad<float> <<<dimGrid, dimBlock>>>(A, hist_gA, gA, alpha, betha);
+        break;
+    }
 }
 
 /**

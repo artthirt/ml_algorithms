@@ -188,6 +188,29 @@ protected:
 	void init_iteration();
 };
 
+class AdaGradOptimizer: public Optimizer{
+public:
+    AdaGradOptimizer();
+
+    double betha() const;
+    void setBetha(double b);
+
+    virtual bool init(const std::vector<GpuMat> &gradW, const std::vector<GpuMat> &gradB);
+    virtual bool pass(const std::vector< gpumat::GpuMat >& gradW, const std::vector< gpumat::GpuMat >& gradB,
+              std::vector< gpumat::GpuMat >& W, std::vector< gpumat::GpuMat >& B);
+
+    void initSize(int size);
+    void initI(const GpuMat &W, const GpuMat &B, int index);
+    void passI(const GpuMat &gW, const GpuMat &gB, gpumat::GpuMat& W, gpumat::GpuMat& B, int index);
+
+protected:
+    double m_betha;
+    std::vector< gpumat::GpuMat > m_histW;
+    std::vector< gpumat::GpuMat > m_histB;
+};
+
+/////////////////////////////////////////////
+
 class SimpleAutoencoder
 {
 public:

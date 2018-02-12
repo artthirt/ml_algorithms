@@ -297,6 +297,61 @@ void MomentumOptimizer::passI(const GpuMat &gW, const GpuMat &gB, GpuMat &W, Gpu
 
 ///////////////////////////////
 
+AdaGradOptimizer::AdaGradOptimizer()
+    : m_betha(0.95)
+{
+
+}
+
+double AdaGradOptimizer::betha() const
+{
+    return m_betha;
+}
+
+void AdaGradOptimizer::setBetha(double b)
+{
+    m_betha = b;
+}
+
+bool AdaGradOptimizer::init(const std::vector<GpuMat> &gradW, const std::vector<GpuMat> &gradB)
+{
+    m_iteration = 0;
+    m_histW.resize(gradW.size());
+    m_histB.resize(gradW.size());
+
+    for(size_t i = 0; i < gradW.size(); i++){
+        initI(gradW[i], gradB[i], i);
+    }
+    return true;}
+
+bool AdaGradOptimizer::pass(const std::vector<GpuMat> &gradW, const std::vector<GpuMat> &gradB, std::vector<GpuMat> &W, std::vector<GpuMat> &B)
+{
+
+}
+
+void AdaGradOptimizer::initSize(int size)
+{
+    m_histW.resize(size);
+    m_histB.resize(size);
+}
+
+void AdaGradOptimizer::initI(const GpuMat &W, const GpuMat &B, int index)
+{
+    m_histW[index].resize(W);
+    m_histB[index].resize(B);
+
+    m_histW[index].zeros();
+    m_histB[index].zeros();
+}
+
+void AdaGradOptimizer::passI(const GpuMat &gW, const GpuMat &gB, GpuMat &W, GpuMat &B, int index)
+{
+    gpumat::adagrad(W, m_histW[index], gW, m_alpha, m_betha);
+    gpumat::adagrad(B, m_histB[index], gB, m_alpha, m_betha);
+}
+
+///////////////////////////////
+
 AdamOptimizer::AdamOptimizer(): Optimizer()
 {
 	m_delim_iter = 1;

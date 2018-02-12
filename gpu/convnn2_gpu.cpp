@@ -562,6 +562,69 @@ bool CnvAdamOptimizer::pass(std::vector<convnn_gpu> &cnv)
 ///////////////////////////////
 
 
+CnvAdaGradOptimizer::CnvAdaGradOptimizer()
+{
+
+}
+
+bool CnvAdaGradOptimizer::init(std::vector<convnn_gpu> &cnv)
+{
+    if(cnv.empty())
+        return false;
+    int index = 0;
+
+    initSize(cnv.size());
+
+    histG.resize(cnv.size());
+    histB.resize(cnv.size());
+
+    for(convnn_gpu& item: cnv){
+        initI(item.W, item.B, index++);
+    }
+    m_iteration = 0;
+    return true;
+}
+
+bool CnvAdaGradOptimizer::pass(std::vector<convnn_gpu> &cnv)
+{
+    if(cnv.empty() || cnv.back().gW.empty() || cnv.back().gB.empty())
+        return false;
+
+    m_iteration++;
+    int index;
+
+    for(int i = 0; i < cnv.size(); ++i){
+        index = i;
+        convnn_gpu& item = cnv[index];
+        if(index >= stop_layer){
+            if(item.use_bn()){
+                if(histG[index].empty()){
+                    histG[index].resize(item.bn.dgamma);
+                    histB[index].resize(item.bn.dbetha);
+                    histG[index].zeros();
+                    histB[index].zeros();
+                }
+                adagrad(item.bn.gamma, histG[index], item.bn.dgamma, m_alpha, m_betha);
+                adagrad(item.bn.betha, histB[index], item.bn.dbetha, m_alpha, m_betha);
+            }
+       }
+    }
+
+#pragma omp parallel for
+    for(int i = 0; i < cnv.size(); ++i){
+        index = i;
+        convnn_gpu& item = cnv[index];
+        if(index >= stop_layer){
+            passI(item.gW, item.gB, item.W, item.B, index);
+        }
+        index++;
+    }
+    return true;
+}
+
+///////////////////////////////
+
+
 CnvMomentumOptimizer::CnvMomentumOptimizer() : MomentumOptimizer()
 {
 	stop_layer = 0;
@@ -1409,5 +1472,3 @@ void gpumat::conv2_transpose(const GpuMat &C, const ct::Size &szA, int channels,
 		}
 	}
 }
-
-

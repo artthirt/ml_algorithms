@@ -182,6 +182,14 @@ public:
 private:
 };
 
+class MlpOptimAdaGrad: public AdaGradOptimizer{
+public:
+    MlpOptimAdaGrad();
+    bool init(const std::vector< gpumat::mlp >& _mlp);
+    bool pass(std::vector<mlp> &_mlp);
+private:
+};
+
 void maxnorm(GpuMat& A, double c);
 
 }

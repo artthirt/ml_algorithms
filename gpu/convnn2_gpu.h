@@ -162,6 +162,20 @@ public:
 	bool pass(std::vector<convnn_gpu> &cnv);
 };
 
+class CnvAdaGradOptimizer: public AdaGradOptimizer
+{
+public:
+    CnvAdaGradOptimizer();
+
+    int stop_layer;
+
+    std::vector< GpuMat > histG;
+    std::vector< GpuMat > histB;
+
+    bool init(std::vector<convnn_gpu> &cnv);
+    bool pass(std::vector<convnn_gpu> &cnv);
+};
+
 //////////////////////
 
 /**

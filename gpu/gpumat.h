@@ -544,6 +544,16 @@ void sub_adamGrad(GpuMat& A, const GpuMat& gA, GpuMat &mA, GpuMat &vA,
 				  double alpha, double sb1, double sb2, double betha1, double betha2);
 
 /**
+ * @brief adagrad
+ * @param A
+ * @param gA
+ * @param hist_gA
+ * @param alpha
+ * @param betha
+ */
+void adagrad(GpuMat& A, GpuMat& hist_gA, const GpuMat& gA, double alpha, double betha);
+
+/**
  * @brief subIndOne
  * @param A
  * @param Ind

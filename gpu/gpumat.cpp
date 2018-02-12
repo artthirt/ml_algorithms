@@ -487,6 +487,17 @@ void cuda_adamgrad(GpuMat& A, const GpuMat& gA, GpuMat& mA, GpuMat& vA,
 				   double alpha, double sb1, double sb2, double betha1, double betha2);
 
 /**
+ * @brief cuda_adagrad
+ * @param A
+ * @param gA
+ * @param hist_gA
+ * @param alpha
+ * @param betha
+ */
+extern "C"
+void cuda_adagrad(GpuMat& A, GpuMat& hist_gA, const GpuMat& gA, double alpha, double betha);
+
+/**
  * @brief cuda_subIndOne
  * @param A
  * @param Ind
@@ -1530,6 +1541,18 @@ void sub_adamGrad(GpuMat& A, const GpuMat& gA, GpuMat& mA, GpuMat& vA,
 	cuda_adamgrad(A, gA, mA, vA, alpha, sb1, sb2, betha1, betha2);
 }
 
+void adagrad(GpuMat &A, GpuMat &hist_gA, const GpuMat &gA, double alpha, double betha)
+{
+    if(A.empty() || hist_gA.empty()||
+            A.type != hist_gA.type ||
+            A.rows != hist_gA.rows || A.cols != hist_gA.cols){
+        throw new std::invalid_argument("AdaGrad");
+    }
+
+    cuda_adagrad(A, hist_gA, gA, alpha, betha);
+}
+
+
 void subIndOne(const GpuMat &A, const GpuMat &Ind, GpuMat &B)
 {
 	if(A.empty() || Ind.empty() || A.rows != Ind.rows || Ind.cols != 1){
@@ -1634,8 +1657,7 @@ void momentum_optimizer(GpuMat &W, GpuMat &M, const GpuMat &G, double alpha, dou
 			W.type != M.type || W.type != G.type)
 		throw new std::invalid_argument("momentum_optimizer: wrong parameters");
 
-	cuda_momentum_optimizer(W, M, G, alpha, betha);
+    cuda_momentum_optimizer(W, M, G, alpha, betha);
 }
-
 
 }
