@@ -10,7 +10,7 @@
 */
 #define BLOCKSIZE           16
 #define BLOCKSIZE_CNV       16
-#define BLOCKSIZE_CUSTOM    16
+#define BLOCKSIZE_CUSTOM    8
 
 namespace gpumat{
 
