@@ -311,7 +311,7 @@ void mlp::backward(std::vector<GpuMat> &Delta, bool last_layer)
 	if(!last_layer){
 		vecDltA0.resize(Delta.size());
 #pragma omp parallel for
-		for(size_t i = 0; i < Delta.size(); ++i){
+		for(int i = 0; i < Delta.size(); ++i){
 			matmulT2((*pDA1)[i], W, vecDltA0[i]);
 		}
 	}
@@ -382,7 +382,7 @@ bool MlpOptimAdam::pass(std::vector<mlp> &_mlp)
 	next_iteration();
 
 #pragma omp parallel for
-	for(size_t i = 0; i < _mlp.size(); ++i){
+	for(int i = 0; i < _mlp.size(); ++i){
 		mlp& mlpi = _mlp[i];
 
 		passI(mlpi.gW, mlpi.gB, mlpi.W, mlpi.B, i);
@@ -495,7 +495,7 @@ bool MlpOptimMoment::pass(std::vector<mlp> &_mlp)
 	m_iteration++;
 
 #pragma omp parallel for
-	for(size_t i = 0; i < _mlp.size(); ++i){
+	for(int i = 0; i < _mlp.size(); ++i){
 		mlp& mlpi = _mlp[i];
 
 		passI(mlpi.gW, mlpi.gB, mlpi.W, mlpi.B, i);
@@ -538,7 +538,7 @@ bool MlpOptimAdaGrad::pass(std::vector<mlp> &_mlp)
     m_iteration++;
 
 #pragma omp parallel for
-    for(size_t i = 0; i < _mlp.size(); ++i){
+	for(int i = 0; i < _mlp.size(); ++i){
         mlp& mlpi = _mlp[i];
 
         passI(mlpi.gW, mlpi.gB, mlpi.W, mlpi.B, i);

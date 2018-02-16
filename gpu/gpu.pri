@@ -34,7 +34,7 @@ CUDA_SOURCES += $$PWD/cu/cuda_arithm.cu \
                 $$PWD/cu/cuda_conv2.cu
 
 win32{
-    CUDA_DIR			= "c:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v8.0/"
+    CUDA_DIR			= "c:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v9.1/"
     MSVCRT_LINK_FLAG_DEBUG	= "/MDd"
     MSVCRT_LINK_FLAG_RELEASE	= "/MD"
     SYSTEM_NAME			= Win64         # Depending on your system either 'Win32', 'x64', or 'Win64'

@@ -326,7 +326,7 @@ bool AdaGradOptimizer::init(const std::vector<GpuMat> &gradW, const std::vector<
 
 bool AdaGradOptimizer::pass(const std::vector<GpuMat> &gradW, const std::vector<GpuMat> &gradB, std::vector<GpuMat> &W, std::vector<GpuMat> &B)
 {
-
+	return true;
 }
 
 void AdaGradOptimizer::initSize(int size)
