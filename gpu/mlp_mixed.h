@@ -9,7 +9,7 @@
 
 namespace ct{
 
-class mlp_mixed
+class GPU_EXPORTS mlp_mixed
 {
 public:
 	Matf *pA0;
@@ -97,7 +97,7 @@ private:
 
 ////////////////////////
 
-class MlpAdamOptimizerMixed: public ct::AdamOptimizerMixed
+class GPU_EXPORTS MlpAdamOptimizerMixed: public ct::AdamOptimizerMixed
 {
 public:
 	MlpAdamOptimizerMixed();
@@ -106,7 +106,7 @@ public:
 	bool pass(std::vector<mlp_mixed>& mlp);
 };
 
-class MlpMomentumOptimizerMixed: public ct::MomentumOptimizerMixed
+class GPU_EXPORTS MlpMomentumOptimizerMixed: public ct::MomentumOptimizerMixed
 {
 public:
 	MlpMomentumOptimizerMixed();

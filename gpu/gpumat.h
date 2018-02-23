@@ -27,60 +27,60 @@ const int sizeof_enum[] = {
 #define SIZEOF_TYPE(type) (sizeof_enum[type])
 
 namespace internal{
-	struct SmallMtxArray;
+    struct SmallMtxArray;
 }
 
-class GpuMat{
+class GPU_EXPORTS GpuMat{
 public:
 	int type;
 	int rows;
 	int cols;
 	uint8_t* data;
 
-	GpuMat();
-	GpuMat(int rows, int cols, int type);
-	GpuMat(int rows, int cols, int type, void* data);
-	GpuMat(const GpuMat& mat);
-	~GpuMat();
+    GpuMat();
+    GpuMat(int rows, int cols, int type);
+    GpuMat(int rows, int cols, int type, void* data);
+    GpuMat(const GpuMat& mat);
+    ~GpuMat();
 
-	GpuMat &operator =(const GpuMat& mat);
-
-	////////////
-
-	GpuMat& ones();
-	GpuMat& zeros();
+    GpuMat &operator =(const GpuMat& mat);
 
 	////////////
 
-	int depth() const;
-	int size() const;
-	int total() const;
-	bool empty() const;
+    GpuMat& ones();
+    GpuMat& zeros();
 
-	ct::Size sz() const;
+	////////////
 
-	void resize(int rows, int cols, int type);
-	void resize(const ct::Size& sz, int type);
-	void resize(const GpuMat& mat);
+    int depth() const;
+    int size() const;
+    int total() const;
+    bool empty() const;
 
-	void reshape(int new_rows, int new_cols);
+    ct::Size sz() const;
 
-	void copyTo(GpuMat& mat) const;
+    void resize(int rows, int cols, int type);
+    void resize(const ct::Size& sz, int type);
+    void resize(const GpuMat& mat);
 
-	void setData(void* data);
-	void getData(void *data) const;
+    void reshape(int new_rows, int new_cols);
 
-	void free();
+    void copyTo(GpuMat& mat) const;
 
-	void swap_dims();
+    void setData(void* data);
+    void getData(void *data) const;
 
-	std::string operator()() const;
+    void free();
 
-	std::string print(int _rows = -1) const;
+    void swap_dims();
 
-	void save(const std::string filename) const;
+    std::string operator()() const;
 
-	void release();
+    std::string print(int _rows = -1) const;
+
+    void save(const std::string filename) const;
+
+    void release();
 
 	///** internal **///
 	internal::SmallMtxArray sderiv;
@@ -92,7 +92,7 @@ private:
 
 /////////////////////////
 
-class _BN{
+class GPU_EXPORTS _BN{
 public:
 	_BN(){
 		X = Y = D = 0;
@@ -126,14 +126,14 @@ public:
  * @param A
  * @param val
  */
-void memset(GpuMat& A, double val);
+void GPU_EXPORTS memset(GpuMat& A, double val);
 /**
  * @brief add
  * @param A
  * @param B
  * @param C - out C = A .+ B
  */
-void add(const GpuMat& A, const GpuMat& B, GpuMat& C);
+void GPU_EXPORTS add(const GpuMat& A, const GpuMat& B, GpuMat& C);
 /**
  * @brief add
  * @param A
@@ -142,7 +142,7 @@ void add(const GpuMat& A, const GpuMat& B, GpuMat& C);
  * @param valA
  * @param valB
  */
-void add(const GpuMat& A, const GpuMat& B, GpuMat& C, double valA = 1., double valB = 1.);
+void GPU_EXPORTS add(const GpuMat& A, const GpuMat& B, GpuMat& C, double valA = 1., double valB = 1.);
 /**
  * @brief add
  * @param A -> A = valA * A + valB * B
@@ -150,27 +150,27 @@ void add(const GpuMat& A, const GpuMat& B, GpuMat& C, double valA = 1., double v
  * @param B
  * @param valB
  */
-void add(GpuMat& A, const GpuMat& B, double valA = 1., double valB = 1.);
+void GPU_EXPORTS add(GpuMat& A, const GpuMat& B, double valA = 1., double valB = 1.);
 /**
  * @brief sub
  * @param A
  * @param B
  * @param C - out C = A .- B
  */
-void sub(const GpuMat& A, const GpuMat& B, GpuMat& C, double valA = 1., double valB = 1.);
+void GPU_EXPORTS sub(const GpuMat& A, const GpuMat& B, GpuMat& C, double valA = 1., double valB = 1.);
 /**
  * @brief sub
  * @param A = A * valA - B * valB
  * @param B
  */
-void sub(GpuMat& A, const GpuMat& B, double valA = 1., double valB = 1.);
+void GPU_EXPORTS sub(GpuMat& A, const GpuMat& B, double valA = 1., double valB = 1.);
 /**
  * @brief sub
  * @param A - = (A .- B) * mulColumn
  * @param B
  * @param mulColumn
  */
-void subWithColumn(GpuMat& A, const GpuMat& B, const GpuMat& mulColumn, double valA = 1., double valB = 1.);
+void GPU_EXPORTS subWithColumn(GpuMat& A, const GpuMat& B, const GpuMat& mulColumn, double valA = 1., double valB = 1.);
 
 /**
  * @brief matmul
@@ -178,7 +178,7 @@ void subWithColumn(GpuMat& A, const GpuMat& B, const GpuMat& mulColumn, double v
  * @param B
  * @param C - out C = A * B
  */
-void matmul(const GpuMat& A, const GpuMat& B, GpuMat& C, double alpha = 1.);
+void GPU_EXPORTS matmul(const GpuMat& A, const GpuMat& B, GpuMat& C, double alpha = 1.);
 
 /**
  * @brief add2matmul
@@ -186,7 +186,7 @@ void matmul(const GpuMat& A, const GpuMat& B, GpuMat& C, double alpha = 1.);
  * @param B
  * @param C - out C += A * B
  */
-void add2matmul(const GpuMat &A, const GpuMat &B, GpuMat &C);
+void GPU_EXPORTS add2matmul(const GpuMat &A, const GpuMat &B, GpuMat &C);
 
 /**
  * @brief matmul_shared
@@ -194,7 +194,7 @@ void add2matmul(const GpuMat &A, const GpuMat &B, GpuMat &C);
  * @param B
  * @param C - out C = A * B
  */
-void matmul_shared(const GpuMat& A, const GpuMat& B, GpuMat& C, double alpha = 1.);
+void GPU_EXPORTS matmul_shared(const GpuMat& A, const GpuMat& B, GpuMat& C, double alpha = 1.);
 
 /**
  * @brief matmulT1
@@ -202,7 +202,7 @@ void matmul_shared(const GpuMat& A, const GpuMat& B, GpuMat& C, double alpha = 1
  * @param B
  * @param C - out C = A' * B
  */
-void matmulT1(const GpuMat& At, const GpuMat& B, GpuMat& C, double alpha = 1.);
+void GPU_EXPORTS matmulT1(const GpuMat& At, const GpuMat& B, GpuMat& C, double alpha = 1.);
 
 /**
  * @brief add2matmulT1
@@ -210,7 +210,7 @@ void matmulT1(const GpuMat& At, const GpuMat& B, GpuMat& C, double alpha = 1.);
  * @param B
  * @param C - out C += A' * B
  */
-void add2matmulT1(const GpuMat &At, const GpuMat &B, GpuMat &C);
+void GPU_EXPORTS add2matmulT1(const GpuMat &At, const GpuMat &B, GpuMat &C);
 
 /**
  * @brief matmulT1_shared
@@ -218,7 +218,7 @@ void add2matmulT1(const GpuMat &At, const GpuMat &B, GpuMat &C);
  * @param B
  * @param C - out C = A' * B
  */
-void matmulT1_shared(const GpuMat& At, const GpuMat& B, GpuMat& C, double alpha = 1.);
+void GPU_EXPORTS matmulT1_shared(const GpuMat& At, const GpuMat& B, GpuMat& C, double alpha = 1.);
 
 /**
  * @brief matmulT2
@@ -226,7 +226,7 @@ void matmulT1_shared(const GpuMat& At, const GpuMat& B, GpuMat& C, double alpha 
  * @param Bt - used as transposed matrix
  * @param C - out C = A * B'
  */
-void matmulT2(const GpuMat& A, const GpuMat& Bt, GpuMat& C, double alpha = 1.);
+void GPU_EXPORTS matmulT2(const GpuMat& A, const GpuMat& Bt, GpuMat& C, double alpha = 1.);
 
 /**
  * @brief add2matmulT2
@@ -234,7 +234,7 @@ void matmulT2(const GpuMat& A, const GpuMat& Bt, GpuMat& C, double alpha = 1.);
  * @param Bt - B
  * @param C -out C += A * B'
  */
-void add2matmulT2(const GpuMat &A, const GpuMat &Bt, GpuMat &C);
+void GPU_EXPORTS add2matmulT2(const GpuMat &A, const GpuMat &Bt, GpuMat &C);
 
 /**
  * @brief matmulT2_shared
@@ -242,7 +242,7 @@ void add2matmulT2(const GpuMat &A, const GpuMat &Bt, GpuMat &C);
  * @param Bt - used as transposed matrix
  * @param C - out C = A * B'
  */
-void matmulT2_shared(const GpuMat& A, const GpuMat& Bt, GpuMat& C, double alpha = 1.);
+void GPU_EXPORTS matmulT2_shared(const GpuMat& A, const GpuMat& Bt, GpuMat& C, double alpha = 1.);
 
 /**
  * @brief mulval
@@ -250,14 +250,14 @@ void matmulT2_shared(const GpuMat& A, const GpuMat& Bt, GpuMat& C, double alpha 
  * @param value - mat 1x1
  * @param C - out C = A * value
  */
-void mulval(const GpuMat& A, double value, GpuMat& C);
+void GPU_EXPORTS mulval(const GpuMat& A, double value, GpuMat& C);
 
 /**
  * @brief mulval
  * @param A -> A *= value
  * @param value - mat 1x1
  */
-void mulval(GpuMat& A, double value);
+void GPU_EXPORTS mulval(GpuMat& A, double value);
 
 /**
  * @brief addval
@@ -265,14 +265,14 @@ void mulval(GpuMat& A, double value);
  * @param value - mat 1x1
  * @param C - out C = A + value
  */
-void addval(const GpuMat& A, double value, GpuMat& C);
+void GPU_EXPORTS addval(const GpuMat& A, double value, GpuMat& C);
 
 /**
  * @brief addval
  * @param A
  * @param value - mat 1x1
  */
-void addval(GpuMat &A, double value);
+void GPU_EXPORTS addval(GpuMat &A, double value);
 
 /**
  * @brief subval
@@ -280,7 +280,7 @@ void addval(GpuMat &A, double value);
  * @param value - mat 1x1
  * @param C - out C = A - value
  */
-void subval(const GpuMat& A, double value, GpuMat& C);
+void GPU_EXPORTS subval(const GpuMat& A, double value, GpuMat& C);
 
 /**
  * @brief subval
@@ -288,28 +288,28 @@ void subval(const GpuMat& A, double value, GpuMat& C);
  * @param value - mat 1x1
  * @param C - out C = value - C
  */
-void subval(double value, const GpuMat& A, GpuMat& C);
+void GPU_EXPORTS subval(double value, const GpuMat& A, GpuMat& C);
 
 /**
  * @brief subval
  * @param A - > A - value
  * @param value - mat 1x1
  */
-void subval(GpuMat& A, double value);
+void GPU_EXPORTS subval(GpuMat& A, double value);
 
 /**
  * @brief subval
  * @param A -> value - A
  * @param value - mat 1x1
  */
-void subval(double value, GpuMat& A);
+void GPU_EXPORTS subval(double value, GpuMat& A);
 
 /**
  * @brief biasPlus
  * @param A - out A[i] = A[i] + bias
  * @param bias
  */
-void biasPlus(GpuMat& A, const GpuMat& bias);
+void GPU_EXPORTS biasPlus(GpuMat& A, const GpuMat& bias);
 
 /**
  * @brief scale_and_shift
@@ -318,7 +318,7 @@ void biasPlus(GpuMat& A, const GpuMat& bias);
  * @param biases
  * @param C[i, j] = A[i,j] * scales[j] + biases[j]
  */
-void scale_and_shift(const GpuMat& A, const GpuMat& scales, const GpuMat& biases, GpuMat& C);
+void GPU_EXPORTS scale_and_shift(const GpuMat& A, const GpuMat& scales, const GpuMat& biases, GpuMat& C);
 
 /**
  * @brief elemiseMul
@@ -326,14 +326,14 @@ void scale_and_shift(const GpuMat& A, const GpuMat& scales, const GpuMat& biases
  * @param B
  * @param C - out C = A .* B
  */
-void elemwiseMult(const GpuMat& A, const GpuMat& B, GpuMat& C);
+void GPU_EXPORTS elemwiseMult(const GpuMat& A, const GpuMat& B, GpuMat& C);
 
 /**
  * @brief elemiseMul
  * @param A = A.* B
  * @param B
  */
-void elemwiseMult(GpuMat& A, const GpuMat& B);
+void GPU_EXPORTS elemwiseMult(GpuMat& A, const GpuMat& B);
 
 /**
  * @brief elemiseDiv
@@ -341,7 +341,7 @@ void elemwiseMult(GpuMat& A, const GpuMat& B);
  * @param B
  * @param C - out C = A ./ B
  */
-void elemwiseDiv(const GpuMat& A, const GpuMat& B, GpuMat& C);
+void GPU_EXPORTS elemwiseDiv(const GpuMat& A, const GpuMat& B, GpuMat& C);
 
 /**
  * @brief elemiseSqrt
@@ -349,7 +349,7 @@ void elemwiseDiv(const GpuMat& A, const GpuMat& B, GpuMat& C);
  * @param B
  * @param C - out C = sqrt(A)
  */
-void elemwiseSqrt(const GpuMat& A, GpuMat& C);
+void GPU_EXPORTS elemwiseSqrt(const GpuMat& A, GpuMat& C);
 
 /**
  * @brief elemiseSqr
@@ -357,21 +357,21 @@ void elemwiseSqrt(const GpuMat& A, GpuMat& C);
  * @param B
  * @param C - out C = sqrt(A)
  */
-void elemwiseSqr(const GpuMat& A, GpuMat& C);
+void GPU_EXPORTS elemwiseSqr(const GpuMat& A, GpuMat& C);
 
 /**
  * @brief sumRows
  * @param A
  * @param C - out C[j] = val * sum(A[i, j]) (i = [1..rows])
  */
-void sumRows(const GpuMat& A, GpuMat& C, double val = 1.);
+void GPU_EXPORTS sumRows(const GpuMat& A, GpuMat& C, double val = 1.);
 
 /**
  * @brief sumCols
  * @param A
  * @param C - out C[i] = val * sum(A[i, j]) (j = [1..cols])
  */
-void sumCols(const GpuMat& A, GpuMat& C, double val = 1.);
+void GPU_EXPORTS sumCols(const GpuMat& A, GpuMat& C, double val = 1.);
 
 /**
  * @brief add2sumRows
@@ -379,47 +379,47 @@ void sumCols(const GpuMat& A, GpuMat& C, double val = 1.);
  * @param C
  * @param val - out C[i] += val * sum(A[i, j]) (j = [1, cols])
  */
-void add2sumRows(const GpuMat &A, GpuMat &C, double val);
+void GPU_EXPORTS add2sumRows(const GpuMat &A, GpuMat &C, double val);
 
 /**
  * @brief sumRows
  * @param A
  * @param C - out C[i] = val * sum(A[i, j]) (j = [1, cols])
  */
-void sumRows_shared(const GpuMat& A, GpuMat& C, double val = 1.);
+void GPU_EXPORTS sumRows_shared(const GpuMat& A, GpuMat& C, double val = 1.);
 
 /**
  * @brief transpose
  * @param A
  * @param C - out C = A'
  */
-void transpose(const GpuMat& A, GpuMat& C);
+void GPU_EXPORTS transpose(const GpuMat& A, GpuMat& C);
 
 /**
  * @brief reLu
  * @param A
  * @param C - out C = reLu(A)
  */
-void reLu(const GpuMat& A, GpuMat& C);
+void GPU_EXPORTS reLu(const GpuMat& A, GpuMat& C);
 
 /**
  * @brief reLu
  * @param A
  */
-void reLu(GpuMat& A);
+void GPU_EXPORTS reLu(GpuMat& A);
 
 /**
  * @brief deriv_reLu
  * @param A
  * @param C - out C = deriv_reLu(A)
  */
-void deriv_reLu(const GpuMat& A, GpuMat& C);
+void GPU_EXPORTS deriv_reLu(const GpuMat& A, GpuMat& C);
 
 /**
  * @brief deriv_reLu
  * @param A
  */
-void deriv_reLu(GpuMat& A);
+void GPU_EXPORTS deriv_reLu(GpuMat& A);
 
 ////
 
@@ -428,26 +428,26 @@ void deriv_reLu(GpuMat& A);
  * @param A
  * @param C - out C = reLu(A)
  */
-void leakyReLu(const GpuMat& A, double x, GpuMat& C);
+void GPU_EXPORTS leakyReLu(const GpuMat& A, double x, GpuMat& C);
 
 /**
  * @brief leakyReLu
  * @param A
  */
-void leakyReLu(GpuMat& A, double x);
+void GPU_EXPORTS leakyReLu(GpuMat& A, double x);
 
 /**
  * @brief deriv_leakyReLu
  * @param A
  * @param C - out C = deriv_reLu(A)
  */
-void deriv_leakyReLu(const GpuMat& A, double x, GpuMat& C);
+void GPU_EXPORTS deriv_leakyReLu(const GpuMat& A, double x, GpuMat& C);
 
 /**
  * @brief deriv_leakyReLu
  * @param A
  */
-void deriv_leakyReLu(GpuMat& A, double x);
+void GPU_EXPORTS deriv_leakyReLu(GpuMat& A, double x);
 
 ////
 
@@ -456,66 +456,66 @@ void deriv_leakyReLu(GpuMat& A, double x);
  * @param A
  * @param C - out C = sigmoid(A)
  */
-void sigmoid(const GpuMat& A, GpuMat& C);
+void GPU_EXPORTS sigmoid(const GpuMat& A, GpuMat& C);
 
 /**
  * @brief sigmoid
  * @param A
  */
-void sigmoid(GpuMat& A);
+void GPU_EXPORTS sigmoid(GpuMat& A);
 
 /**
  * @brief deriv_sigmoid
  * @param A
  * @param C - out C = deriv_sigmoid(A)
  */
-void deriv_sigmoid(const GpuMat& A, GpuMat& C);
+void GPU_EXPORTS deriv_sigmoid(const GpuMat& A, GpuMat& C);
 
 /**
  * @brief back_delta_sigmoid
  * @param sigmoid = (target - sigmoid) * sigmoid * (1 - sigmoid)
  * @param target
  */
-void back_delta_sigmoid(GpuMat &sigmoid, const GpuMat &target);
+void GPU_EXPORTS back_delta_sigmoid(GpuMat &sigmoid, const GpuMat &target);
 
 /**
  * @brief back_delta_sigmoid
  * @param sigmoid = (target - sigmoid) * sigmoid * (1 - sigmoid)
  * @param target
  */
-void back_delta_sigmoid(GpuMat &sigmoid, const GpuMat &target, const GpuMat& mulColumn);
+void GPU_EXPORTS back_delta_sigmoid(GpuMat &sigmoid, const GpuMat &target, const GpuMat& mulColumn);
 
 /**
  * @brief deriv_sigmoid
  * @param A
  */
-void deriv_sigmoid(GpuMat& A);
+void GPU_EXPORTS deriv_sigmoid(GpuMat& A);
 
 /**
  * @brief tanh
  * @param A
  * @param C - out C = tanh(A)
  */
-void tanh(const GpuMat& A, GpuMat& C);
+void GPU_EXPORTS tanh(const GpuMat& A, GpuMat& C);
 
 /**
  * @brief tanh
  * @param A = tanh(A)
  */
-void tanh(GpuMat& A);
+void GPU_EXPORTS tanh(GpuMat& A);
 
 /**
  * @brief deriv_tanh
  * @param A
  * @param C - out C = deriv_tanh(A)
  */
-void deriv_tanh(const GpuMat& A, GpuMat& C);
+void GPU_EXPORTS deriv_tanh(const GpuMat& A, GpuMat& C);
 
 /**
  * @brief deriv_tanh
  * @param A
  */
-void deriv_tanh(GpuMat& A);
+void GPU_EXPORTS deriv_tanh(GpuMat& A);
 
 /**
  * @brief softmax
@@ -524,7 +524,7 @@ void deriv_tanh(GpuMat& A);
  * @param C = softmax(A)
  * @param partZ = sum(exp(A), axis)
  */
-void softmax(const GpuMat& A, int axis, GpuMat& C, GpuMat& partZ);
+void GPU_EXPORTS softmax(const GpuMat& A, int axis, GpuMat& C, GpuMat& partZ);
 
 /**
  * @brief softmax
@@ -532,7 +532,7 @@ void softmax(const GpuMat& A, int axis, GpuMat& C, GpuMat& partZ);
  * @param axis -> 0 - in row, 1 - in col
  * @param partZ = sum(exp(A), axis)
  */
-void softmax(GpuMat& A, int axis, GpuMat& partZ);
+void GPU_EXPORTS softmax(GpuMat& A, int axis, GpuMat& partZ);
 
 /**
  * @brief sub
@@ -540,7 +540,7 @@ void softmax(GpuMat& A, int axis, GpuMat& partZ);
  * @param B
  * @param C - out C = A .- B
  */
-void sub_adamGrad(GpuMat& A, const GpuMat& gA, GpuMat &mA, GpuMat &vA,
+void GPU_EXPORTS sub_adamGrad(GpuMat& A, const GpuMat& gA, GpuMat &mA, GpuMat &vA,
 				  double alpha, double sb1, double sb2, double betha1, double betha2);
 
 /**
@@ -551,7 +551,7 @@ void sub_adamGrad(GpuMat& A, const GpuMat& gA, GpuMat &mA, GpuMat &vA,
  * @param alpha
  * @param betha
  */
-void adagrad(GpuMat& A, GpuMat& hist_gA, const GpuMat& gA, double alpha, double betha);
+void GPU_EXPORTS adagrad(GpuMat& A, GpuMat& hist_gA, const GpuMat& gA, double alpha, double betha);
 
 /**
  * @brief subIndOne
@@ -559,7 +559,7 @@ void adagrad(GpuMat& A, GpuMat& hist_gA, const GpuMat& gA, double alpha, double 
  * @param Ind
  * @param B
  */
-void subIndOne(const GpuMat& A, const GpuMat& Ind, GpuMat& B);
+void GPU_EXPORTS subIndOne(const GpuMat& A, const GpuMat& Ind, GpuMat& B);
 
 /**
  * @brief subIndOne
@@ -567,14 +567,14 @@ void subIndOne(const GpuMat& A, const GpuMat& Ind, GpuMat& B);
  * @param Ind
  * @param B
  */
-void subIndOne(const std::vector< GpuMat >& vA, const GpuMat& Ind, std::vector<GpuMat> &B);
+void GPU_EXPORTS subIndOne(const std::vector< GpuMat >& vA, const GpuMat& Ind, std::vector<GpuMat> &B);
 
 /**
  * @brief hconcat
  * @param list
  * @param res
  */
-void hconcat2(const std::vector<GpuMat> &list, gpumat::GpuMat& res);
+void GPU_EXPORTS hconcat2(const std::vector<GpuMat> &list, gpumat::GpuMat& res);
 
 /**
  * @brief hsplit
@@ -582,7 +582,7 @@ void hconcat2(const std::vector<GpuMat> &list, gpumat::GpuMat& res);
  * @param cols
  * @param list
  */
-void hsplit2(const GpuMat& res, std::vector< int > cols, std::vector< GpuMat >& list);
+void GPU_EXPORTS hsplit2(const GpuMat& res, std::vector< int > cols, std::vector< GpuMat >& list);
 
 /**
  * @brief mul2deriv
@@ -594,7 +594,7 @@ void hsplit2(const GpuMat& res, std::vector< int > cols, std::vector< GpuMat >& 
  * @param param2
  * @param param3
  */
-void mul2deriv(const GpuMat& D, const gpumat::GpuMat& A, gpumat::etypefunction func, gpumat::GpuMat& DA,
+void GPU_EXPORTS mul2deriv(const GpuMat& D, const gpumat::GpuMat& A, gpumat::etypefunction func, gpumat::GpuMat& DA,
 			   double param1 = 0, double param2 = 0, double param3 = 0);
 
 /**
@@ -609,7 +609,7 @@ void mul2deriv(const GpuMat& D, const gpumat::GpuMat& A, gpumat::etypefunction f
  * @param param2 - for future
  * @param param3 - for future
  */
-void m2mpbaf(const GpuMat& A, const GpuMat& B, const GpuMat& C, etypefunction func, GpuMat& D,
+void GPU_EXPORTS m2mpbaf(const GpuMat& A, const GpuMat& B, const GpuMat& C, etypefunction func, GpuMat& D,
 			 double param1 = 0, double param2 = 0, double param3 = 0);
 
 /**
@@ -620,7 +620,7 @@ void m2mpbaf(const GpuMat& A, const GpuMat& B, const GpuMat& C, etypefunction fu
  * @param alpha
  * @param betha
  */
-void momentum_optimizer(GpuMat& W, GpuMat& M, const GpuMat& G, double alpha, double betha);
+void GPU_EXPORTS momentum_optimizer(GpuMat& W, GpuMat& M, const GpuMat& G, double alpha, double betha);
 
 }
 

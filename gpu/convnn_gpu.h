@@ -2,7 +2,7 @@
 #define CONVNN_GPU_H
 
 #include "common_types.h"
-#include "cuda_common.h"
+//#include "cuda_common.h"
 #include "gpumat.h"
 #include "helper_gpu.h"
 #include "nn.h"

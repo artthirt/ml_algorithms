@@ -1,11 +1,11 @@
 INCLUDEPATH += $$PWD
 
-DEFINES += _USE_GPU
+DEFINES += _USE_GPU $$GPU_EXPORTS
 
 HEADERS += \
     $$PWD/gpumat.h \
     $$PWD/helper_gpu.h \
-    $$PWD/cuda_common.h \
+#    $$PWD/cuda_common.h \
     $$PWD/convnn_gpu.h \
     $$PWD/cu/common_devices.h \
     $$PWD/gpu_mlp.h \
@@ -43,7 +43,7 @@ win32{
     INCLUDEPATH  += $$CUDA_DIR/include
     QMAKE_LIBDIR += $$CUDA_DIR/lib/x64     # Note I'm using a 64 bits Operating system
 }else{
-    CUDA_DIR			= /usr/local/cuda
+    CUDA_DIR			= /usr/
     SYSTEM_NAME			= unix         # Depending on your system either 'Win32', 'x64', or 'Win64'
     CUDA_OBJECTS_DIR		= ./
     INCLUDEPATH  += $$CUDA_DIR/include
@@ -76,7 +76,7 @@ CONFIG(debug, debug|release) {
 
     cuda_d.commands = $$CUDA_DIR/bin/nvcc -D_DEBUG $$NVCC_OPTIONS $$CUDA_INC \
                     $$NVCC_LIBS --machine $$SYSTEM_TYPE -arch=$$CUDA_ARCH \
-                    -c -o ${QMAKE_FILE_OUT} ${QMAKE_FILE_NAME}
+                    -c -o ${QMAKE_FILE_OUT} ${QMAKE_FILE_NAME}  --compiler-options="-fPIC" -DGPU_EXPORTS=""
 
     win32{
         cuda_d.commands += --compile -cudart static -g -DWIN32 -D_MBCS \
@@ -95,7 +95,7 @@ else {
     cuda.output = $$CUDA_OBJECTS_DIR/${QMAKE_FILE_BASE}_cuda.o
     cuda.commands = $$CUDA_DIR/bin/nvcc $$NVCC_OPTIONS $$CUDA_INC $$NVCC_LIBS \
                     --machine $$SYSTEM_TYPE -arch=$$CUDA_ARCH\
-                    -c -o ${QMAKE_FILE_OUT} ${QMAKE_FILE_NAME}
+                    -c -o ${QMAKE_FILE_OUT} ${QMAKE_FILE_NAME}  --compiler-options="-fPIC" -DGPU_EXPORTS=""
 
     win32{
         cuda.commands +=  --compile -cudart static -DWIN32 -D_MBCS \

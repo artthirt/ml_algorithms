@@ -16,25 +16,25 @@ namespace gpumat{
  * @param mat
  * @param gmat
  */
-void convert_to_gpu(const ct::Matf& mat, gpumat::GpuMat& gmat);
+void GPU_EXPORTS convert_to_gpu(const ct::Matf& mat, gpumat::GpuMat& gmat);
 /**
  * @brief convert_to_gpu
  * @param mat
  * @param gmat
  */
-void convert_to_gpu(const ct::Matd& mat, gpumat::GpuMat& gmat);
+void GPU_EXPORTS convert_to_gpu(const ct::Matd& mat, gpumat::GpuMat& gmat);
 /**
  * @brief convert_to_mat
  * @param gmat
  * @param mat
  */
-void convert_to_mat(const gpumat::GpuMat& gmat, ct::Matf& mat);
+void GPU_EXPORTS convert_to_mat(const gpumat::GpuMat& gmat, ct::Matf& mat);
 /**
  * @brief convert_to_mat
  * @param gmat
  * @param mat
  */
-void convert_to_mat(const gpumat::GpuMat& gmat, ct::Matd& mat);
+void GPU_EXPORTS convert_to_mat(const gpumat::GpuMat& gmat, ct::Matd& mat);
 
 /**
  * @brief write_fs
@@ -42,21 +42,21 @@ void convert_to_mat(const gpumat::GpuMat& gmat, ct::Matd& mat);
  * @param fs
  * @param mat
  */
-void write_fs(std::fstream &fs, const GpuMat &mat);
+void GPU_EXPORTS write_fs(std::fstream &fs, const GpuMat &mat);
 
 /**
  * @brief write_fs2
  * @param fs
  * @param mat
  */
-void write_fs2(std::fstream &fs, const GpuMat &mat);
+void GPU_EXPORTS write_fs2(std::fstream &fs, const GpuMat &mat);
 
 /**
  * @brief write_gmat
  * @param name
  * @param mat
  */
-void write_gmat(const std::string &name, const GpuMat &mat);
+void GPU_EXPORTS write_gmat(const std::string &name, const GpuMat &mat);
 
 /**
  * @brief read_fs
@@ -64,18 +64,18 @@ void write_gmat(const std::string &name, const GpuMat &mat);
  * @param fs
  * @param mat
  */
-void read_fs(std::fstream &fs, gpumat::GpuMat& mat);
+void GPU_EXPORTS read_fs(std::fstream &fs, gpumat::GpuMat& mat);
 
 /**
  * @brief read_fs2
  * @param fs
  * @param mat
  */
-void read_fs2(std::fstream &fs, gpumat::GpuMat& mat, int type = GPU_FLOAT);
+void GPU_EXPORTS read_fs2(std::fstream &fs, gpumat::GpuMat& mat, int type = GPU_FLOAT);
 
 /////////////////////////////////////////
 
-class Optimizer{
+class GPU_EXPORTS Optimizer{
 public:
 	Optimizer();
 	virtual ~Optimizer();
@@ -102,7 +102,7 @@ private:
 
 //////////////////////////////////////////
 
-class StohasticGradientOptimizer: public Optimizer{
+class GPU_EXPORTS StohasticGradientOptimizer: public Optimizer{
 public:
 	StohasticGradientOptimizer();
 
@@ -119,7 +119,7 @@ private:
 
 //////////////////////////////////////////
 
-class MomentumOptimizer: public Optimizer{
+class GPU_EXPORTS MomentumOptimizer: public Optimizer{
 public:
 	MomentumOptimizer();
 
@@ -142,7 +142,7 @@ protected:
 
 /////////////////////////////////////////
 
-class AdamOptimizer: public Optimizer{
+class GPU_EXPORTS AdamOptimizer: public Optimizer{
 public:
 	AdamOptimizer();
 
@@ -188,7 +188,7 @@ protected:
 	void init_iteration();
 };
 
-class AdaGradOptimizer: public Optimizer{
+class GPU_EXPORTS AdaGradOptimizer: public Optimizer{
 public:
     AdaGradOptimizer();
 
@@ -211,7 +211,7 @@ protected:
 
 /////////////////////////////////////////////
 
-class SimpleAutoencoder
+class GPU_EXPORTS SimpleAutoencoder
 {
 public:
 
@@ -245,29 +245,29 @@ private:
  * @param mat
  * @param fn
  */
-void save_gmat(const GpuMat &mat, const std::string &fn);
+void GPU_EXPORTS save_gmat(const GpuMat &mat, const std::string &fn);
 /**
  * @brief save_gmat10
  * @param mat
  * @param fn
  */
-void save_gmat10(const GpuMat& mat, const std::string& fn);
+void GPU_EXPORTS save_gmat10(const GpuMat& mat, const std::string& fn);
 
 /**
  * @brief cnv2gpu
  * @param M
  * @param G
  */
-void cnv2gpu(const std::vector<ct::Matf> &M, std::vector< gpumat::GpuMat > &G);
-void cnv2gpu(const std::vector<ct::Matd> &M, std::vector< gpumat::GpuMat > &G);
+void GPU_EXPORTS cnv2gpu(const std::vector<ct::Matf> &M, std::vector< gpumat::GpuMat > &G);
+void GPU_EXPORTS cnv2gpu(const std::vector<ct::Matd> &M, std::vector< gpumat::GpuMat > &G);
 
 /**
  * @brief cnv2mat
  * @param G
  * @param M
  */
-void cnv2mat(const std::vector< gpumat::GpuMat > &G, std::vector<ct::Matf> &M);
-void cnv2mat(const std::vector< gpumat::GpuMat > &G, std::vector<ct::Matd> &M);
+void GPU_EXPORTS cnv2mat(const std::vector< gpumat::GpuMat > &G, std::vector<ct::Matf> &M);
+void GPU_EXPORTS cnv2mat(const std::vector< gpumat::GpuMat > &G, std::vector<ct::Matd> &M);
 
 }
 

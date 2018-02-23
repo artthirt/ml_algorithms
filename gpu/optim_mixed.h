@@ -6,7 +6,7 @@
 
 namespace ct{
 
-class AdamOptimizerMixed: public ct::AdamOptimizer<float>{
+class GPU_EXPORTS AdamOptimizerMixed: public ct::AdamOptimizer<float>{
 public:
 	AdamOptimizerMixed();
 
@@ -17,7 +17,7 @@ public:
 
 /////////////////////////////
 
-class MomentumOptimizerMixed: public ct::MomentumOptimizer<float>{
+class GPU_EXPORTS MomentumOptimizerMixed: public ct::MomentumOptimizer<float>{
 public:
 	MomentumOptimizerMixed();
 

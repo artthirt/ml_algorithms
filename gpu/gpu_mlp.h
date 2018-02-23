@@ -3,14 +3,14 @@
 
 #include "custom_types.h"
 #include "gpumat.h"
-#include "cuda_common.h"
+//#include "cuda_common.h"
 #include "helper_gpu.h"
 
 #include <map>
 
 namespace gpumat{
 
-class mlp{
+class GPU_EXPORTS mlp{
 public:
 	GpuMat *pA0;
 	GpuMat W;
@@ -160,21 +160,21 @@ private:
 	etypefunction m_func;
 };
 
-class MlpOptimAdam: public AdamOptimizer{
+class GPU_EXPORTS MlpOptimAdam: public AdamOptimizer{
 public:
 	bool init(const std::vector< gpumat::mlp >& _mlp);
 	bool pass(std::vector<mlp> &_mlp);
 private:
 };
 
-class MlpOptimSG: public StohasticGradientOptimizer{
+class GPU_EXPORTS MlpOptimSG: public StohasticGradientOptimizer{
 public:
 	bool init(const std::vector< gpumat::mlp >& _mlp);
 	bool pass(std::vector<mlp> &_mlp);
 private:
 };
 
-class MlpOptimMoment: public MomentumOptimizer{
+class GPU_EXPORTS MlpOptimMoment: public MomentumOptimizer{
 public:
 	MlpOptimMoment();
 	bool init(const std::vector< gpumat::mlp >& _mlp);
