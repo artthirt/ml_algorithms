@@ -76,14 +76,14 @@ CONFIG(debug, debug|release) {
 
     cuda_d.commands = $$CUDA_DIR/bin/nvcc -D_DEBUG $$NVCC_OPTIONS $$CUDA_INC \
                     $$NVCC_LIBS --machine $$SYSTEM_TYPE -arch=$$CUDA_ARCH \
-                    -c -o ${QMAKE_FILE_OUT} ${QMAKE_FILE_NAME}  --compiler-options="-fPIC" -DGPU_EXPORTS=""
+                    -c -o ${QMAKE_FILE_OUT} ${QMAKE_FILE_NAME} -DGPU_EXPORTS=""
 
     win32{
         cuda_d.commands += --compile -cudart static -g -DWIN32 -D_MBCS \
                     -Xcompiler "/wd4819,/EHsc,/W3,/nologo,/Od,/Zi,/RTC1" \
                     -Xcompiler $$MSVCRT_LINK_FLAG_DEBUG
     }else{
-        cuda_d.commands += -ccbin gcc-6 -g -G \
+        cuda_d.commands += --compiler-options="-fPIC" -ccbin gcc-6 -g -G \
     }
 
     cuda_d.dependency_type = TYPE_C
@@ -95,14 +95,14 @@ else {
     cuda.output = $$CUDA_OBJECTS_DIR/${QMAKE_FILE_BASE}_cuda.o
     cuda.commands = $$CUDA_DIR/bin/nvcc $$NVCC_OPTIONS $$CUDA_INC $$NVCC_LIBS \
                     --machine $$SYSTEM_TYPE -arch=$$CUDA_ARCH\
-                    -c -o ${QMAKE_FILE_OUT} ${QMAKE_FILE_NAME}  --compiler-options="-fPIC" -DGPU_EXPORTS=""
+                    -c -o ${QMAKE_FILE_OUT} ${QMAKE_FILE_NAME} -DGPU_EXPORTS=""
 
     win32{
         cuda.commands +=  --compile -cudart static -DWIN32 -D_MBCS \
                     -Xcompiler "/wd4819,/EHsc,/W3,/nologo,/O2,/Zi" \
                     -Xcompiler $$MSVCRT_LINK_FLAG_RELEASE
     }else{
-        cuda.commands += -ccbin gcc-6 \
+        cuda.commands += --compiler-options="-fPIC" -ccbin gcc-6 \
     }
 
     cuda.dependency_type = TYPE_C
