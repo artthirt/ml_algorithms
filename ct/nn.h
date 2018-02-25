@@ -197,16 +197,17 @@ public:
 		ct::momentumGrad(gB, m_mb[index], B, Optimizer<T>::m_alpha, m_betha);
 	}
 
-	void pass(const std::vector< ct::Mat_<T> > &gradW, const std::vector< T > &gradB,
-			  std::vector< ct::Mat_<T> > &W, std::vector< T > &B)
+    bool pass(const std::vector< ct::Mat_<T> > &gradW, const std::vector< ct::Mat_<T> > &gradB,
+              std::vector< ct::Mat_<T> > &W, std::vector< ct::Mat_<T> > &B)
 	{
 		if(W.empty() || gradW.size() != W.size() || gradB.empty() || gradB.size() != gradW.size())
 			throw new std::invalid_argument("MomentOptimizer: wrong parameters");
 
 		Optimizer<T>::m_iteration++;
 		for(int i = 0; i < W.size(); ++i){
-			passI(gradW[i], gradB[i], W[i], B[i], i);
+            passI(gradW[i], gradB[i], W[i], B[i], i);
 		}
+        return true;
 	}
 
 protected:
