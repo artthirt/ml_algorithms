@@ -1,5 +1,17 @@
 INCLUDEPATH += $$PWD
 
+isEmpty(GPU_EXPORTS){
+    win32{
+        GPU_EXPORTS = "GPU_EXPORTS=__declspec(dllexport)"
+
+        QMAKE_CFLAGS += /openmp
+        QMAKE_CXXFLAGS += /openmp
+
+    }else{
+        GPU_EXPORTS = "GPU_EXPORTS=\"__attribute__ ((visibility (\\\"default\\\")))\""
+    }
+}
+
 DEFINES += _USE_GPU $$GPU_EXPORTS
 
 HEADERS += \

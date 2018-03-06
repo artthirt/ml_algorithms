@@ -547,7 +547,7 @@ bool CnvAdamOptimizer::pass(std::vector<convnn_gpu> &cnv)
     }
 
     /*for(convnn_gpu& item: cnv)*/
-#pragma omp parallel for
+//#pragma omp parallel for
     for(int i = 0; i < cnv.size(); ++i){
         index = i;
         convnn_gpu& item = cnv[index];
@@ -673,14 +673,13 @@ bool CnvMomentumOptimizer::pass(std::vector<convnn_gpu> &cnv)
        }
     }
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for(int i = 0; i < cnv.size(); ++i){
         index = i;
         convnn_gpu& item = cnv[index];
 		if(index >= stop_layer){
 			passI(item.gW, item.gB, item.W, item.B, index);
 		}
-		index++;
 	}
 	return true;
 }
