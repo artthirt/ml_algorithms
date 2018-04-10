@@ -24,6 +24,8 @@
 
 namespace ct{
 
+extern int _precision;
+
 extern std::mt19937 generator;
 
 template< typename T, int count >
@@ -1171,7 +1173,7 @@ public:
 		res  << std::fixed << "[";
 		for(int i = 0; i < rows; i++){
 			for(int j = 0; j < cols; j++){
-				res << std::setprecision(5) << val[i * cols + j] << " ";
+                res << std::setprecision(_precision) << val[i * cols + j] << " ";
 			}
 			res << ";\n";
 		}
@@ -1193,7 +1195,7 @@ public:
 		res << std::fixed << "[";
 		for(int i = 0; i < _rows; i++){
 			for(int j = 0; j < cols; j++){
-				res << std::setprecision(5) << val[i * cols + j] << " ";
+                res << std::setprecision(_precision) << val[i * cols + j] << " ";
 			}
 			res << ";\n";
 		}
@@ -1401,11 +1403,16 @@ inline T rad2angle(T val)
 ////////////////////////////
 
 template< typename T >
-void save_mat(const Mat_<T>& mat, const std::string& fn)
+void save_mat(const Mat_<T>& mat, const std::string& fn, char mode = 'w')
 {
-	std::string s = mat;			\
+    std::string s = mat;
 	std::fstream fs;
-	fs.open(fn.c_str(), std::ios_base::out);
+
+    std::ios_base::openmode m = std::ios_base::out;
+    if(mode == 'a')
+        m |= std::ios_base::app;
+
+    fs.open(fn.c_str(), m);
 
 	fs << s;
 
@@ -1415,7 +1422,7 @@ void save_mat(const Mat_<T>& mat, const std::string& fn)
 template< typename T >
 void save_mat10(const Mat_<T>& mat, const std::string& fn)
 {
-	std::string s = mat.print(10);			\
+    std::string s = mat.print(10);
 	std::fstream fs;
 	fs.open(fn.c_str(), std::ios_base::out);
 
