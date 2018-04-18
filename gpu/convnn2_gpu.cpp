@@ -176,7 +176,7 @@ void convnn_gpu::init(const ct::Size &_szA0, int _channels, int stride, int _K,
 	}else{
 		ct::get_cnv_sizes(szA0, szW, stride, szA1, szA2);
 	}
-    float n = (float)1/(sqrt(rows));
+    float n = 0.1;//(float)1/(sqrt(rows));
 
 	{
 		ct::Matf Wi(rows, cols), Bi(1, kernels);
