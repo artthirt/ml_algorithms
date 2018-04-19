@@ -398,8 +398,8 @@ void convnn_gpu::backward(const std::vector<gpumat::GpuMat> &D, bool last_level)
 		//gpumat::add(gW[0], vgW);
 		//gpumat::add(gB[0], vgB);
 	}
-    gpumat::mulval(gW, (double)1./(D.size() * channels));
-    gpumat::mulval(gB, (double)1./(D.size() * channels));
+    gpumat::mulval(gW, (double)1./(D.size()));
+    gpumat::mulval(gB, (double)1./(D.size()));
 
 #if 0
 #if 0
