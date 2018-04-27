@@ -63,7 +63,7 @@ win32{
 }
 
 SYSTEM_TYPE = 64            # '32' or '64', depending on your system
-CUDA_ARCH = sm_50           # Type of CUDA architecture, for example 'compute_10', 'compute_11', 'sm_10'
+CUDA_ARCH = sm_30           # Type of CUDA architecture, for example 'compute_10', 'compute_11', 'sm_10'
 NVCC_OPTIONS = --use_fast_math
 
 # Add the necessary libraries
